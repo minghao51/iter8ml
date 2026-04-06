@@ -1,0 +1,55 @@
+[project]
+name = "tabular-blueprint"
+version = "0.1.0"
+description = "A high-velocity iteration framework for tabular ML"
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+
+dependencies = [
+    "polars>=1.0",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "catboost>=1.2",
+    "lightgbm>=4.0",
+    "xgboost>=2.0",
+    "tabpfn>=2.0",
+    "skrub>=0.3",
+    "cleanlab>=2.6",
+    "optuna>=3.6",
+    "torch>=2.3",
+    "accelerate>=0.30",
+    "transformers>=4.40",
+    "scikit-learn>=1.4",
+    "numpy>=1.26",
+    "typer>=0.12",
+    "psutil>=5.9",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+hamilton   = ["sf-hamilton>=1.70"]
+llm       = ["mcp>=0.9", "anthropic>=0.25"]
+wandb     = ["wandb>=0.17"]
+mlflow    = ["mlflow>=2.13"]
+zenml     = ["zenml>=0.57"]
+dev       = ["pytest>=8.0", "ruff>=0.4"]
+transformers = ["datasets>=2.14"]
+
+[project.scripts]
+tabblueprint = "main:app"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"main.py" = ["B008"]  # typer requires Option() in function signatures
+"notebooks/*" = ["E402", "I001"]  # notebook-style imports per cell
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts   = "-v --tb=short"

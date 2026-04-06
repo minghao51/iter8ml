@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    volumes:
+      - .:/workspace
+      - workspace-data:/workspace/workspace
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.13.0
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow-data:/mlruns
+    command: mlflow server --host 0.0.0.0 --backend-store-uri /mlruns
+
+volumes:
+  workspace-data:
+  mlflow-data:

@@ -1,0 +1,48 @@
+# Environment
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Workspace (keep .gitkeep)
+workspace/*
+!workspace/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Notebooks
+notebooks/.ipynb_checkpoints/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ML artifacts
+mlruns/
+wandb/
+catboost_info/
+*.cbm
+*.lgbm
+*.json
+
+# Test artifacts
+workspace/test_*.jsonl
+catboost_info/
+*.cbm
+*.lgbm
+*.json
+
+# Test artifacts
+workspace/test_*.jsonl
