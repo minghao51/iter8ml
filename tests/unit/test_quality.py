@@ -41,10 +41,12 @@ def test_audit_data_quality_disabled():
 
 
 def test_audit_data_quality_single_class():
-    df = pl.DataFrame({
-        "a": [1.0, 2.0, 3.0],
-        "target": [0, 0, 0],
-    })
+    df = pl.DataFrame(
+        {
+            "a": [1.0, 2.0, 3.0],
+            "target": [0, 0, 0],
+        }
+    )
     report = audit_data_quality(df, "target", enabled=True)
     assert report["enabled"] is False
     assert "2 classes" in report["message"]

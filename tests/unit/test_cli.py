@@ -113,12 +113,18 @@ def test_run_unsupported_format():
 
 
 def test_run_with_csv(sample_csv):
-    result = runner.invoke(app, [
-        "run",
-        "--data", sample_csv,
-        "--target", "target",
-        "--models", "catboost",
-    ])
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "--data",
+            sample_csv,
+            "--target",
+            "target",
+            "--models",
+            "catboost",
+        ],
+    )
     assert result.exit_code == 0
     assert "Loaded 100 rows" in result.stdout
     assert "Results" in result.stdout
@@ -126,12 +132,18 @@ def test_run_with_csv(sample_csv):
 
 
 def test_run_with_parquet(sample_parquet):
-    result = runner.invoke(app, [
-        "run",
-        "--data", sample_parquet,
-        "--target", "target",
-        "--models", "catboost",
-    ])
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "--data",
+            sample_parquet,
+            "--target",
+            "target",
+            "--models",
+            "catboost",
+        ],
+    )
     assert result.exit_code == 0
     assert "Loaded 100 rows" in result.stdout
 
@@ -141,12 +153,18 @@ def test_leaderboard_after_run(sample_csv, tmp_path):
     os.chdir(str(tmp_path))
     try:
         runner.invoke(app, ["init"])
-        runner.invoke(app, [
-            "run",
-            "--data", sample_csv,
-            "--target", "target",
-            "--models", "catboost",
-        ])
+        runner.invoke(
+            app,
+            [
+                "run",
+                "--data",
+                sample_csv,
+                "--target",
+                "target",
+                "--models",
+                "catboost",
+            ],
+        )
 
         result = runner.invoke(app, ["leaderboard"])
         assert result.exit_code == 0
@@ -163,24 +181,36 @@ def test_drift_detection(sample_parquet, tmp_path):
     new_path = tmp_path / "shifted.parquet"
     df_shifted.write_parquet(str(new_path))
 
-    result = runner.invoke(app, [
-        "drift",
-        "--reference", sample_parquet,
-        "--new", str(new_path),
-    ])
+    result = runner.invoke(
+        app,
+        [
+            "drift",
+            "--reference",
+            sample_parquet,
+            "--new",
+            str(new_path),
+        ],
+    )
     assert result.exit_code == 0
     assert "Drift Detection Report" in result.stdout
     assert "Drift detected" in result.stdout
 
 
 def test_hpo_command(sample_csv):
-    result = runner.invoke(app, [
-        "hpo",
-        "--data", sample_csv,
-        "--target", "target",
-        "--model", "catboost",
-        "--trials", "2",
-    ])
+    result = runner.invoke(
+        app,
+        [
+            "hpo",
+            "--data",
+            sample_csv,
+            "--target",
+            "target",
+            "--model",
+            "catboost",
+            "--trials",
+            "2",
+        ],
+    )
     assert result.exit_code == 0
     assert "HPO" in result.stdout
     assert "Best params" in result.stdout

@@ -23,13 +23,10 @@ def create_study(
 def _validate_bounds(param_name: str, low: int | float, high: int | float) -> None:
     """Validate that search space bounds are numeric and ordered."""
     if not isinstance(low, (int, float)) or not isinstance(high, (int, float)):
-        raise ValueError(
-            f"Invalid search space for '{param_name}': bounds must be numeric"
-        )
+        raise ValueError(f"Invalid search space for '{param_name}': bounds must be numeric")
     if low >= high:
         raise ValueError(
-            f"Invalid search space for '{param_name}': "
-            f"lower bound {low} >= upper bound {high}"
+            f"Invalid search space for '{param_name}': lower bound {low} >= upper bound {high}"
         )
 
 

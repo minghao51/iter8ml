@@ -1,4 +1,4 @@
-"""CatBoost model wrapper with native categorical support."""
+"""CatBoost model wrapper."""
 
 from pathlib import Path
 

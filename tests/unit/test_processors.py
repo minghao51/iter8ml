@@ -51,9 +51,11 @@ def test_fill_nulls_no_nulls():
 
 
 def test_decompose_dates():
-    df = pl.DataFrame({
-        "event_date": pl.Series(["2023-01-15", "2023-06-20"]).str.to_datetime(),
-    })
+    df = pl.DataFrame(
+        {
+            "event_date": pl.Series(["2023-01-15", "2023-06-20"]).str.to_datetime(),
+        }
+    )
     result = decompose_dates(df)
     assert "event_year" in result.columns
     assert "event_month" in result.columns
@@ -62,9 +64,11 @@ def test_decompose_dates():
 
 
 def test_decompose_dates_custom_cols():
-    df = pl.DataFrame({
-        "my_date": pl.Series(["2023-01-15"]).str.to_datetime(),
-    })
+    df = pl.DataFrame(
+        {
+            "my_date": pl.Series(["2023-01-15"]).str.to_datetime(),
+        }
+    )
     result = decompose_dates(df, date_cols=["my_date"])
     assert "my_year" in result.columns
     assert "my_month" in result.columns
@@ -102,10 +106,12 @@ def test_cast_types():
 
 
 def test_pipeline_all_steps():
-    df = pl.DataFrame({
-        "a": [1.0, None, 3.0],
-        "cat": pl.Series(["x", "y", "z"], dtype=pl.Categorical),
-    })
+    df = pl.DataFrame(
+        {
+            "a": [1.0, None, 3.0],
+            "cat": pl.Series(["x", "y", "z"], dtype=pl.Categorical),
+        }
+    )
     result = pipeline(
         df,
         do_fill_nulls=True,
