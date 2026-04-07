@@ -3,6 +3,8 @@
 import numpy as np
 import pytest
 
+from configs.experiment import ExperimentConfig
+from core.constants import TaskType
 from core.engine.evaluator import Evaluator
 from core.engine.hpo import create_study, optimize_model
 
@@ -66,7 +68,15 @@ def test_create_study_minimize():
 
 def test_optimize_model_basic(sample_data):
     X, y = sample_data
-    evaluator = Evaluator(task="classification", cv_folds=2, metrics=["roc_auc"])
+    config = ExperimentConfig(
+        name="hpo_test",
+        task=TaskType.CLASSIFICATION,
+        target_col="target",
+        data_path="test.csv",
+        cv_folds=2,
+        metrics=["roc_auc"],
+    )
+    evaluator = Evaluator(config)
     search_space = {"lr": [0.001, 0.1], "n_estimators": [50, 200]}
 
     result = optimize_model(
@@ -88,7 +98,15 @@ def test_optimize_model_basic(sample_data):
 
 def test_optimize_model_no_search_space(sample_data):
     X, y = sample_data
-    evaluator = Evaluator(task="classification", cv_folds=2, metrics=["roc_auc"])
+    config = ExperimentConfig(
+        name="hpo_test",
+        task=TaskType.CLASSIFICATION,
+        target_col="target",
+        data_path="test.csv",
+        cv_folds=2,
+        metrics=["roc_auc"],
+    )
+    evaluator = Evaluator(config)
 
     result = optimize_model(
         DummyModel,
@@ -106,7 +124,15 @@ def test_optimize_model_no_search_space(sample_data):
 
 def test_optimize_model_log_space(sample_data):
     X, y = sample_data
-    evaluator = Evaluator(task="classification", cv_folds=2, metrics=["roc_auc"])
+    config = ExperimentConfig(
+        name="hpo_test",
+        task=TaskType.CLASSIFICATION,
+        target_col="target",
+        data_path="test.csv",
+        cv_folds=2,
+        metrics=["roc_auc"],
+    )
+    evaluator = Evaluator(config)
     search_space = {"lr": [0.001, 0.1, "log"]}
 
     result = optimize_model(

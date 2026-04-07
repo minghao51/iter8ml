@@ -1,5 +1,3 @@
-"""Cross-validation strategies and metrics registry."""
-
 import numpy as np
 from sklearn.metrics import (
     accuracy_score,
@@ -11,6 +9,8 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 from sklearn.model_selection import KFold, StratifiedKFold, TimeSeriesSplit
+
+from configs.experiment import ExperimentConfig
 
 METRICS_REGISTRY = {
     "classification": {
@@ -42,18 +42,24 @@ def get_cv_split(strategy: str, n_splits: int = 5):
 class Evaluator:
     """Runs cross-validation and computes metrics."""
 
-    def __init__(
-        self,
-        task: str,
-        metrics: list[str] | None = None,
-        cv_folds: int = 5,
-        cv_strategy: str = "stratified",
-    ):
-        self.task = task
-        default_metrics = ["roc_auc", "f1_macro"] if task == "classification" else ["rmse", "r2"]
-        self.metrics = metrics or default_metrics
-        self.cv_folds = cv_folds
-        self.cv_strategy = cv_strategy
+    def __init__(self, config: ExperimentConfig):
+        self.config = config
+
+    @property
+    def task(self) -> str:
+        return self.config.task.value
+
+    @property
+    def metrics(self) -> list[str]:
+        return self.config.metrics
+
+    @property
+    def cv_folds(self) -> int:
+        return self.config.cv_folds
+
+    @property
+    def cv_strategy(self) -> str:
+        return self.config.cv_strategy.value
 
     def evaluate(
         self,
@@ -77,6 +83,12 @@ class Evaluator:
         fold_scores = {m: [] for m in self.metrics}
         model_task = task or self.task
 
+        # Cache metric functions outside the fold loop
+        metric_fns = {
+            metric_name: METRICS_REGISTRY[model_task][metric_name]
+            for metric_name in self.metrics
+        }
+
         for train_idx, val_idx in cv.split(X, y):
             X_train, X_val = X[train_idx], X[val_idx]
             y_train, y_val = y[train_idx], y[val_idx]
@@ -85,8 +97,7 @@ class Evaluator:
             model.fit(X_train, y_train)
             y_pred = model.predict(X_val)
 
-            for metric_name in self.metrics:
-                metric_fn = METRICS_REGISTRY[model_task][metric_name]
+            for metric_name, metric_fn in metric_fns.items():
                 if metric_name == "log_loss":
                     y_proba = model.predict_proba(X_val)
                     if y_proba is not None:

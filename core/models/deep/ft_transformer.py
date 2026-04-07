@@ -7,6 +7,8 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
+from configs.model_configs import FTTransformerConfig
+
 
 class FTTransformerModel:
     """
@@ -19,26 +21,21 @@ class FTTransformerModel:
         task: str = "classification",
         n_features: int = 10,
         n_classes: int = 2,
-        n_heads: int = 4,
-        d_hidden: int = 128,
-        n_layers: int = 3,
-        dropout: float = 0.1,
-        learning_rate: float = 1e-4,
-        batch_size: int = 128,
-        n_epochs: int = 100,
-        random_seed: int = 42,
+        config: FTTransformerConfig | None = None,
     ):
         self.task = task
         self.n_features = n_features
         self.n_classes = n_classes
-        self.n_heads = n_heads
-        self.d_hidden = d_hidden
-        self.n_layers = n_layers
-        self.dropout = dropout
-        self.learning_rate = learning_rate
-        self.batch_size = batch_size
-        self.n_epochs = n_epochs
-        self.random_seed = random_seed
+        self.config = config or FTTransformerConfig()
+        # Extract values from config
+        self.n_heads = self.config.n_heads
+        self.d_hidden = self.config.d_hidden
+        self.n_layers = self.config.n_layers
+        self.dropout = self.config.dropout
+        self.learning_rate = self.config.learning_rate
+        self.batch_size = self.config.batch_size
+        self.n_epochs = self.config.n_epochs
+        self.random_seed = self.config.random_seed
         self.model: nn.Module | None = None
         self.accelerator = None
 

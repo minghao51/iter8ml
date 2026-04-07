@@ -8,6 +8,7 @@ import typer
 
 from configs.experiment import ExperimentConfig
 from configs.hardware import HardwareProfile
+from core.constants import from_task_type
 from core.data.loaders import load_data
 from core.engine.trainer import Trainer
 from core.utils.jsonl import load_events
@@ -49,7 +50,7 @@ def run(
     if experiment_config is None:
         experiment_config = ExperimentConfig(
             name="experiment",
-            task=task,
+            task=from_task_type(task),
             target_col=target_col or "target",
             data_path=data_path or "",
         )
@@ -206,7 +207,14 @@ def hpo(
     adapter = DataAdapter(target_format="numpy")
     X, y = adapter.transform(df, target_col)
 
-    evaluator = Evaluator(task=task)
+    # Create a minimal config for the evaluator
+    hpo_config = ExperimentConfig(
+        name="hpo",
+        task=from_task_type(task),
+        target_col=target_col,
+        data_path=data_path,
+    )
+    evaluator = Evaluator(hpo_config)
     model_configs = ModelConfigs()
     if not hasattr(model_configs, model):
         available = [a for a in dir(model_configs) if not a.startswith("_")]

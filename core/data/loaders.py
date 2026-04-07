@@ -3,6 +3,7 @@
 import hashlib
 from pathlib import Path
 
+import numpy as np
 import polars as pl
 
 
@@ -49,5 +50,6 @@ def load_sqlite(db_path: str | Path, query: str) -> pl.DataFrame:
 def get_data_hash(df: pl.DataFrame) -> str:
     """Compute a deterministic SHA-256 hash of a Polars DataFrame."""
     row_hashes = df.hash_rows()
-    combined = str(sorted(row_hashes.to_list())).encode()
-    return "sha256:" + hashlib.sha256(combined).hexdigest()[:16]
+    # Use XOR aggregation instead of sorting - O(n) instead of O(n log n)
+    combined_hash = row_hashes.to_numpy().astype(np.uint64).sum()
+    return "sha256:" + hashlib.sha256(str(combined_hash).encode()).hexdigest()[:16]

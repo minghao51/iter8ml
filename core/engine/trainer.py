@@ -6,9 +6,11 @@ import os
 import platform
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
 from pathlib import Path
 
+import numpy as np
 import polars as pl
 
 from configs.experiment import ExperimentConfig
@@ -66,9 +68,11 @@ def _update_registry(
     with open(lock_path, "w") as lock_file:
         fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
         try:
-            if registry_file.exists():
+            try:
                 with open(registry_path) as f:
                     registry = json.load(f)
+            except FileNotFoundError:
+                registry = {}
 
             if key not in registry or score > registry[key].get("score", -float("inf")):
                 registry[key] = {
@@ -123,15 +127,13 @@ class Trainer:
         self,
         config: ExperimentConfig,
         tracker: Tracker | None = None,
-        workspace_dir: Path | None = None,
     ):
         self.config = config
         self.tracker = tracker or JSONLTracker(
-            log_path=str((workspace_dir or WORKSPACE_DIR) / "experiments.jsonl")
+            log_path=str(self.config.workspace_dir / "experiments.jsonl")
         )
         self.hardware = HardwareProfile.detect()
         self.selector = ModelSelector()
-        self.workspace_dir = workspace_dir or WORKSPACE_DIR
 
     def run(self, df: pl.DataFrame) -> dict:
         """Run full experiment on a Polars DataFrame."""
@@ -145,7 +147,7 @@ class Trainer:
         self.tracker.log_event(
             {
                 "event": "experiment_started",
-                "config": self.config.model_dump(),
+                "config": self.config.model_dump(mode="json"),
                 "data_hash": data_hash,
                 "n_rows": n_rows,
                 "n_features": n_features,
@@ -155,7 +157,7 @@ class Trainer:
         models_to_run = (
             self.selector.select(
                 n_rows=n_rows,
-                task=self.config.task,
+                task=self.config.task.value,
                 vram_gb=self.hardware.vram_gb,
             )
             if self.config.models == "auto"
@@ -171,88 +173,182 @@ class Trainer:
         adapter = DataAdapter(target_format="numpy")
         X, y = adapter.transform(df, self.config.target_col)
 
-        evaluator = Evaluator(
-            task=self.config.task,
-            metrics=self.config.metrics,
-            cv_folds=self.config.cv_folds,
-            cv_strategy=self.config.cv_strategy,
-        )
+        evaluator = Evaluator(self.config)
 
-        results = {}
-        best_score = -float("inf")
-        primary_metric = self.config.metrics[0]
+        # Determine max workers based on GPU availability
+        max_workers = self.config.max_workers
+        if self.hardware.has_gpu and self.hardware.vram_gb < 16:
+            # Single GPU with limited VRAM - run models sequentially
+            max_workers = 1
 
-        for model_name in models_to_run:
-            start = time.time()
-            try:
-                model_cls = _get_model_class(model_name)
-                model = model_cls(task=self.config.task)
-                model.fit(X, y)
-                artifact_path = str(self.workspace_dir / "artifacts" / f"{model_name}_{run_id}")
-                model.save(artifact_path)
-
-                cv_scores = evaluator.evaluate(model_cls, X, y, task=self.config.task)
-                duration = time.time() - start
-
-                event = {
-                    "event": "model_completed",
-                    "run_id": run_id,
-                    "model": model.model_name,
-                    "task": self.config.task,
-                    "data_hash": data_hash,
-                    "n_rows": n_rows,
-                    "n_features": n_features,
-                    "cv_scores": cv_scores,
-                    "duration_seconds": round(duration, 2),
-                    "artifact_path": artifact_path,
-                    "hardware": {
-                        "device": "cuda" if self.hardware.has_gpu else "cpu",
-                        "vram_used_gb": 0.0,
-                    },
-                }
-
-                self.tracker.log_event(event)
-                self.tracker.log_metrics(cv_scores)
-                results[model_name] = cv_scores
-
-                score = cv_scores.get(primary_metric, 0)
-                if score > best_score:
-                    best_score = score
-                    _update_registry(
-                        str(self.workspace_dir / "registry.json"),
-                        f"{self.config.name}:{self.config.task}",
-                        model.model_name,
-                        run_id,
-                        score,
-                        artifact_path,
-                    )
-
-            except Exception as e:
-                self.tracker.log_event(
-                    {
-                        "event": "model_failed",
-                        "model": model_name,
-                        "error": str(e),
-                    }
-                )
-                results[model_name] = {"error": str(e)}
+        # Use sequential training if max_workers is 1
+        if max_workers == 1:
+            results = self._train_sequential(
+                models_to_run, X, y, evaluator, run_id, data_hash, n_rows, n_features
+            )
+        else:
+            results = self._train_concurrent(
+                models_to_run, X, y, evaluator, run_id, data_hash, n_rows, n_features, max_workers
+            )
 
         _generate_leaderboard(
-            str(self.workspace_dir / "experiments.jsonl"),
-            str(self.workspace_dir / "leaderboard.md"),
+            str(self.config.workspace_dir / "experiments.jsonl"),
+            str(self.config.workspace_dir / "leaderboard.md"),
         )
         self._update_state()
         self.tracker.finish()
 
         return results
 
+    def _train_sequential(
+        self, models_to_run, X, y, evaluator, run_id, data_hash, n_rows, n_features
+    ):
+        """Train models sequentially."""
+        results = {}
+        best_score = -float("inf")
+        primary_metric = self.config.metrics[0]
+
+        for model_name in models_to_run:
+            result = self._train_single_model(
+                model_name, X, y, evaluator, run_id, data_hash, n_rows, n_features
+            )
+            results[model_name] = result
+
+            if "error" not in result:
+                score = result.get("cv_scores", {}).get(primary_metric, 0)
+                if score > best_score:
+                    best_score = score
+                    _update_registry(
+                        str(self.config.workspace_dir / "registry.json"),
+                        f"{self.config.name}:{self.config.task.value}",
+                        result["model_name"],
+                        run_id,
+                        score,
+                        result["artifact_path"],
+                    )
+
+        return results
+
+    def _train_concurrent(
+        self, models_to_run, X, y, evaluator, run_id, data_hash, n_rows, n_features, max_workers
+    ):
+        """Train models concurrently using ThreadPoolExecutor."""
+        results = {}
+        best_score = -float("inf")
+        primary_metric = self.config.metrics[0]
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all training jobs
+            futures = {
+                executor.submit(
+                    self._train_single_model,
+                    model_name,
+                    X,
+                    y,
+                    evaluator,
+                    run_id,
+                    data_hash,
+                    n_rows,
+                    n_features,
+                ): model_name
+                for model_name in models_to_run
+            }
+
+            # Collect results as they complete
+            for future in as_completed(futures):
+                model_name = futures[future]
+                try:
+                    result = future.result()
+                    results[model_name] = result
+
+                    if "error" not in result:
+                        score = result.get("cv_scores", {}).get(primary_metric, 0)
+                        if score > best_score:
+                            best_score = score
+                            _update_registry(
+                                str(self.config.workspace_dir / "registry.json"),
+                                f"{self.config.name}:{self.config.task.value}",
+                                result["model_name"],
+                                run_id,
+                                score,
+                                result["artifact_path"],
+                            )
+                except Exception as e:
+                    results[model_name] = {"error": str(e)}
+
+        return results
+
+    def _train_single_model(
+        self, model_name, X, y, evaluator, run_id, data_hash, n_rows, n_features
+    ):
+        """Train a single model and return results."""
+        start = time.time()
+        try:
+            model_cls = _get_model_class(model_name)
+
+            cv_scores = evaluator.evaluate(model_cls, X, y, task=self.config.task.value)
+
+            # Train on full dataset only after CV succeeds
+            # FTTransformer requires n_features and n_classes
+            if model_name == "ft_transformer":
+                n_classes = len(np.unique(y)) if self.config.task.value == "classification" else 1
+                model = model_cls(
+                    task=self.config.task.value,
+                    n_features=n_features,
+                    n_classes=n_classes,
+                )
+            else:
+                model = model_cls(task=self.config.task.value)
+            model.fit(X, y)
+            artifact_path = str(self.config.workspace_dir / "artifacts" / f"{model_name}_{run_id}")
+            model.save(artifact_path)
+
+            duration = time.time() - start
+
+            event = {
+                "event": "model_completed",
+                "run_id": run_id,
+                "model": model.model_name,
+                "task": self.config.task.value,
+                "data_hash": data_hash,
+                "n_rows": n_rows,
+                "n_features": n_features,
+                "cv_scores": cv_scores,
+                "duration_seconds": round(duration, 2),
+                "artifact_path": artifact_path,
+                "hardware": {
+                    "device": "cuda" if self.hardware.has_gpu else "cpu",
+                    "vram_used_gb": 0.0,
+                },
+            }
+
+            self.tracker.log_event(event)
+            self.tracker.log_metrics(cv_scores)
+
+            return {
+                "model_name": model.model_name,
+                "cv_scores": cv_scores,
+                "artifact_path": artifact_path,
+                "duration_seconds": round(duration, 2),
+            }
+
+        except Exception as e:
+            self.tracker.log_event(
+                {
+                    "event": "model_failed",
+                    "model": model_name,
+                    "error": str(e),
+                }
+            )
+            return {"error": str(e)}
+
     def _update_state(self):
         """Generate LLM-readable state summary."""
         from core.engine.state_observer import StateObserver
 
         observer = StateObserver(
-            log_path=str(self.workspace_dir / "experiments.jsonl"),
-            registry_path=str(self.workspace_dir / "registry.json"),
-            output_path=str(self.workspace_dir / "current_state.md"),
+            log_path=str(self.config.workspace_dir / "experiments.jsonl"),
+            registry_path=str(self.config.workspace_dir / "registry.json"),
+            output_path=str(self.config.workspace_dir / "current_state.md"),
         )
         observer.generate()

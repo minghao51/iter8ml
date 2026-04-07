@@ -1,12 +1,15 @@
-"""Pluggable Tracker protocol and JSONL implementation."""
+"""Pluggable Tracker protocol and JSONL implementation with log rotation."""
 
 import json
+import threading
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol
 
 
 class Tracker(Protocol):
+    current_run_id: str | None
+
     def log_metrics(self, metrics: dict, step: int | None = None) -> None: ...
     def log_params(self, params: dict) -> None: ...
     def log_artifact(self, path: str) -> None: ...
@@ -15,12 +18,49 @@ class Tracker(Protocol):
 
 
 class JSONLTracker:
-    """Default tracker. Writes structured events to workspace/experiments.jsonl."""
+    """Default tracker with log rotation.
 
-    def __init__(self, log_path: str = "workspace/experiments.jsonl"):
+    Writes structured events to workspace/experiments.jsonl.
+    """
+
+    def __init__(
+        self,
+        log_path: str = "workspace/experiments.jsonl",
+        max_file_size_mb: float = 100.0,
+        backup_count: int = 5,
+    ):
         self.log_path = Path(log_path)
         self.log_path.parent.mkdir(parents=True, exist_ok=True)
+        self.max_file_size_bytes = int(max_file_size_mb * 1024 * 1024)
+        self.backup_count = backup_count
         self.current_run_id = None
+        self._lock = threading.Lock()
+
+    def _should_rotate(self) -> bool:
+        """Check if the log file exceeds the size limit."""
+        if not self.log_path.exists():
+            return False
+        return self.log_path.stat().st_size >= self.max_file_size_bytes
+
+    def _rotate_log(self) -> None:
+        """Rotate log files, keeping backup_count historical files."""
+        if not self.log_path.exists():
+            return
+
+        # Remove oldest backup if we have too many
+        oldest_backup = self.log_path.with_suffix(f".jsonl.{self.backup_count}")
+        if oldest_backup.exists():
+            oldest_backup.unlink()
+
+        # Rotate existing backups: .N -> .N+1
+        for i in range(self.backup_count - 1, 0, -1):
+            old_backup = self.log_path.with_suffix(f".jsonl.{i}")
+            new_backup = self.log_path.with_suffix(f".jsonl.{i + 1}")
+            if old_backup.exists():
+                old_backup.rename(new_backup)
+
+        # Move current log to .1
+        self.log_path.rename(self.log_path.with_suffix(".jsonl.1"))
 
     def log_metrics(self, metrics: dict, step: int | None = None) -> None:
         self.log_event({"event": "metrics", "metrics": metrics, "step": step})
@@ -32,10 +72,15 @@ class JSONLTracker:
         self.log_event({"event": "artifact", "path": path})
 
     def log_event(self, event: dict) -> None:
-        event["run_id"] = self.current_run_id or "unknown"
-        event["timestamp"] = datetime.now(UTC).isoformat()
-        with open(self.log_path, "a") as f:
-            f.write(json.dumps(event) + "\n")
+        with self._lock:
+            # Check if we need to rotate before writing
+            if self._should_rotate():
+                self._rotate_log()
+
+            event["run_id"] = self.current_run_id or "unknown"
+            event["timestamp"] = datetime.now(UTC).isoformat()
+            with open(self.log_path, "a") as f:
+                f.write(json.dumps(event) + "\n")
 
     def finish(self) -> None:
         self.log_event({"event": "run_completed"})

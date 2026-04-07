@@ -4,6 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from configs.experiment import ExperimentConfig
+from core.constants import CVStrategy
 
 
 def test_default_config():
@@ -14,7 +15,7 @@ def test_default_config():
         data_path="data.csv",
     )
     assert config.cv_folds == 5
-    assert config.cv_strategy == "stratified"
+    assert config.cv_strategy == CVStrategy.STRATIFIED
     assert config.run_hpo is False
     assert config.models == "auto"
     assert config.random_seed == 42
@@ -27,7 +28,7 @@ def test_regression_defaults():
         target_col="target",
         data_path="data.csv",
     )
-    assert config.cv_strategy == "kfold"
+    assert config.cv_strategy == CVStrategy.KFOLD
     assert config.metrics == ["rmse", "r2"]
 
 
