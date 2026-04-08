@@ -30,7 +30,9 @@ def audit_data_quality(
     except ImportError:
         return {"enabled": False, "message": "cleanlab not installed"}
 
-    X = df.drop(target_col).to_numpy()
+    # Use .select() to get feature columns (may create view instead of copy)
+    feature_cols = [c for c in df.columns if c != target_col]
+    X = df.select(feature_cols).to_numpy()
     y = df[target_col].to_numpy()
 
     if len(np.unique(y)) < 2:

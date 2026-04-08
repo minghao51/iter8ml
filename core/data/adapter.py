@@ -41,16 +41,28 @@ class DataAdapter:
         return X_np, y_np
 
     def _to_tensor(self, X: pl.DataFrame, y: pl.Series) -> tuple:
-        """Convert to PyTorch tensors."""
+        """Convert to PyTorch tensors using native Polars to_torch for zero-copy."""
         import torch
 
-        X_np, y_np = self._to_numpy(X, y)
-        X_tensor = torch.tensor(X_np, dtype=torch.float32)
-        y_tensor = torch.tensor(y_np, dtype=torch.float32 if y.dtype.is_float() else torch.long)
+        # Native Polars → PyTorch conversion (zero-copy when conditions met)
+        df = X.with_columns(y.alias("_label_"))
+        tensors: dict[str, torch.Tensor] = df.to_torch(
+            return_type="dict",
+            dtype=None,  # Preserve original dtypes, cast in torch
+        )
+
+        # Stack feature columns
+        X_tensor = torch.stack([tensors[col] for col in X.columns]).T
+        y_tensor = tensors["_label_"]
+
+        # Cast to appropriate dtypes
+        X_tensor = X_tensor.to(torch.float32)
+        y_tensor = y_tensor.to(torch.float32 if y.dtype.is_float() else torch.long)
+
         return X_tensor, y_tensor
 
     def _to_dataset(self, X: pl.DataFrame, y: pl.Series):
-        """Convert to HuggingFace Dataset."""
+        """Convert to HuggingFace Dataset using Arrow format for zero-copy."""
         try:
             from datasets import Dataset
         except ImportError as e:
@@ -59,8 +71,6 @@ class DataAdapter:
                 "Install it with: uv sync --extra transformers"
             ) from e
 
-        X_np, y_np = self._to_numpy(X, y)
-        feature_names = X.columns
-        data_dict = {name: X_np[:, i] for i, name in enumerate(feature_names)}
-        data_dict["label"] = y_np
-        return Dataset.from_dict(data_dict)
+        # Use PyArrow as interchange format (zero-copy when possible)
+        table = X.with_columns(y.alias("label")).to_arrow()
+        return Dataset.from_arrow(table)
