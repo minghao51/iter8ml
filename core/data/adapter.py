@@ -62,7 +62,7 @@ class DataAdapter:
         return X_tensor, y_tensor
 
     def _to_dataset(self, X: pl.DataFrame, y: pl.Series):
-        """Convert to HuggingFace Dataset using Arrow format for zero-copy."""
+        """Convert to HuggingFace Dataset with compatibility across datasets versions."""
         try:
             from datasets import Dataset
         except ImportError as e:
@@ -71,6 +71,18 @@ class DataAdapter:
                 "Install it with: uv sync --extra transformers"
             ) from e
 
-        # Use PyArrow as interchange format (zero-copy when possible)
-        table = X.with_columns(y.alias("label")).to_arrow()
-        return Dataset.from_arrow(table)
+        df = X.with_columns(y.alias("label"))
+
+        # Prefer native Polars conversion when available.
+        if hasattr(Dataset, "from_polars"):
+            return Dataset.from_polars(df)
+
+        # Fallback for older/newer APIs that accept Arrow tables directly.
+        table = df.to_arrow()
+        if hasattr(Dataset, "from_arrow"):
+            return Dataset.from_arrow(table)
+        if hasattr(Dataset, "from_pyarrow"):
+            return Dataset.from_pyarrow(table)
+
+        # Final fallback keeps compatibility with legacy versions.
+        return Dataset.from_dict(df.to_dict(as_series=False))
