@@ -62,8 +62,8 @@ def test_get_column_stats_parquet(sample_parquet):
 def test_get_column_stats_unsupported_format(tmp_path):
     bad_path = str(tmp_path / "data.json")
     Path(bad_path).write_text("{}")
-    result = get_column_stats(bad_path)
-    assert "Unsupported format" in result
+    with pytest.raises(ValueError, match="Unsupported file format"):
+        get_column_stats(bad_path)
 
 
 def test_run_baseline_csv(sample_csv):
@@ -180,3 +180,13 @@ def test_run_hpo_forwards_task(sample_csv, monkeypatch):
     data = json.loads(result)
     assert data["n_trials"] == 1
     assert captured["task"] == "regression"
+
+
+def test_get_column_stats_uses_centralized_loader(monkeypatch):
+    """Verify get_column_stats uses load_data from core.data.loaders."""
+    from unittest.mock import patch
+
+    with patch("mcp_server.tools.load_data") as mock_load:
+        mock_load.return_value = pl.DataFrame({"a": [1, 2, 3]})
+        result = get_column_stats("test.csv")
+        mock_load.assert_called_once()

@@ -26,14 +26,7 @@ def get_column_stats(data_path: str) -> str:
     """Returns Polars describe() output for a dataset."""
     import polars as pl
 
-    path = Path(data_path)
-    if path.suffix == ".csv":
-        df = pl.read_csv(str(path))
-    elif path.suffix == ".parquet":
-        df = pl.read_parquet(str(path))
-    else:
-        return f"Unsupported format: {path.suffix}"
-
+    df = load_data(data_path)
     desc = df.describe()
     return desc.to_pandas().to_markdown()
 
