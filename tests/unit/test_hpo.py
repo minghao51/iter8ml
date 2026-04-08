@@ -148,3 +148,41 @@ def test_optimize_model_log_space(sample_data):
 
     assert "best_params" in result
     assert result["n_trials"] == 2
+
+
+def test_optimize_model_preserves_exception_context():
+    """Test that evaluation failures preserve exception context."""
+    from core.engine.hpo import optimize_model
+    from core.models.conventional.catboost_model import CatBoostModel
+    from unittest.mock import Mock
+    import optuna
+
+    # Create invalid data to trigger error
+    X = np.array([[1, 2], [3, 4]])
+    y = np.array([1, 2])  # Wrong shape for classification
+
+    evaluator = Mock()
+
+    # First trial fails, second succeeds
+    call_count = [0]
+    def side_effect(*args, **kwargs):
+        call_count[0] += 1
+        if call_count[0] == 1:
+            raise ValueError("Invalid data shape")
+        return {"roc_auc": 0.8}
+
+    evaluator.evaluate.side_effect = side_effect
+
+    result = optimize_model(
+        CatBoostModel,
+        X,
+        y,
+        evaluator,
+        "catboost",
+        n_trials=2,
+        search_space={},
+    )
+
+    # Should have completed trials without crashing
+    assert result["n_trials"] == 2
+    assert "best_params" in result

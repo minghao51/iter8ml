@@ -80,13 +80,17 @@ def optimize_model(
         try:
             scores = evaluator.evaluate(model_cls, X, y, task=task, **params)
             if not scores:
-                raise optuna.TrialPruned()
+                raise optuna.TrialPruned("No scores returned from evaluator")
             primary = list(scores.values())[0]
             return primary
         except optuna.TrialPruned:
             raise
         except Exception as e:
-            raise optuna.TrialPruned() from e
+            # Add context about which parameters failed
+            params_str = ", ".join(f"{k}={v}" for k, v in params.items())
+            raise optuna.TrialPruned(
+                f"Evaluation failed for trial with params: {params_str}. Error: {e}"
+            ) from e
 
     study.optimize(objective, n_trials=n_trials)
 
