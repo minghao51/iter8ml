@@ -61,10 +61,26 @@ def load_sqlite(db_path: str | Path, query: str) -> pl.DataFrame:
     if not query or not query.strip():
         raise ValueError("Query cannot be empty")
 
-    # Basic SQL injection check - only allow SELECT statements
-    query_upper = query.strip().upper()
+    # Security validation: Only allow single SELECT statements
+    # This is a basic validation - for production use, consider:
+    # - Using a proper SQL parser for more robust validation
+    # - Implementing query whitelisting or parameterized queries
+    # - Using read-only database connections
+    query_stripped = query.strip()
+    query_upper = query_stripped.upper()
+
+    # Check if it starts with SELECT (after stripping whitespace)
     if not query_upper.startswith("SELECT"):
         raise ValueError("Only SELECT queries are supported for security reasons")
+
+    # Prevent multiple statements by checking for semicolons
+    if ";" in query_upper:
+        raise ValueError("Multiple statements are not supported for security reasons")
+
+    # Additional check: ensure it's a SELECT query, not just starting with SELECT
+    # This catches attempts like "SELECT" followed by non-SQL content
+    if len(query_stripped) < 7:  # "SELECT" is 6 chars
+        raise ValueError("Invalid SELECT query")
 
     try:
         with sqlite3.connect(str(db_path)) as conn:

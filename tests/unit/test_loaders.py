@@ -57,6 +57,39 @@ def test_load_sqlite_invalid_query(tmp_path):
         load_sqlite(db_file, "INVALID SQL QUERY")
 
 
+def test_load_sqlite_empty_query(tmp_path):
+    """Test loading with empty query."""
+    db_file = tmp_path / "test.db"
+    import sqlite3
+    with sqlite3.connect(db_file) as conn:
+        conn.execute("CREATE TABLE test (id INTEGER)")
+
+    with pytest.raises(ValueError, match="Query cannot be empty"):
+        load_sqlite(db_file, "")
+
+
+def test_load_sqlite_whitespace_query(tmp_path):
+    """Test loading with whitespace-only query."""
+    db_file = tmp_path / "test.db"
+    import sqlite3
+    with sqlite3.connect(db_file) as conn:
+        conn.execute("CREATE TABLE test (id INTEGER)")
+
+    with pytest.raises(ValueError, match="Query cannot be empty"):
+        load_sqlite(db_file, "   \t\n")
+
+
+def test_load_sqlite_multiple_statements(tmp_path):
+    """Test loading with multiple statements (security check)."""
+    db_file = tmp_path / "test.db"
+    import sqlite3
+    with sqlite3.connect(db_file) as conn:
+        conn.execute("CREATE TABLE test (id INTEGER)")
+
+    with pytest.raises(ValueError, match="Multiple statements are not supported"):
+        load_sqlite(db_file, "SELECT * FROM test; DROP TABLE test")
+
+
 def test_load_sqlite_empty_result(tmp_path):
     """Test loading query with no results."""
     import sqlite3
