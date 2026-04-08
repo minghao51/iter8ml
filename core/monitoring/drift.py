@@ -64,11 +64,19 @@ class DriftDetector:
         )
 
     def _ks_test(self, col: str, new_df: pl.DataFrame) -> float:
-        ref_vals = self.reference_df[col].drop_nulls().to_numpy()
-        new_vals = new_df[col].drop_nulls().to_numpy()
-        if len(ref_vals) == 0 or len(new_vals) == 0:
+        ref_series = self.reference_df[col].drop_nulls()
+        new_series = new_df[col].drop_nulls()
+
+        # Handle float NaNs while keeping Decimal/object numeric support.
+        if ref_series.dtype.is_float():
+            ref_series = ref_series.filter(~ref_series.is_nan())
+        if new_series.dtype.is_float():
+            new_series = new_series.filter(~new_series.is_nan())
+
+        if len(ref_series) == 0 or len(new_series) == 0:
             return 1.0
-        _, p_value = stats.ks_2samp(ref_vals, new_vals)
+
+        _, p_value = stats.ks_2samp(ref_series.to_numpy(), new_series.to_numpy())
         return p_value
 
     def _chi2_test(self, col: str, new_df: pl.DataFrame) -> float:

@@ -1,5 +1,7 @@
 """Tests for DriftDetector."""
 
+from decimal import Decimal
+
 import polars as pl
 
 from core.monitoring.drift import DriftDetector
@@ -46,3 +48,18 @@ def test_empty_new_df():
     report = detector.detect(new_df)
 
     assert report.n_columns_tested == 1
+
+
+def test_decimal_column_with_nulls():
+    ref_df = pl.DataFrame({"a": [Decimal("1.1"), Decimal("2.2"), None]}).cast(
+        {"a": pl.Decimal(10, 1)}
+    )
+    new_df = pl.DataFrame({"a": [Decimal("1.0"), Decimal("2.0"), None]}).cast(
+        {"a": pl.Decimal(10, 1)}
+    )
+
+    detector = DriftDetector(ref_df)
+    report = detector.detect(new_df)
+
+    assert report.n_columns_tested == 1
+    assert len(report.column_results) == 1
