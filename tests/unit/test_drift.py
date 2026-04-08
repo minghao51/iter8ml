@@ -63,3 +63,14 @@ def test_decimal_column_with_nulls():
 
     assert report.n_columns_tested == 1
     assert len(report.column_results) == 1
+
+
+def test_float_column_with_nulls_and_nans():
+    ref_df = pl.DataFrame({"a": [1.0, None, float("nan"), 2.0, 3.0]})
+    new_df = pl.DataFrame({"a": [1.5, None, float("nan"), 2.5, 3.5]})
+
+    detector = DriftDetector(ref_df)
+    report = detector.detect(new_df)
+
+    assert report.n_columns_tested == 1
+    assert len(report.column_results) == 1
