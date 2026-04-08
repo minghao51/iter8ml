@@ -1,7 +1,5 @@
 """Trainer: ties config + data + model into a run."""
 
-import fcntl
-import json
 import os
 import platform
 import time
@@ -23,6 +21,7 @@ from core.data.loaders import get_data_hash
 from core.engine.evaluator import Evaluator
 from core.engine.tracker import JSONLTracker, Tracker
 from core.models.selector import ModelSelector
+from core.services.registry_service import RegistryService
 from core.utils.jsonl import load_events
 
 _MODEL_REGISTRY = {
@@ -50,44 +49,6 @@ def _get_model_class(model_name: str):
     cls = getattr(module, class_name)
     _MODEL_CLASS_CACHE[model_name] = cls
     return cls
-
-
-def _update_registry(
-    registry_path: str,
-    key: str,
-    model_name: str,
-    run_id: str,
-    score: float,
-    artifact_path: str,
-):
-    """Update model registry if new model beats champion."""
-    registry = {}
-    registry_file = Path(registry_path)
-    lock_path = str(registry_file.with_suffix(".lock"))
-
-    with open(lock_path, "w") as lock_file:
-        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
-        try:
-            try:
-                with open(registry_path) as f:
-                    registry = json.load(f)
-            except FileNotFoundError:
-                registry = {}
-
-            if key not in registry or score > registry[key].get("score", -float("inf")):
-                registry[key] = {
-                    "model": model_name,
-                    "run_id": run_id,
-                    "score": score,
-                    "artifact_path": artifact_path,
-                    "registered_at": datetime.now(UTC).isoformat(),
-                }
-                with open(registry_path, "w") as f:
-                    json.dump(registry, f, indent=2)
-                return True
-            return False
-        finally:
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 
 def _generate_leaderboard(log_path: str, output_path: str):
@@ -200,6 +161,13 @@ class Trainer:
 
         return results
 
+    def _update_champion_if_better(
+        self, key: str, model_name: str, run_id: str, score: float, artifact_path: str
+    ) -> bool:
+        """Update registry if new model beats champion."""
+        registry = RegistryService(str(self.config.workspace_dir / "registry.json"))
+        return registry.update_if_better(key, model_name, run_id, score, artifact_path)
+
     def _train_sequential(
         self, models_to_run, X, y, evaluator, run_id, data_hash, n_rows, n_features
     ):
@@ -218,8 +186,7 @@ class Trainer:
                 score = result.get("cv_scores", {}).get(primary_metric, 0)
                 if score > best_score:
                     best_score = score
-                    _update_registry(
-                        str(self.config.workspace_dir / "registry.json"),
+                    self._update_champion_if_better(
                         f"{self.config.name}:{self.config.task.value}",
                         result["model_name"],
                         run_id,
@@ -265,8 +232,7 @@ class Trainer:
                         score = result.get("cv_scores", {}).get(primary_metric, 0)
                         if score > best_score:
                             best_score = score
-                            _update_registry(
-                                str(self.config.workspace_dir / "registry.json"),
+                            self._update_champion_if_better(
                                 f"{self.config.name}:{self.config.task.value}",
                                 result["model_name"],
                                 run_id,
