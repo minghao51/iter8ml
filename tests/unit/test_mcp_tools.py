@@ -190,3 +190,16 @@ def test_get_column_stats_uses_centralized_loader(monkeypatch):
         mock_load.return_value = pl.DataFrame({"a": [1, 2, 3]})
         result = get_column_stats("test.csv")
         mock_load.assert_called_once()
+
+
+def test_registry_tools_use_service(monkeypatch, tmp_path):
+    """Verify registry tools use RegistryService."""
+    from unittest.mock import Mock, patch
+    from mcp_server.tools import registry_show, registry_promote
+
+    mock_registry = Mock()
+    mock_registry.get_all.return_value = {"key1": {"model": "catboost"}}
+
+    with patch("mcp_server.tools.RegistryService", return_value=mock_registry):
+        result = registry_show()
+        assert "catboost" in result

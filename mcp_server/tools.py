@@ -1,6 +1,5 @@
 """MCP Server: exposes atomic tools for LLM agents."""
 
-import fcntl
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -9,6 +8,7 @@ from mcp.server.fastmcp import FastMCP
 
 from core.data.loaders import load_data
 from core.engine.state_observer import StateObserver
+from core.services.registry_service import RegistryService
 from core.utils.jsonl import load_events
 
 mcp = FastMCP("tabular-blueprint")
@@ -106,62 +106,49 @@ def get_event_log(n: int = 10) -> str:
 @mcp.tool()
 def registry_show() -> str:
     """Returns current registry.json content."""
-    registry_path = Path("workspace/registry.json")
-    if not registry_path.exists():
+    registry = RegistryService("workspace/registry.json")
+    data = registry.get_all()
+    if not data:
         return "Registry is empty."
-
-    with open(registry_path) as f:
-        return json.dumps(json.load(f), indent=2)
+    return json.dumps(data, indent=2)
 
 
 @mcp.tool()
 def registry_promote(run_id: str, key: str) -> str:
     """Promotes a run_id to champion in the registry."""
-    registry_path = Path("workspace/registry.json")
-    lock_path = str(registry_path.with_suffix(".lock"))
+    log_path = Path("workspace/experiments.jsonl")
+    if not log_path.exists():
+        return "No events found to locate run."
 
-    with open(lock_path, "w") as lock_file:
-        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
-        try:
-            registry = {}
-            if registry_path.exists():
-                with open(registry_path) as f:
-                    registry = json.load(f)
+    events = load_events(log_path)
 
-            log_path = Path("workspace/experiments.jsonl")
-            if not log_path.exists():
-                return "No events found to locate run."
+    run_event = next(
+        (
+            e
+            for e in events
+            if e.get("run_id") == run_id and e.get("event") == "model_completed"
+        ),
+        None,
+    )
 
-            events = load_events(log_path)
+    if not run_event:
+        return f"Run {run_id} not found."
 
-            run_event = next(
-                (
-                    e
-                    for e in events
-                    if e.get("run_id") == run_id and e.get("event") == "model_completed"
-                ),
-                None,
-            )
+    cv_scores = run_event.get("cv_scores", {})
+    score = cv_scores.get("roc_auc", cv_scores.get("r2", 0))
 
-            if not run_event:
-                return f"Run {run_id} not found."
+    registry = RegistryService("workspace/registry.json")
+    updated = registry.update_if_better(
+        key=key,
+        model_name=run_event.get("model"),
+        run_id=run_id,
+        score=score,
+        artifact_path=run_event.get("artifact_path"),
+    )
 
-            cv_scores = run_event.get("cv_scores", {})
-            score = cv_scores.get("roc_auc", cv_scores.get("r2", 0))
-            registry[key] = {
-                "model": run_event.get("model"),
-                "run_id": run_id,
-                "score": score,
-                "artifact_path": run_event.get("artifact_path"),
-                "registered_at": datetime.now(UTC).isoformat(),
-            }
-
-            with open(registry_path, "w") as f:
-                json.dump(registry, f, indent=2)
-        finally:
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
-
-    return f"Promoted {run_id} to champion for {key}."
+    if updated:
+        return f"Promoted {run_id} to champion for {key}."
+    return f"Existing champion for {key} has better score."
 
 
 @mcp.tool()
