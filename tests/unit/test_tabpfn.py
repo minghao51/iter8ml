@@ -29,3 +29,25 @@ def test_tabpfn_rejects_large_data():
     y = np.random.randint(0, 2, 15000)
     with pytest.raises(DataSizeError, match="max 10000 rows"):
         model.fit(X, y)
+
+
+def test_tabpfn_max_rows_configurable():
+    """Test that MAX_ROWS can be configured via constructor."""
+    from unittest.mock import Mock
+
+    # Create model with custom max rows
+    model = TabPFNModel(task="classification", max_rows=5000)
+
+    # Should fail at 5001 rows
+    X = np.random.rand(5001, 2)
+    y = np.random.randint(0, 2, 5001)
+
+    with pytest.raises(DataSizeError, match="max 5000 rows"):
+        model.fit(X, y)
+
+    # Should succeed at 5000 rows
+    X_small = np.random.rand(5000, 2)
+    y_small = np.random.randint(0, 2, 5000)
+    # Mock the model to avoid actual training
+    model._build_model = Mock()
+    model.fit(X_small, y_small)  # Should not raise

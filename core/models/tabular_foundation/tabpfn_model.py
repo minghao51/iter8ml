@@ -11,14 +11,19 @@ class DataSizeError(ValueError):
 
 class TabPFNModel:
     """
-    TabPFN v2 wrapper with hard row-count guardrail.
-    Raises DataSizeError if n_rows > 10,000.
+    TabPFN v2 wrapper with configurable row-count guardrail.
+
+    Args:
+        task: "classification" or "regression"
+        max_rows: Maximum number of training rows. Default: 10_000.
+        **kwargs: Additional parameters passed to TabPFN model.
     """
 
-    MAX_ROWS = 10_000
+    DEFAULT_MAX_ROWS = 10_000
 
-    def __init__(self, task: str = "classification", **kwargs):
+    def __init__(self, task: str = "classification", max_rows: int | None = None, **kwargs):
         self.task = task
+        self.max_rows = max_rows or self.DEFAULT_MAX_ROWS
         self.params = kwargs
         self.model = None
 
@@ -36,10 +41,10 @@ class TabPFNModel:
         )
 
     def fit(self, X: np.ndarray, y: np.ndarray, **kwargs) -> None:
-        if len(X) > self.MAX_ROWS:
+        if len(X) > self.max_rows:
             raise DataSizeError(
-                f"TabPFN supports max {self.MAX_ROWS} rows, got {len(X)}. "
-                "Use CatBoost or LightGBM for larger datasets."
+                f"TabPFN supports max {self.max_rows} rows for this instance, got {len(X)}. "
+                f"Increase max_rows parameter or use CatBoost/LightGBM for larger datasets."
             )
         self.model = self._build_model()
         self.model.fit(X, y)
