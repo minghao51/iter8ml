@@ -1,7 +1,6 @@
 """Trainer: ties config + data + model into a run."""
 
 import os
-import platform
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -14,8 +13,8 @@ import polars as pl
 from configs.experiment import ExperimentConfig
 from configs.hardware import HardwareProfile
 
-if platform.system() == "Darwin" and platform.machine() == "arm64":
-    os.environ.setdefault("OMP_NUM_THREADS", "1")
+# Configure OpenMP threads based on hardware profile
+HardwareProfile.configure_omp_threads()
 from core.data.adapter import DataAdapter
 from core.data.loaders import get_data_hash
 from core.engine.evaluator import Evaluator

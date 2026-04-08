@@ -71,3 +71,18 @@ def test_trainer_uses_registry_service(tmp_path, monkeypatch):
 
     # Restore original
     monkeypatch.setattr(core.engine.trainer, "RegistryService", original_registry)
+
+
+def test_omp_threads_configurable(monkeypatch):
+    """Test that OMP threads can be configured via HardwareProfile."""
+    from configs.hardware import HardwareProfile
+    import os
+
+    # Test default
+    thread_count = HardwareProfile.configure_omp_threads()
+    assert os.environ.get("OMP_NUM_THREADS") == str(thread_count)
+
+    # Test custom value
+    custom_count = HardwareProfile.configure_omp_threads(threads=4)
+    assert custom_count == 4
+    assert os.environ.get("OMP_NUM_THREADS") == "4"

@@ -1,5 +1,8 @@
 """Hardware profile auto-detection for model routing decisions."""
 
+import os
+import platform
+
 import psutil
 from pydantic import BaseModel
 
@@ -36,3 +39,24 @@ class HardwareProfile(BaseModel):
             has_gpu=has_gpu,
             gpu_name=gpu_name,
         )
+
+    @classmethod
+    def _get_default_threads(cls) -> int:
+        """Get default thread count based on platform."""
+        if platform.system() == "Darwin" and platform.machine() == "arm64":
+            return 1  # macOS ARM64 has performance issues with threading
+        return os.cpu_count() or 1
+
+    @classmethod
+    def configure_omp_threads(cls, threads: int | None = None) -> int:
+        """Configure OMP_NUM_THREADS environment variable.
+
+        Args:
+            threads: Number of threads to use. If None, uses platform default.
+
+        Returns:
+            The configured thread count.
+        """
+        thread_count = threads or cls._get_default_threads()
+        os.environ["OMP_NUM_THREADS"] = str(thread_count)
+        return thread_count
