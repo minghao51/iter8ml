@@ -216,10 +216,13 @@ def hpo(
     )
     evaluator = Evaluator(hpo_config)
     model_configs = ModelConfigs()
+    # Validate model exists before accessing its config
     if not hasattr(model_configs, model):
         available = [a for a in dir(model_configs) if not a.startswith("_")]
         typer.echo(f"Error: Unknown model '{model}'. Available models: {', '.join(available)}")
         raise typer.Exit(1)
+
+    # Safe to use getattr now - we've validated existence
     search_space = getattr(model_configs, model).hpo_search_space()
     model_cls = _get_model_class(model)
 

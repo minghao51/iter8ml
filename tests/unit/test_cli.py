@@ -215,3 +215,26 @@ def test_hpo_command(sample_csv):
     assert "HPO" in result.stdout
     assert "Best params" in result.stdout
     assert "Best value" in result.stdout
+
+
+def test_hpo_unknown_model_exits_gracefully(tmp_path, monkeypatch):
+    """Test that unknown model name produces clear error."""
+    # Create a dummy data file
+    data_file = tmp_path / "test.csv"
+    data_file.write_text("a,b,target\n1,2,0\n3,4,1")
+
+    result = runner.invoke(
+        app,
+        [
+            "hpo",
+            "--data",
+            str(data_file),
+            "--target",
+            "target",
+            "--model",
+            "unknown_model_x",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert "Unknown model" in result.stdout
