@@ -24,16 +24,17 @@ def test_full_pipeline_catboost_classification():
             task="classification",
             target_col="target",
             data_path="",
+            workspace_dir=ws,
             cv_folds=3,
             metrics=["roc_auc", "f1_macro"],
         )
 
         tracker = JSONLTracker(str(ws / "experiments.jsonl"))
-        trainer = Trainer(config, tracker=tracker, workspace_dir=ws)
+        trainer = Trainer(config, tracker=tracker)
         results = trainer.run(df)
 
         assert "catboost" in results
-        assert "roc_auc" in results["catboost"]
+        assert "roc_auc" in results["catboost"]["cv_scores"]
 
         events = []
         with open(ws / "experiments.jsonl") as f:
@@ -61,18 +62,19 @@ def test_full_pipeline_catboost_regression():
             task="regression",
             target_col="target",
             data_path="",
+            workspace_dir=ws,
             cv_folds=3,
             cv_strategy="kfold",
             metrics=["rmse", "r2"],
         )
 
         tracker = JSONLTracker(str(ws / "experiments.jsonl"))
-        trainer = Trainer(config, tracker=tracker, workspace_dir=ws)
+        trainer = Trainer(config, tracker=tracker)
         results = trainer.run(df)
 
         assert "catboost" in results
-        assert "rmse" in results["catboost"]
-        assert "r2" in results["catboost"]
+        assert "rmse" in results["catboost"]["cv_scores"]
+        assert "r2" in results["catboost"]["cv_scores"]
 
         events = []
         with open(ws / "experiments.jsonl") as f:
