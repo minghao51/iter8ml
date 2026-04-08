@@ -3,8 +3,9 @@
 import tempfile
 
 import polars as pl
+import pytest
 
-from core.data.loaders import get_data_hash, load_csv, load_parquet
+from core.data.loaders import get_data_hash, load_csv, load_parquet, load_sqlite
 
 
 def test_get_data_hash_consistency():
@@ -36,3 +37,32 @@ def test_load_parquet():
         df_loaded = load_parquet(f.name)
         assert len(df_loaded) == 3
         assert df_loaded.columns == ["x", "y"]
+
+
+def test_load_sqlite_invalid_path():
+    """Test loading from non-existent database path."""
+    with pytest.raises(FileNotFoundError, match="Database file not found"):
+        load_sqlite("/nonexistent/db.sqlite", "SELECT 1")
+
+
+def test_load_sqlite_invalid_query(tmp_path):
+    """Test loading with invalid SQL query."""
+    db_file = tmp_path / "test.db"
+    # Create valid database
+    import sqlite3
+    with sqlite3.connect(db_file) as conn:
+        conn.execute("CREATE TABLE test (id INTEGER)")
+
+    with pytest.raises(ValueError, match="Only SELECT queries are supported"):
+        load_sqlite(db_file, "INVALID SQL QUERY")
+
+
+def test_load_sqlite_empty_result(tmp_path):
+    """Test loading query with no results."""
+    import sqlite3
+    db_file = tmp_path / "empty.db"
+    with sqlite3.connect(db_file) as conn:
+        conn.execute("CREATE TABLE test (id INTEGER)")
+
+    df = load_sqlite(db_file, "SELECT * FROM test WHERE 1=0")
+    assert len(df) == 0
