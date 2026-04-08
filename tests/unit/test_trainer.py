@@ -6,6 +6,7 @@ import polars as pl
 import pytest
 
 from configs.experiment import ExperimentConfig
+from core.constants import TaskType
 from core.engine.trainer import Trainer
 
 
@@ -34,7 +35,7 @@ def test_trainer_uses_registry_service(tmp_path, monkeypatch):
 
     config = ExperimentConfig(
         name="test",
-        task="classification",
+        task=TaskType.CLASSIFICATION,
         target_col="target",
         data_path="test.csv",
         workspace_dir=tmp_path,
