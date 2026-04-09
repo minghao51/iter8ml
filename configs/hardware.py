@@ -58,5 +58,10 @@ class HardwareProfile(BaseModel):
             The configured thread count.
         """
         thread_count = threads or cls._get_default_threads()
-        os.environ["OMP_NUM_THREADS"] = str(thread_count)
+        if threads is None:
+            # Only set if not already configured by user
+            os.environ.setdefault("OMP_NUM_THREADS", str(thread_count))
+        else:
+            # Explicitly specified, so override
+            os.environ["OMP_NUM_THREADS"] = str(thread_count)
         return thread_count
