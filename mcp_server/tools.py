@@ -1,7 +1,6 @@
 """MCP Server: exposes atomic tools for LLM agents."""
 
 import json
-from datetime import UTC, datetime
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
@@ -24,7 +23,7 @@ def get_experiment_state() -> str:
 @mcp.tool()
 def get_column_stats(data_path: str) -> str:
     """Returns Polars describe() output for a dataset."""
-    import polars as pl
+    import polars as pl  # noqa: F401
 
     df = load_data(data_path)
     desc = df.describe()
@@ -61,18 +60,27 @@ def run_hpo(
     trials: int = 50,
 ) -> str:
     """Triggers Optuna study for a named model."""
+    from configs.experiment import ExperimentConfig
     from configs.model_configs import ModelConfigs
     from core.data.adapter import DataAdapter
     from core.engine.evaluator import Evaluator
     from core.engine.hpo import optimize_model
     from core.engine.trainer import _get_model_class
+    from main import from_task_type
 
     df = load_data(data_path)
 
     adapter = DataAdapter(target_format="numpy")
     X, y = adapter.transform(df, target_col)
 
-    evaluator = Evaluator(task=task)
+    # Create a minimal config for the evaluator
+    hpo_config = ExperimentConfig(
+        name="hpo",
+        task=from_task_type(task),
+        target_col=target_col,
+        data_path=data_path,
+    )
+    evaluator = Evaluator(hpo_config)
 
     model_configs = ModelConfigs()
     search_space = getattr(model_configs, model).hpo_search_space()

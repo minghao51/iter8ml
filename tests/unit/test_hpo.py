@@ -152,10 +152,10 @@ def test_optimize_model_log_space(sample_data):
 
 def test_optimize_model_preserves_exception_context():
     """Test that evaluation failures preserve exception context."""
+    from unittest.mock import Mock
+
     from core.engine.hpo import optimize_model
     from core.models.conventional.catboost_model import CatBoostModel
-    from unittest.mock import Mock
-    import optuna
 
     # Create invalid data to trigger error
     X = np.array([[1, 2], [3, 4]])

@@ -1,10 +1,8 @@
 """Trainer: ties config + data + model into a run."""
 
-import os
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -15,13 +13,14 @@ from configs.hardware import HardwareProfile
 
 # Configure OpenMP threads based on hardware profile
 HardwareProfile.configure_omp_threads()
-from core.data.adapter import DataAdapter
-from core.data.loaders import get_data_hash
-from core.engine.evaluator import Evaluator
-from core.engine.tracker import JSONLTracker, Tracker
-from core.models.selector import ModelSelector
-from core.services.registry_service import RegistryService
-from core.utils.jsonl import load_events
+
+from core.data.adapter import DataAdapter  # noqa: E402
+from core.data.loaders import get_data_hash  # noqa: E402
+from core.engine.evaluator import Evaluator  # noqa: E402
+from core.engine.tracker import JSONLTracker, Tracker  # noqa: E402
+from core.models.selector import ModelSelector  # noqa: E402
+from core.services.registry_service import RegistryService  # noqa: E402
+from core.utils.jsonl import load_events  # noqa: E402
 
 _MODEL_REGISTRY = {
     "catboost": ("core.models.conventional.catboost_model", "CatBoostModel"),

@@ -1,6 +1,7 @@
 """Test JSONL utilities."""
 
 import pytest
+
 from core.utils.jsonl import load_events
 
 

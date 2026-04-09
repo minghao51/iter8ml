@@ -41,7 +41,12 @@ def sample_parquet(tmp_path):
     return str(path)
 
 
-def test_get_experiment_state():
+def test_get_experiment_state(tmp_path, monkeypatch):
+    """Test get_experiment_state in a clean environment."""
+
+    # Change to tmp_path to avoid reading existing experiments
+    monkeypatch.chdir(str(tmp_path))
+
     result = get_experiment_state()
     assert isinstance(result, str)
     assert "No experiments run" in result
@@ -188,14 +193,15 @@ def test_get_column_stats_uses_centralized_loader(monkeypatch):
 
     with patch("mcp_server.tools.load_data") as mock_load:
         mock_load.return_value = pl.DataFrame({"a": [1, 2, 3]})
-        result = get_column_stats("test.csv")
+        get_column_stats("test.csv")
         mock_load.assert_called_once()
 
 
 def test_registry_tools_use_service(monkeypatch, tmp_path):
     """Verify registry tools use RegistryService."""
     from unittest.mock import Mock, patch
-    from mcp_server.tools import registry_show, registry_promote
+
+    from mcp_server.tools import registry_show
 
     mock_registry = Mock()
     mock_registry.get_all.return_value = {"key1": {"model": "catboost"}}

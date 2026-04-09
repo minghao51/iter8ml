@@ -1,10 +1,5 @@
 """Tests for Trainer class."""
 
-from unittest.mock import Mock, patch
-
-import polars as pl
-import pytest
-
 from configs.experiment import ExperimentConfig
 from core.constants import TaskType
 from core.engine.trainer import Trainer
@@ -12,7 +7,6 @@ from core.engine.trainer import Trainer
 
 def test_trainer_uses_registry_service(tmp_path, monkeypatch):
     """Verify trainer uses RegistryService for updates."""
-    from unittest.mock import MagicMock
 
     # Track calls to RegistryService
     registry_calls = []
@@ -75,8 +69,9 @@ def test_trainer_uses_registry_service(tmp_path, monkeypatch):
 
 def test_omp_threads_configurable(monkeypatch):
     """Test that OMP threads can be configured via HardwareProfile."""
-    from configs.hardware import HardwareProfile
     import os
+
+    from configs.hardware import HardwareProfile
 
     # Test default
     thread_count = HardwareProfile.configure_omp_threads()
