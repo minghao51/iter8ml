@@ -1,0 +1,124 @@
+"""Tests for structured experiment reporting."""
+
+import json
+
+from core.services.report_service import ReportService
+
+
+def test_build_report_empty(tmp_path):
+    log_path = tmp_path / "experiments.jsonl"
+    log_path.touch()
+
+    report = ReportService(
+        log_path=log_path,
+        registry_path=tmp_path / "registry.json",
+    ).build_report()
+
+    assert report.leaderboard == []
+    assert report.latest_run is None
+    assert report.registry == {}
+
+
+def test_build_report_classification_orders_by_primary_score(tmp_path):
+    log_path = tmp_path / "experiments.jsonl"
+    events = [
+        {
+            "event": "model_completed",
+            "run_id": "run_low",
+            "model": "ModelLow",
+            "task": "classification",
+            "cv_scores": {"roc_auc": 0.81, "f1_macro": 0.7},
+            "timestamp": "2026-04-04T00:00:00Z",
+        },
+        {
+            "event": "model_completed",
+            "run_id": "run_high",
+            "model": "ModelHigh",
+            "task": "classification",
+            "cv_scores": {"roc_auc": 0.92, "f1_macro": 0.6},
+            "timestamp": "2026-04-05T00:00:00Z",
+        },
+    ]
+    log_path.write_text("\n".join(json.dumps(event) for event in events) + "\n")
+
+    report = ReportService(
+        log_path=log_path,
+        registry_path=tmp_path / "registry.json",
+    ).build_report()
+
+    assert [entry.model for entry in report.leaderboard] == ["ModelHigh", "ModelLow"]
+    assert report.latest_run.model == "ModelHigh"
+
+
+def test_build_report_regression_uses_r2_by_default(tmp_path):
+    log_path = tmp_path / "experiments.jsonl"
+    events = [
+        {
+            "event": "model_completed",
+            "run_id": "run_a",
+            "model": "ModelA",
+            "task": "regression",
+            "cv_scores": {"rmse": 10.0, "r2": 0.4},
+            "timestamp": "2026-04-04T00:00:00Z",
+        },
+        {
+            "event": "model_completed",
+            "run_id": "run_b",
+            "model": "ModelB",
+            "task": "regression",
+            "cv_scores": {"rmse": 2.0, "r2": 0.9},
+            "timestamp": "2026-04-05T00:00:00Z",
+        },
+    ]
+    log_path.write_text("\n".join(json.dumps(event) for event in events) + "\n")
+
+    report = ReportService(
+        log_path=log_path,
+        registry_path=tmp_path / "registry.json",
+    ).build_report()
+
+    assert report.leaderboard[0].model == "ModelB"
+    assert report.leaderboard[0].primary_metric == "r2"
+    assert report.leaderboard[0].primary_score == 0.9
+
+
+def test_build_report_respects_explicit_metric_override(tmp_path):
+    log_path = tmp_path / "experiments.jsonl"
+    events = [
+        {
+            "event": "model_completed",
+            "run_id": "run_fast",
+            "model": "Fast",
+            "task": "classification",
+            "cv_scores": {"roc_auc": 0.8, "f1_macro": 0.95},
+            "timestamp": "2026-04-04T00:00:00Z",
+        },
+        {
+            "event": "model_completed",
+            "run_id": "run_balanced",
+            "model": "Balanced",
+            "task": "classification",
+            "cv_scores": {"roc_auc": 0.9, "f1_macro": 0.85},
+            "timestamp": "2026-04-05T00:00:00Z",
+        },
+    ]
+    log_path.write_text("\n".join(json.dumps(event) for event in events) + "\n")
+
+    report = ReportService(
+        log_path=log_path,
+        registry_path=tmp_path / "registry.json",
+    ).build_report(metric="f1_macro")
+
+    assert [entry.model for entry in report.leaderboard] == ["Fast", "Balanced"]
+    assert report.leaderboard[0].primary_metric == "f1_macro"
+
+
+def test_build_report_includes_registry_summary(tmp_path):
+    log_path = tmp_path / "experiments.jsonl"
+    log_path.write_text("")
+    registry_path = tmp_path / "registry.json"
+    registry_path.write_text(json.dumps({"champion": {"model": "CatBoost", "score": 0.95}}))
+
+    report = ReportService(log_path=log_path, registry_path=registry_path).build_report()
+
+    assert report.registry["champion"]["model"] == "CatBoost"
