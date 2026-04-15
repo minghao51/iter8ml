@@ -7,6 +7,7 @@ from mcp.server.fastmcp import FastMCP
 
 from core.data.loaders import load_data
 from core.engine.state_observer import StateObserver
+from core.models.factory import get_model_class
 from core.services.registry_service import RegistryService
 from core.utils.jsonl import load_events
 
@@ -60,32 +61,13 @@ def run_hpo(
     trials: int = 50,
 ) -> str:
     """Triggers Optuna study for a named model."""
-    from configs.experiment import ExperimentConfig
-    from configs.model_configs import ModelConfigs
-    from core.data.adapter import DataAdapter
-    from core.engine.evaluator import Evaluator
-    from core.engine.hpo import optimize_model
-    from core.engine.trainer import _get_model_class
-    from main import from_task_type
+    from core.engine.hpo import optimize_model, setup_hpo_components
 
-    df = load_data(data_path)
-
-    adapter = DataAdapter(target_format="numpy")
-    X, y = adapter.transform(df, target_col)
-
-    # Create a minimal config for the evaluator
-    hpo_config = ExperimentConfig(
-        name="hpo",
-        task=from_task_type(task),
-        target_col=target_col,
-        data_path=data_path,
+    X, y, evaluator, search_space = setup_hpo_components(
+        data_path, target_col, task, model
     )
-    evaluator = Evaluator(hpo_config)
 
-    model_configs = ModelConfigs()
-    search_space = getattr(model_configs, model).hpo_search_space()
-
-    model_cls = _get_model_class(model)
+    model_cls = get_model_class(model)
     result = optimize_model(
         model_cls,
         X,
@@ -128,35 +110,9 @@ def registry_promote(run_id: str, key: str) -> str:
     if not log_path.exists():
         return "No events found to locate run."
 
-    events = load_events(log_path)
-
-    run_event = next(
-        (
-            e
-            for e in events
-            if e.get("run_id") == run_id and e.get("event") == "model_completed"
-        ),
-        None,
-    )
-
-    if not run_event:
-        return f"Run {run_id} not found."
-
-    cv_scores = run_event.get("cv_scores", {})
-    score = cv_scores.get("roc_auc", cv_scores.get("r2", 0))
-
     registry = RegistryService("workspace/registry.json")
-    updated = registry.update_if_better(
-        key=key,
-        model_name=run_event.get("model"),
-        run_id=run_id,
-        score=score,
-        artifact_path=run_event.get("artifact_path"),
-    )
-
-    if updated:
-        return f"Promoted {run_id} to champion for {key}."
-    return f"Existing champion for {key} has better score."
+    result = registry.promote_run(run_id=run_id, key=key, log_path=log_path)
+    return result.message
 
 
 @mcp.tool()

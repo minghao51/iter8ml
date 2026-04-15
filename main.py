@@ -11,7 +11,8 @@ from configs.hardware import HardwareProfile
 from core.constants import from_task_type
 from core.data.loaders import load_data
 from core.engine.trainer import Trainer
-from core.utils.jsonl import load_events
+from core.models.factory import get_model_class
+from core.services.report_service import ReportService
 
 app = typer.Typer(name="tabblueprint", help="A high-velocity iteration framework for tabular ML")
 
@@ -88,32 +89,8 @@ def leaderboard(
     metric: str = typer.Option(None, "--metric", help="Sort by this metric"),
 ):
     """Show experiment leaderboard."""
-    log_path = Path("workspace/experiments.jsonl")
-    if not log_path.exists():
-        typer.echo("No experiments found.")
-        return
-
-    events = load_events(log_path)
-
-    completed = [e for e in events if e.get("event") == "model_completed"]
-    if not completed:
-        typer.echo("No completed experiments found.")
-        return
-
-    if metric:
-        completed.sort(key=lambda x: x.get("cv_scores", {}).get(metric, 0), reverse=True)
-    else:
-        completed.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
-
-    typer.echo("\n# Leaderboard\n")
-    typer.echo("| Model | Run ID | CV Scores | Duration |")
-    typer.echo("|---|---|---|---|")
-    for e in completed[:top]:
-        scores = ", ".join(f"{k}={v:.4f}" for k, v in e.get("cv_scores", {}).items())
-        typer.echo(
-            f"| {e.get('model', '?')} | {e.get('run_id', '?')} | {scores} "
-            f"| {e.get('duration_seconds', '?')}s |"
-        )
+    report = ReportService().format_leaderboard_console(metric=metric, limit=top)
+    typer.echo(report)
 
 
 @app.command()
@@ -196,35 +173,17 @@ def hpo(
     trials: int = typer.Option(50, "--trials", "-n"),
 ):
     """Run hyperparameter optimization for a model."""
-    from configs.model_configs import ModelConfigs
-    from core.data.adapter import DataAdapter
-    from core.engine.evaluator import Evaluator
-    from core.engine.hpo import optimize_model
-    from core.engine.trainer import _get_model_class
+    from core.engine.hpo import optimize_model, setup_hpo_components
 
-    df = load_data(data_path)
+    try:
+        X, y, evaluator, search_space = setup_hpo_components(
+            data_path, target_col, task, model
+        )
+    except ValueError as e:
+        typer.echo(f"Error: {e}")
+        raise typer.Exit(1) from e
 
-    adapter = DataAdapter(target_format="numpy")
-    X, y = adapter.transform(df, target_col)
-
-    # Create a minimal config for the evaluator
-    hpo_config = ExperimentConfig(
-        name="hpo",
-        task=from_task_type(task),
-        target_col=target_col,
-        data_path=data_path,
-    )
-    evaluator = Evaluator(hpo_config)
-    model_configs = ModelConfigs()
-    # Validate model exists before accessing its config
-    if not hasattr(model_configs, model):
-        available = [a for a in dir(model_configs) if not a.startswith("_")]
-        typer.echo(f"Error: Unknown model '{model}'. Available models: {', '.join(available)}")
-        raise typer.Exit(1)
-
-    # Safe to use getattr now - we've validated existence
-    search_space = getattr(model_configs, model).hpo_search_space()
-    model_cls = _get_model_class(model)
+    model_cls = get_model_class(model)
 
     typer.echo(f"Running HPO for {model} ({trials} trials)...")
     result = optimize_model(

@@ -18,63 +18,9 @@ from core.data.adapter import DataAdapter  # noqa: E402
 from core.data.loaders import get_data_hash  # noqa: E402
 from core.engine.evaluator import Evaluator  # noqa: E402
 from core.engine.tracker import JSONLTracker, Tracker  # noqa: E402
+from core.models.factory import get_model_class  # noqa: E402
 from core.models.selector import ModelSelector  # noqa: E402
 from core.services.registry_service import RegistryService  # noqa: E402
-from core.utils.jsonl import load_events  # noqa: E402
-
-_MODEL_REGISTRY = {
-    "catboost": ("core.models.conventional.catboost_model", "CatBoostModel"),
-    "lightgbm": ("core.models.conventional.lightgbm_model", "LightGBMModel"),
-    "xgboost": ("core.models.conventional.xgboost_model", "XGBoostModel"),
-    "tabpfn": ("core.models.tabular_foundation.tabpfn_model", "TabPFNModel"),
-    "ft_transformer": ("core.models.deep.ft_transformer", "FTTransformerModel"),
-}
-_MODEL_CLASS_CACHE: dict[str, type] = {}
-
-
-def _get_model_class(model_name: str):
-    """Factory to get model class by name."""
-    if model_name not in _MODEL_REGISTRY:
-        raise ValueError(f"Unknown model: {model_name}")
-
-    if model_name in _MODEL_CLASS_CACHE:
-        return _MODEL_CLASS_CACHE[model_name]
-
-    import importlib
-
-    module_path, class_name = _MODEL_REGISTRY[model_name]
-    module = importlib.import_module(module_path)
-    cls = getattr(module, class_name)
-    _MODEL_CLASS_CACHE[model_name] = cls
-    return cls
-
-
-def _generate_leaderboard(log_path: str, output_path: str):
-    """Generate leaderboard.md from JSONL events."""
-    events = load_events(log_path)
-
-    completed = [e for e in events if e.get("event") == "model_completed"]
-    completed.sort(
-        key=lambda x: x.get("cv_scores", {}).get("roc_auc", x.get("cv_scores", {}).get("r2", 0)),
-        reverse=True,
-    )
-
-    lines = [
-        "# Experiment Leaderboard\n",
-        "| Model | Run ID | CV Scores | Duration | Timestamp |",
-        "|---|---|---|---|---|",
-    ]
-    for e in completed:
-        scores = ", ".join(f"{k}={v:.4f}" for k, v in e.get("cv_scores", {}).items())
-        lines.append(
-            f"| {e.get('model', '?')} | {e.get('run_id', '?')} | {scores} "
-            f"| {e.get('duration_seconds', '?')}s | {e.get('timestamp', '?')} |"
-        )
-
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, "w") as f:
-        f.write("\n".join(lines) + "\n")
-
 
 WORKSPACE_DIR = Path("workspace")
 
@@ -150,10 +96,6 @@ class Trainer:
                 models_to_run, X, y, evaluator, run_id, data_hash, n_rows, n_features, max_workers
             )
 
-        _generate_leaderboard(
-            str(self.config.workspace_dir / "experiments.jsonl"),
-            str(self.config.workspace_dir / "leaderboard.md"),
-        )
         self._update_state()
         self.tracker.finish()
 
@@ -248,7 +190,7 @@ class Trainer:
         """Train a single model and return results."""
         start = time.time()
         try:
-            model_cls = _get_model_class(model_name)
+            model_cls = get_model_class(model_name)
 
             cv_scores = evaluator.evaluate(model_cls, X, y, task=self.config.task.value)
 
@@ -314,5 +256,6 @@ class Trainer:
             log_path=str(self.config.workspace_dir / "experiments.jsonl"),
             registry_path=str(self.config.workspace_dir / "registry.json"),
             output_path=str(self.config.workspace_dir / "current_state.md"),
+            leaderboard_path=str(self.config.workspace_dir / "leaderboard.md"),
         )
         observer.generate()

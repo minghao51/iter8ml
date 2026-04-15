@@ -2,9 +2,22 @@
 
 import fcntl
 import json
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+from core.services.report_service import resolve_primary_score
+from core.utils.jsonl import load_events
+
+
+@dataclass(frozen=True)
+class PromotionResult:
+    """Structured outcome for registry promotion attempts."""
+
+    status: str
+    message: str
+    entry: dict[str, Any] | None = None
 
 
 class RegistryService:
@@ -58,8 +71,48 @@ class RegistryService:
         """Get all registry entries."""
         return self.load()
 
+    def promote_run(self, run_id: str, key: str, log_path: str | Path) -> PromotionResult:
+        """Promote a completed run into the registry."""
+        events = load_events(log_path)
+        run_event = next(
+            (
+                event
+                for event in events
+                if event.get("run_id") == run_id and event.get("event") == "model_completed"
+            ),
+            None,
+        )
+        if not run_event:
+            return PromotionResult(
+                status="not_found",
+                message=f"Run {run_id} not found.",
+            )
+
+        metric_name, score = resolve_primary_score(run_event.get("cv_scores", {}))
+        updated = self.update_if_better(
+            key=key,
+            model_name=run_event.get("model", ""),
+            run_id=run_id,
+            score=score,
+            artifact_path=run_event.get("artifact_path", ""),
+        )
+        entry = self.get(key)
+
+        if updated:
+            return PromotionResult(
+                status="promoted",
+                message=f"Promoted {run_id} to champion for {key} using {metric_name}.",
+                entry=entry,
+            )
+
+        return PromotionResult(
+            status="rejected",
+            message=f"Existing champion for {key} has better score.",
+            entry=entry,
+        )
+
     def _save(self, registry: dict[str, Any]) -> None:
         """Save registry to disk."""
         self.registry_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.registry_path, "w") as f:
+        with open(self.registry_path, "w", encoding="utf-8") as f:
             json.dump(registry, f, indent=2)

@@ -43,8 +43,9 @@ def test_generate_with_events(tmp_path):
     content = observer.generate()
 
     assert "CatBoost" in content
-    assert "0.85" in content
+    assert "roc_auc" in content
     assert (tmp_path / "current_state.md").exists()
+    assert (tmp_path / "leaderboard.md").exists()
 
 
 def test_generate_uses_most_recent_completed_event_for_current_state(tmp_path):
@@ -86,4 +87,4 @@ def test_generate_uses_most_recent_completed_event_for_current_state(tmp_path):
 
     assert "**Task:** Regression" in content
     assert "**Dataset:** new_data" in content
-    assert "| BestModel | 0.9500 | 0.85 | 5.2s |" in content
+    assert "| 1 | BestModel | unknown | roc_auc | 0.9500 | 5.2s |" in content

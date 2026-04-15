@@ -1,9 +1,8 @@
 """StateObserver: generates LLM-readable experiment state summaries."""
 
-import json
 from pathlib import Path
 
-from core.utils.jsonl import load_events
+from core.services.report_service import ExperimentReport, ReportService
 
 
 class StateObserver:
@@ -14,69 +13,77 @@ class StateObserver:
         log_path: str = "workspace/experiments.jsonl",
         registry_path: str = "workspace/registry.json",
         output_path: str = "workspace/current_state.md",
+        leaderboard_path: str | None = None,
     ):
         self.log_path = Path(log_path)
         self.registry_path = Path(registry_path)
         self.output_path = Path(output_path)
+        self.leaderboard_path = (
+            Path(leaderboard_path)
+            if leaderboard_path is not None
+            else self.output_path.with_name("leaderboard.md")
+        )
 
     def generate(self) -> str:
-        """Read JSONL events and registry, produce current_state.md."""
-        events = self._load_events()
-        registry = self._load_registry()
-        completed = [e for e in events if e.get("event") == "model_completed"]
+        """Read experiment state and render current_state.md and leaderboard.md."""
+        report = ReportService(
+            log_path=self.log_path,
+            registry_path=self.registry_path,
+        ).build_report()
 
-        if not completed:
-            return "# No experiments run yet\n"
+        if not report.latest_run:
+            content = "# No experiments run yet\n"
+            self.output_path.parent.mkdir(parents=True, exist_ok=True)
+            self.output_path.write_text(content)
+            return content
 
-        latest = completed[-1]
-        ranked = sorted(
-            completed,
-            key=lambda x: x.get("cv_scores", {}).get(
-                "roc_auc", x.get("cv_scores", {}).get("r2", 0)
-            ),
-            reverse=True,
-        )
+        state_content = self._render_state(report)
+        leaderboard_content = self._render_leaderboard()
+
+        self.output_path.parent.mkdir(parents=True, exist_ok=True)
+        self.output_path.write_text(state_content)
+        self.leaderboard_path.parent.mkdir(parents=True, exist_ok=True)
+        self.leaderboard_path.write_text(leaderboard_content)
+        return state_content
+
+    def _render_state(self, report: ExperimentReport) -> str:
+        latest = report.latest_run
+        assert latest is not None
+
         lines = [
-            "## Current Experiment State\n",
-            f"**Task:** {latest.get('task', '?').title()}",
-            f"**Dataset:** {latest.get('dataset', 'unknown')}",
-            f"({latest.get('n_rows', '?')} rows, {latest.get('n_features', '?')} features)\n",
-            "### Leaderboard (sorted by primary metric)\n",
-            "| Model | ROC-AUC | F1 | Duration |",
-            "|---|---|---|---|",
+            "# Current Experiment State\n",
+            f"**Task:** {latest.task.title()}",
+            f"**Dataset:** {latest.dataset}",
+            f"**Rows / Features:** {latest.n_rows} / {latest.n_features}",
+            f"**Latest Run ID:** {latest.run_id}\n",
+            "## Leaderboard\n",
+            "| Rank | Model | Run ID | Primary Metric | Score | Duration |",
+            "|---|---|---|---|---|---|",
         ]
 
-        for e in ranked:
-            scores = e.get("cv_scores", {})
-            roc = scores.get("roc_auc", scores.get("r2", 0))
-            f1 = scores.get("f1_macro", "-")
-            dur = e.get("duration_seconds", "?")
-            lines.append(f"| {e.get('model', '?')} | {roc:.4f} | {f1} | {dur}s |")
+        for index, entry in enumerate(report.leaderboard, start=1):
+            lines.append(
+                f"| {index} | {entry.model} | {entry.run_id} | {entry.primary_metric} "
+                f"| {entry.primary_score:.4f} | {entry.duration_seconds}s |"
+            )
 
-        hw = latest.get("hardware", {})
         lines.extend(
             [
-                "\n### Resource Status\n",
-                f"Device: {hw.get('device', 'cpu')}",
-                f"VRAM Used: {hw.get('vram_used_gb', 0)} GB",
+                "\n## Resource Status\n",
+                f"Device: {latest.hardware.get('device', 'cpu')}",
+                f"VRAM Used: {latest.hardware.get('vram_used_gb', 0)} GB",
             ]
         )
 
-        if self.registry_path.exists():
-            lines.append("\n### Registered Champions\n")
-            for key, entry in registry.items():
+        if report.registry:
+            lines.append("\n## Registered Champions\n")
+            for key, entry in report.registry.items():
                 lines.append(f"- **{key}**: {entry.get('model')} (score: {entry.get('score')})")
 
-        content = "\n".join(lines) + "\n"
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-        self.output_path.write_text(content)
-        return content
+        return "\n".join(lines) + "\n"
 
-    def _load_events(self) -> list[dict]:
-        return load_events(self.log_path)
-
-    def _load_registry(self) -> dict:
-        if self.registry_path.exists():
-            with open(self.registry_path) as f:
-                return json.load(f)
-        return {}
+    def _render_leaderboard(self) -> str:
+        return ReportService(
+            log_path=self.log_path,
+            registry_path=self.registry_path,
+        ).format_leaderboard_markdown()

@@ -51,3 +51,49 @@ def test_update_if_better_lower_score(temp_registry):
     result = service.update_if_better("key1", "catboost", "run2", 0.90, "/path/to/model")
     assert result is False
     assert service.load()["key1"]["score"] == 0.95
+
+
+def test_promote_run_missing_run(temp_registry, tmp_path):
+    service = RegistryService(temp_registry)
+    result = service.promote_run("missing", "key1", tmp_path / "experiments.jsonl")
+    assert result.status == "not_found"
+    assert "not found" in result.message
+
+
+def test_promote_run_regression_uses_r2(temp_registry, tmp_path):
+    log_path = tmp_path / "experiments.jsonl"
+    event = {
+        "event": "model_completed",
+        "run_id": "run_reg",
+        "model": "CatBoost",
+        "task": "regression",
+        "cv_scores": {"rmse": 1.2, "r2": 0.81},
+        "artifact_path": "/tmp/model",
+    }
+    log_path.write_text(json.dumps(event) + "\n")
+
+    service = RegistryService(temp_registry)
+    result = service.promote_run("run_reg", "regression:test", log_path)
+
+    assert result.status == "promoted"
+    assert service.load()["regression:test"]["score"] == 0.81
+
+
+def test_promote_run_rejects_when_existing_champion_is_better(temp_registry, tmp_path):
+    temp_registry.write_text(json.dumps({"key1": {"score": 0.95}}))
+    log_path = tmp_path / "experiments.jsonl"
+    event = {
+        "event": "model_completed",
+        "run_id": "run_low",
+        "model": "CatBoost",
+        "task": "classification",
+        "cv_scores": {"roc_auc": 0.90},
+        "artifact_path": "/tmp/model",
+    }
+    log_path.write_text(json.dumps(event) + "\n")
+
+    service = RegistryService(temp_registry)
+    result = service.promote_run("run_low", "key1", log_path)
+
+    assert result.status == "rejected"
+    assert service.load()["key1"]["score"] == 0.95

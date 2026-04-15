@@ -1,6 +1,9 @@
 """Optuna study factory for hyperparameter optimization."""
 
+import numpy as np
 import optuna
+
+from core.constants import from_task_type
 
 
 def create_study(
@@ -28,6 +31,50 @@ def _validate_bounds(param_name: str, low: int | float, high: int | float) -> No
         raise ValueError(
             f"Invalid search space for '{param_name}': lower bound {low} >= upper bound {high}"
         )
+
+
+def setup_hpo_components(
+    data_path: str,
+    target_col: str,
+    task: str,
+    model: str,
+) -> tuple[np.ndarray, np.ndarray, any, dict]:
+    """
+    Shared setup for HPO across CLI and MCP.
+
+    Args:
+        data_path: Path to data file
+        target_col: Target column name
+        task: "classification" or "regression"
+        model: Model name for HPO
+
+    Returns:
+        (X, y, evaluator, search_space)
+    """
+    from configs.experiment import ExperimentConfig
+    from configs.model_configs import ModelConfigs
+    from core.data.adapter import DataAdapter
+    from core.data.loaders import load_data
+    from core.engine.evaluator import Evaluator
+    from core.models.factory import validate_model_name
+
+    df = load_data(data_path)
+    adapter = DataAdapter(target_format="numpy")
+    X, y = adapter.transform(df, target_col)
+
+    hpo_config = ExperimentConfig(
+        name="hpo",
+        task=from_task_type(task),
+        target_col=target_col,
+        data_path=data_path,
+    )
+    evaluator = Evaluator(hpo_config)
+
+    validate_model_name(model)
+    model_configs = ModelConfigs()
+    search_space = getattr(model_configs, model).hpo_search_space()
+
+    return X, y, evaluator, search_space
 
 
 def optimize_model(

@@ -170,6 +170,7 @@ def test_leaderboard_after_run(sample_csv, tmp_path):
         assert result.exit_code == 0
         assert "Leaderboard" in result.stdout
         assert "CatBoost" in result.stdout
+        assert "Primary Metric" in result.stdout
     finally:
         os.chdir(orig)
 

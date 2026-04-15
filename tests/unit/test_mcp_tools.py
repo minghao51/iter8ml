@@ -187,6 +187,31 @@ def test_run_hpo_forwards_task(sample_csv, monkeypatch):
     assert captured["task"] == "regression"
 
 
+def test_run_hpo_uses_shared_model_factory(sample_csv, monkeypatch):
+    captured = {}
+
+    class FakeModel:
+        pass
+
+    def fake_get_model_class(model_name):
+        captured["model_name"] = model_name
+        return FakeModel
+
+    def fake_optimize_model(model_cls, X, y, evaluator, model_name, **kwargs):
+        captured["model_cls"] = model_cls
+        return {"best_params": {}, "best_value": 0.0, "n_trials": 1}
+
+    monkeypatch.setattr("mcp_server.tools.get_model_class", fake_get_model_class)
+    monkeypatch.setattr("core.engine.hpo.optimize_model", fake_optimize_model)
+
+    result = run_hpo(sample_csv, "target", model="catboost", trials=1)
+
+    data = json.loads(result)
+    assert data["n_trials"] == 1
+    assert captured["model_name"] == "catboost"
+    assert captured["model_cls"] is FakeModel
+
+
 def test_get_column_stats_uses_centralized_loader(monkeypatch):
     """Verify get_column_stats uses load_data from core.data.loaders."""
     from unittest.mock import patch
