@@ -1,5 +1,6 @@
 """Structured experiment reporting utilities."""
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -65,9 +66,7 @@ class ReportService:
         self.log_path = Path(log_path)
         self.registry_path = Path(registry_path)
 
-    def build_report(
-        self, metric: str | None = None, limit: int | None = None
-    ) -> ExperimentReport:
+    def build_report(self, metric: str | None = None, limit: int | None = None) -> ExperimentReport:
         """Load events and registry and return a canonical report."""
         entries = [self._to_entry(event, metric) for event in self._load_completed_events()]
         leaderboard = sorted(
@@ -86,9 +85,7 @@ class ReportService:
             registry=self._load_registry(),
         )
 
-    def format_leaderboard_console(
-        self, metric: str | None = None, limit: int = 10
-    ) -> str:
+    def format_leaderboard_console(self, metric: str | None = None, limit: int = 10) -> str:
         """Format leaderboard as console table (CLI output)."""
         report = self.build_report(metric=metric, limit=limit)
         if not report.leaderboard:
@@ -114,8 +111,7 @@ class ReportService:
         report = self.build_report(metric=metric, limit=limit)
 
         header = (
-            "| Rank | Model | Run ID | Primary Metric | Score | "
-            "All Scores | Duration | Timestamp |"
+            "| Rank | Model | Run ID | Primary Metric | Score | All Scores | Duration | Timestamp |"
         )
         separator = "|---|---|---|---|---|---|---|---|"
 
@@ -134,15 +130,11 @@ class ReportService:
 
     def _load_completed_events(self) -> list[dict[str, Any]]:
         return [
-            event
-            for event in load_events(self.log_path)
-            if event.get("event") == "model_completed"
+            event for event in load_events(self.log_path) if event.get("event") == "model_completed"
         ]
 
     def _load_registry(self) -> dict[str, Any]:
         if self.registry_path.exists():
-            import json
-
             with open(self.registry_path, encoding="utf-8") as f:
                 return json.load(f)
         return {}

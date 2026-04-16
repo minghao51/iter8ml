@@ -1,11 +1,18 @@
-# Environment
-.venv/
+# Python
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
 *.egg-info/
 dist/
 build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# UV
+.uv/
+.venv/
 
 # Workspace (keep .gitkeep)
 workspace/*
@@ -22,12 +29,8 @@ workspace/*
 Thumbs.db
 
 # Notebooks
+.ipynb_checkpoints/
 notebooks/.ipynb_checkpoints/
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
 
 # ML artifacts
 mlruns/
@@ -35,14 +38,16 @@ wandb/
 catboost_info/
 *.cbm
 *.lgbm
-*.json
+*.onnx
+*.pkl
+*.parquet
+
+# Logs
+*.log
+
+# Frontend
+node_modules/
 
 # Test artifacts
 workspace/test_*.jsonl
-catboost_info/
-*.cbm
-*.lgbm
-*.json
-
-# Test artifacts
-workspace/test_*.jsonl
+tests/fixtures/*.jsonl

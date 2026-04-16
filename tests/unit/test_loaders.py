@@ -50,6 +50,7 @@ def test_load_sqlite_invalid_query(tmp_path):
     db_file = tmp_path / "test.db"
     # Create valid database
     import sqlite3
+
     with sqlite3.connect(db_file) as conn:
         conn.execute("CREATE TABLE test (id INTEGER)")
 
@@ -61,6 +62,7 @@ def test_load_sqlite_empty_query(tmp_path):
     """Test loading with empty query."""
     db_file = tmp_path / "test.db"
     import sqlite3
+
     with sqlite3.connect(db_file) as conn:
         conn.execute("CREATE TABLE test (id INTEGER)")
 
@@ -72,6 +74,7 @@ def test_load_sqlite_whitespace_query(tmp_path):
     """Test loading with whitespace-only query."""
     db_file = tmp_path / "test.db"
     import sqlite3
+
     with sqlite3.connect(db_file) as conn:
         conn.execute("CREATE TABLE test (id INTEGER)")
 
@@ -83,6 +86,7 @@ def test_load_sqlite_multiple_statements(tmp_path):
     """Test loading with multiple statements (security check)."""
     db_file = tmp_path / "test.db"
     import sqlite3
+
     with sqlite3.connect(db_file) as conn:
         conn.execute("CREATE TABLE test (id INTEGER)")
 
@@ -93,6 +97,7 @@ def test_load_sqlite_multiple_statements(tmp_path):
 def test_load_sqlite_empty_result(tmp_path):
     """Test loading query with no results."""
     import sqlite3
+
     db_file = tmp_path / "empty.db"
     with sqlite3.connect(db_file) as conn:
         conn.execute("CREATE TABLE test (id INTEGER)")

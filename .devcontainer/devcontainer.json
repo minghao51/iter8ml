@@ -1,0 +1,8 @@
+{
+  "name": "tabular-blueprint",
+  "image": "tabular-blueprint:latest",
+  "features": {
+    "ghcr.io/devcontainers/features/cuda:1": {}
+  },
+  "postCreateCommand": "uv sync"
+}

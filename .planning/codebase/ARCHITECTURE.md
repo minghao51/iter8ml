@@ -1,108 +1,112 @@
-# ARCHITECTURE
+# Tabular Blueprint - Architecture Documentation
 
-## Overall Architectural Pattern
+## Overview
+Tabular Blueprint is a high-velocity iteration framework for tabular machine learning, built around a modular architecture with clear separation of concerns.
 
-Tabular Blueprint follows a **Layered Plugin Architecture** with clear separation of concerns. The system is designed as a modular machine learning framework for tabular data with the following key characteristics:
+## Core Patterns
 
-- **Plugin-based model system** with abstract base classes for extensibility
-- **Configuration-driven experiments** using Pydantic models
-- **Event-driven tracking** with pluggable backends (JSONL, Weights & Biases, MLflow)
-- **Pipeline-oriented** data flow with adapters and processors
+### 1. Command Layer Pattern
+- **Entry Point**: `main.py` - CLI interface using Typer
+- **Commands**: `init`, `run`, `leaderboard`, `registry`, `hardware`, `drift`, `state`, `hpo`
+- **Flow**: CLI → Config Parser → Data Loading → Trainer → Models → Evaluation → Registry
 
-## Key Layers and Their Responsibilities
+### 2. Configuration-Driven Architecture
+- **Base Config**: `configs/experiment.py` - Pydantic-based experiment configuration
+- **Hardware Profile**: `configs/hardware.py` - System resource detection and optimization
+- **Validation**: Automatic metric/CV strategy defaults based on task type
+- **Serialization**: Enum-to-string conversion for JSON compatibility
 
-### 1. **CLI Layer** (`main.py`)
-- Entry point using Typer for command-line interface
-- Commands: `init`, `run`, `leaderboard`, `registry`, `hardware`, `drift`, `state`, `hpo`
-- Handles user input validation and parameter parsing
-- Manages workspace initialization and experiment orchestration
+### 3. Engine-Orchestrated Flow
+- **Trainer**: `core/engine/trainer.py` - Central orchestrator
+- **Evaluator**: `core/engine/evaluator.py` - Cross-validation and metrics computation
+- **Tracker**: `core/engine/tracker.py` - Experiment tracking (JSONL, WandB, MLFlow)
+- **State Observer**: `core/engine/state_observer.py` - Experiment state management
+- **HPO**: `core/engine/hpo.py` - Hyperparameter optimization with Optuna
 
-### 2. **Configuration Layer** (`configs/`)
-- **ExperimentConfig**: Core experiment definition (task, target, data path, models)
-- **HardwareProfile**: System resource detection (GPU, RAM, CPU)
-- **ModelConfigs**: Predefined model configurations and HPO search spaces
-- Type-safe configuration using Pydantic enums
+### 4. Model Registry Pattern
+- **Abstract Model**: `core/models/base.py` - Protocol for structural subtyping
+- **Factory Pattern**: `core/models/factory.py` - Model instantiation and validation
+- **Selector**: `core/models/selector.py` - Auto-selection logic
+- **Concrete Models**: `core/models/conventional/`, `core/models/deep/`, `core/models/tabular_foundation/`
 
-### 3. **Core Engine Layer** (`core/`)
-- **Trainer**: Main orchestration engine for model training
-- **Evaluator**: Cross-validation and performance evaluation
-- **HPO**: Hyperparameter optimization using Optuna
-- **StateObserver**: Experiment state tracking and reporting
-- **Tracker**: Event logging and experiment tracking backends
+### 5. Service Layer
+- **Registry Service**: `core/services/registry_service.py` - Model promotion and versioning
+- **Report Service**: `core/services/report_service.py` - Leaderboard formatting and display
+- **Promotion Result**: Structured model promotion workflow
 
-### 4. **Data Layer** (`core/data/`)
-- **Loaders**: Data loading from various formats (CSV, Parquet, etc.)
-- **Adapter**: Data transformation between formats (pandas, numpy, etc.)
-- **Processors**: Data preprocessing and feature engineering
-- **Quality**: Data validation and quality checks
+## Abstractions
 
-### 5. **Model Layer** (`core/models/`)
-- **Base Model**: Abstract base class for all models
-- **Conventional**: Gradient boosting models (CatBoost, LightGBM, XGBoost)
-- **Deep Learning**: Neural network models (FT-Transformer)
-- **Tabular Foundation**: Pre-trained models (TabPFN)
-- **Selector**: Automatic model selection based on data characteristics
+### Data Flow
+```
+CLI Command → ExperimentConfig → Data Loading → Model Selection → Training → Evaluation → Registry
+```
 
-### 6. **Monitoring Layer** (`core/monitoring/`)
-- **Drift Detection**: Statistical monitoring of data drift
-- Performance tracking over time
-- Model versioning and registry management
+### Key Abstractions:
+1. **AbstractModel Protocol**: Defines fit/predict/save interface for all models
+2. **Task Type**: Classification vs Regression with appropriate defaults
+3. **CV Strategy**: KFold, Stratified, TimeSeries with smart defaults
+4. **Tracker Interface**: Pluggable tracking backends
+5. **Hardware Profile**: Auto-detection and thread configuration
 
-## Data Flow and Communication Patterns
+### Data Handling
+- **Format**: Polars DataFrames for performance
+- **Loaders**: CSV, Parquet, SQLite support
+- **Adapter**: Cleaned data with consistent schema
+- **Hashing**: Data versioning via SHA256
 
-1. **Initialization Flow**:
-   ```
-   CLI → Workspace Setup → Configuration Loading → Data Loading → Model Selection
-   ```
+## Layer Architecture
 
-2. **Training Flow**:
-   ```
-   Data → Preprocessing → Model Selection → Training → Cross-validation → Tracking
-   ```
+### Presentation Layer
+- `main.py` - CLI interface
+- Commands validate inputs and delegate
 
-3. **HPO Flow**:
-   ```
-   Data → Search Space Definition → Optuna Optimization → Best Model Selection → Registration
-   ```
+### Service Layer
+- Core services for registry, reporting, state management
+- No business logic, pure coordination
 
-4. **Event Tracking**:
-   ```
-   Engine Events → Tracker Backend → JSONL/WandB/MLflow → Leaderboard & Registry
-   ```
+### Engine Layer
+- Experiment orchestration
+- Cross-validation execution
+- Hyperparameter optimization
+- Hardware resource management
 
-## Abstractions and Interfaces
+### Data Layer
+- Data loading and preprocessing
+- Format conversion
+- Version tracking
 
-### Core Abstract Classes
-- `BaseModel`: Interface for all model implementations
-- `DataLoader`: Abstract data loading interface
-- `TrackerBackend`: Pluggable tracking backends
-- `DriftDetector`: Interface for drift detection algorithms
+### Model Layer
+- Abstract model interface
+- Concrete implementations
+- Auto-selection logic
 
-### Key Design Patterns
-- **Strategy Pattern**: For cross-validation strategies and model selection
-- **Factory Pattern**: For model instantiation based on names
-- **Observer Pattern**: For experiment state tracking
-- **Plugin Architecture**: For adding new models and tracking backends
+## Entry Points
 
-## Entry Points and Initialization Sequence
+### Primary Entry Point
+- **File**: `main.py`
+- **Function**: `app()` - Typer CLI application
+- **Command**: `tabblueprint` (script defined in pyproject.toml)
 
-1. **Primary Entry Point**: `main.py` (CLI via `tabblueprint` command)
-2. **Secondary Entry Points**: 
-   - `mcp_server/`: MCP (Model Context Protocol) server integration
-   - `examples/`: Example pipelines and integrations
+### Module Exports
+- **Core**: `core/__init__.py` - Minimal import
+- **Engine**: `core/engine/__init__.py` - Evaluator, Tracker, Trainer
+- **Models**: `core/models/__init__.py` - AbstractModel, ModelSelector, Factory
+- **Data**: `core/data/__init__.py` - Loaders
+- **Services**: `core/services/__init__.py` - RegistryService, ReportService
 
-### Initialization Steps:
-1. Workspace creation with `tabblueprint init`
-2. Configuration loading (CLI args or config files)
-3. Hardware profile detection
-4. Data loading and validation
-5. Model selection or explicit model configuration
-6. Experiment execution via Trainer
+## Configuration Flow
 
-## Key Integrations
+1. **CLI Parsing**: Typer converts CLI args to ExperimentConfig
+2. **Validation**: Pydantic validates and applies defaults
+3. **Task Alignment**: Auto-sets metrics and CV strategy based on task type
+4. **Hardware Detection**: Auto-configures OpenMP threads and GPU detection
+5. **Execution**: Trainer orchestrates the full workflow
 
-- **MCP Server**: For AI model context protocol integration
-- **ZenML**: Pipeline orchestration support
-- **Hamilton**: Dataflow programming integration
-- **Transformers**: Deep learning model support
-- **Various ML Libraries**: CatBoost, LightGBM, XGBoost, TabPFN, PyTorch
+## Key Design Decisions
+
+1. **Polars over Pandas**: Performance for tabular data
+2. **Protocol over ABC**: Structural subtyping for models
+3. **JSONL Tracking**: Simple, file-based experiment tracking
+4. **Enum-Driven Config**: Type-safe configuration with serialization
+5. **Modular Models**: Separate packages for conventional, deep, foundation models
+6. **Hardware Auto-Detection**: Optimizes resource usage automatically

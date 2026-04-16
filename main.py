@@ -176,9 +176,7 @@ def hpo(
     from core.engine.hpo import optimize_model, setup_hpo_components
 
     try:
-        X, y, evaluator, search_space = setup_hpo_components(
-            data_path, target_col, task, model
-        )
+        X, y, evaluator, search_space = setup_hpo_components(data_path, target_col, task, model)
     except ValueError as e:
         typer.echo(f"Error: {e}")
         raise typer.Exit(1) from e

@@ -1,59 +1,116 @@
-# Integrations Analysis
+# Integrations - Tabular Blueprint
 
-## External APIs and Services
-### Experiment Tracking
-- **Weights & Biases (wandb)**: Optional integration for experiment tracking and visualization
-- **MLflow**: Optional integration for experiment tracking and model registry
-- **ZenML**: Optional integration for ML pipeline orchestration
+## External APIs & Services
 
 ### LLM Integration
-- **Anthropic**: Via MCP (Model Context Protocol) for LLM-based features
-- **MCP**: Model Context Protocol for standardized AI model interactions
+- **Anthropic** >=0.25 - LLM provider (optional dependency)
+- **MCP** >=0.9 - Model Context Protocol for LLM interactions
+- **File**: pyproject.toml (optional dependencies section)
 
-## Data Storage and Databases
-### File-Based Storage
-- **CSV**: Supported for data ingestion
-- **Parquet**: Supported for efficient data storage and retrieval
-- **SQLite**: Built-in support for SQL queries via Polars integration
+### Experiment Tracking
+- **MLflow** >=2.13 - Experiment tracking and model registry
+  - **Docker service**: mlflow (port 5000)
+  - **Volume**: mlflow-data:/mlruns
+  - **Command**: mlflow server --host 0.0.0.0 --backend-store-uri /mlruns
+  - **File**: docker-compose.yml
 
-### Data Processing
-- **Polars**: Primary DataFrame library for in-memory data processing
-- **NumPy**: Numerical computing support
+### Monitoring & Reporting
+- **WandB** >=0.17 - Experiment tracking (optional)
 
-## External Services
+### Pipeline Orchestration
+- **ZenML** >=0.57 - ML pipeline orchestration (optional)
+- **Hamilton** >=1.70 - Workflow orchestration (optional)
+
+## Databases & Storage
+
+### Local Storage
+- **Workspace** - Local directory for experiments
+  - Path: `/workspace/`
+  - Subdirectories:
+    - `artifacts/` - Model artifacts
+    - `experiments.jsonl` - Experiment logs
+    - `registry.json` - Model registry
+
 ### Model Registry
-- **Local JSON registry**: Basic model registry implementation in `workspace/registry.json`
+- **JSON-based registry** - Local model registry at `workspace/registry.json`
+  - Stores model metadata, scores, and registration timestamps
+
+## Compute & Hardware
+
+### GPU Support
+- **NVIDIA CUDA** 12.4.0 - GPU acceleration
+- **Docker configuration**: GPU-enabled service in docker-compose.yml
+  ```yaml
+  services:
+    app:
+      # ...
+      deploy:
+        resources:
+          reservations:
+            devices:
+              - driver: nvidia
+                count: all
+                capabilities: [gpu]
+  ```
 
 ### Hardware Detection
-- **GPU Detection**: Automatic CUDA hardware detection
-- **System Monitoring**: CPU, RAM, and VRAM detection via psutil
+- **HardwareProfile** class - Detects available hardware (CPU, GPU, VRAM)
+- **File**: main.py (hardware command)
 
-## Webhook and Event Systems
-### Logging and Tracking
-- **JSONL Tracker**: Default event tracking with log rotation
-- **Protocol-based Trackers**: Extensible tracker interface for custom implementations
-- **Event Types**: Metrics, parameters, artifacts, and custom events
+## Data Processing
 
-### Event Storage
-- **Local JSONL**: Default event storage in `workspace/experiments.jsonl`
-- **Log Rotation**: Automatic file rotation based on size limits (default 100MB)
+### Data Loading
+- **Polars** - Primary DataFrame library
+- **skrub** - Preprocessing utilities
+- **Custom loaders** - Located in `core/data/loaders.py`
 
-## Authentication and Authorization
-- **No external authentication**: Currently uses local file-based authentication
-- **No API keys**: No external service API keys detected in configuration
-- **Local-only**: All operations are local to the workspace
+### Model Management
+- **Model registry** - Built-in model registry
+- **ReportService** - Experiment reporting and leaderboard generation
+- **File**: main.py (leaderboard and registry commands)
+
+## Monitoring & Drift Detection
+
+### Drift Detection
+- **Custom DriftDetector** - Distribution drift detection
+- **File**: main.py (drift command)
+- **Features**:
+  - Statistical testing for distribution shifts
+  - Column-by-column drift reporting
+  - P-value and test statistics
+
+## CLI Interface
+
+### Commands
+- **init** - Initialize workspace
+- **run** - Run experiments
+- **leaderboard** - Show experiment results
+- **registry** - Manage model registry
+- **hardware** - Show hardware profile
+- **drift** - Detect data drift
+- **state** - Generate experiment state
+- **hpo** - Hyperparameter optimization
+
+### Configuration
+- **ExperimentConfig** - Experiment configuration
+- **HardwareProfile** - Hardware profile configuration
+- **File**: configs/experiment.py, configs/hardware.py
 
 ## Integration Points
-### Data Loading
-- Flexible data loading from CSV, Parquet, and SQLite
-- Polars-based efficient data processing
 
-### Experiment Management
-- Built-in experiment tracking with multiple tracker options
-- Hyperparameter optimization with Optuna
-- Model registry and leaderboard functionality
+### Data Flow
+1. Data loaded via `core/data/loaders.py`
+2. Experiments configured via `configs/experiment.py`
+3. Models trained via `core/engine/trainer.py`
+4. Results stored in `workspace/experiments.jsonl`
+5. Registry updated in `workspace/registry.json`
 
-### Monitoring
-- Drift detection between datasets
-- Hardware profile detection
-- State observation and reporting
+### External Service Integration
+- No external APIs required - designed for local execution
+- Optional integrations available: MLflow, WandB, ZenML
+- GPU support through local NVIDIA CUDA installation
+
+## Docker Services
+- **app** - Main application service
+- **mlflow** - MLflow server for experiment tracking
+- **Volumes**: workspace-data, mlflow-data

@@ -24,11 +24,16 @@ def get_experiment_state() -> str:
 @mcp.tool()
 def get_column_stats(data_path: str) -> str:
     """Returns Polars describe() output for a dataset."""
-    import polars as pl  # noqa: F401
-
     df = load_data(data_path)
     desc = df.describe()
-    return desc.to_pandas().to_markdown()
+    headers = desc.columns
+    separator = ["---"] * len(headers)
+    rows = [headers, separator]
+
+    for record in desc.iter_rows():
+        rows.append([str(value) for value in record])
+
+    return "\n".join("| " + " | ".join(row) + " |" for row in rows)
 
 
 @mcp.tool()
@@ -63,9 +68,7 @@ def run_hpo(
     """Triggers Optuna study for a named model."""
     from core.engine.hpo import optimize_model, setup_hpo_components
 
-    X, y, evaluator, search_space = setup_hpo_components(
-        data_path, target_col, task, model
-    )
+    X, y, evaluator, search_space = setup_hpo_components(data_path, target_col, task, model)
 
     model_cls = get_model_class(model)
     result = optimize_model(

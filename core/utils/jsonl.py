@@ -28,7 +28,5 @@ def load_events(path: str | Path) -> list[dict]:
                 try:
                     events.append(json.loads(stripped))
                 except json.JSONDecodeError as e:
-                    raise ValueError(
-                        f"Invalid JSON at line {line_num} in {path}: {e}"
-                    ) from e
+                    raise ValueError(f"Invalid JSON at line {line_num} in {path}: {e}") from e
     return events

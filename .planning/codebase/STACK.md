@@ -1,54 +1,64 @@
-# Tech Stack Analysis
+# Tech Stack - Tabular Blueprint
 
-## Languages and Versions
-- **Python**: 3.11+ (primary language)
-- **Runtime**: uv (Python package and dependency manager)
+## Languages & Runtime
+- **Python** 3.11+ (`requires-python = ">=3.11"`)
+- **Operating System**: Ubuntu 22.04 (Docker)
+- **CUDA**: 12.4.0 (GPU support)
 
-## Frameworks and Libraries
-### Core ML Framework
-- **Polars**: 1.0+ (DataFrame library for data processing)
-- **Pydantic**: 2.0+ (data validation and serialization)
-- **Pydantic Settings**: 2.0+ (configuration management)
+## Frameworks & Dependencies
 
-### Machine Learning Libraries
-- **Gradient Boosting**: 
-  - CatBoost: 1.2+
-  - LightGBM: 4.0+
-  - XGBoost: 2.0+
-- **Deep Learning**:
-  - PyTorch: 2.3+
-  - Transformers: 4.40+
-  - Accelerate: 0.30+
-- **Other ML**:
-  - Scikit-learn: 1.4+
-  - TabPFN: 2.0+ (tabular foundation models)
-  - Scrub: 0.3+ (feature engineering)
-  - CleanLab: 2.6+ (data cleaning)
-  - Optuna: 3.6+ (hyperparameter optimization)
+### Core ML Libraries
+- **Polars** >=1.0 - DataFrame library
+- **Pydantic** >=2.0 - Data validation
+- **Pydantic Settings** >=2.0 - Configuration management
 
-### Optional Integrations
-- **LLM Support**: Anthropic: 0.25+ (via MCP protocol)
-- **Hamilton**: sf-hamilton: 1.70+ (dataflow framework)
-- **Experiment Tracking**: 
-  - Weights & Biases (wandb): 0.17+
-  - MLflow: 2.13+
-  - ZenML: 0.57+
+### ML Frameworks
+- **CatBoost** >=1.2 - Gradient boosting
+- **LightGBM** >=4.0 - Gradient boosting
+- **XGBoost** >=2.0 - Gradient boosting
+- **TabPFN** >=2.0 - Transformer-based tabular models
+- **skrub** >=0.3 - Preprocessing utilities
+- **CleanLab** >=2.6 - Data cleaning and label noise detection
+- **Optuna** >=3.6 - Hyperparameter optimization
+- **PyTorch** >=2.3 - Deep learning framework
+- **Transformers** >=4.40 - HuggingFace models
+- **scikit-learn** >=1.4 - ML utilities
 
-### CLI and Development
-- **Typer**: 0.12+ (CLI framework)
-- **Rich**: 13.0+ (terminal styling)
-- **Ruff**: 0.4+ (linter and formatter)
-- **Psutil**: 5.9+ (system monitoring)
-- **Pre-commit**: Local hooks for formatting, linting, and testing
+### Data & Utilities
+- **NumPy** >=1.26 - Numerical computing
+- **Accelerate** >=0.30 - HuggingFace acceleration
+- **Typer** >=0.12 - CLI framework
+- **PSUtil** >=5.9 - System monitoring
+- **Rich** >=13.0 - Terminal formatting
 
-## Configuration Files
-- `pyproject.toml`: Project dependencies and tool configuration
-- `.pre-commit-config.yaml`: Git hooks for code quality
-- `.devcontainer/devcontainer.json`: Development container setup
-- `Dockerfile`: Container deployment with CUDA support
+### Optional Dependencies
+- **Hamilton** (sf-hamilton>=1.70) - Workflow orchestration
+- **LLM Support** (mcp>=0.9, anthropic>=0.25) - Model Context Protocol & Anthropic
+- **WandB** (wandb>=0.17) - Experiment tracking
+- **MLflow** (mlflow>=2.13) - ML lifecycle management
+- **ZenML** (zenml>=0.57) - ML pipeline orchestration
+- **Transformers Extended** (datasets>=2.14) - Dataset loading
+- **Dev Tools** (pytest>=8.0, ruff>=0.4) - Testing & linting
 
-## Execution Model
-- **CLI Tool**: `tabblueprint` command-line interface
-- **Entry Point**: `main.py` with Typer app
-- **Package Management**: uv for dependency management and execution
-- **Container Support**: Docker with CUDA runtime for GPU acceleration
+## Configuration Tools
+- **Ruff** - Python linter & formatter
+  - Line length: 100
+  - Target Python 3.11
+  - Rules: E, F, I, UP, B, SIM
+- **Pre-commit** - Git hooks for ruff-format, ruff-check, pytest
+- **pytest** - Unit testing framework
+  - Test paths: tests/
+  - Options: -v --tb=short
+
+## Build System
+- **UV** - Python package manager (Docker setup)
+- **pyproject.toml** - Project configuration
+
+## Entry Point
+- **main.py** - CLI application using Typer
+- **Script name**: `tabblueprint` (defined in pyproject.toml)
+
+## Docker Configuration
+- **Base image**: nvidia/cuda:12.4.0-runtime-ubuntu22.04
+- **Python**: 3.11
+- **GPU support**: Enabled via CUDA

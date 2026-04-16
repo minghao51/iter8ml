@@ -4,6 +4,7 @@ import numpy as np
 import optuna
 
 from core.constants import from_task_type
+from core.engine.evaluator import Evaluator
 
 
 def create_study(
@@ -38,7 +39,7 @@ def setup_hpo_components(
     target_col: str,
     task: str,
     model: str,
-) -> tuple[np.ndarray, np.ndarray, any, dict]:
+) -> tuple[np.ndarray, np.ndarray, Evaluator, dict]:
     """
     Shared setup for HPO across CLI and MCP.
 

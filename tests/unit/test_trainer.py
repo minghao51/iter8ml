@@ -18,13 +18,15 @@ def test_trainer_uses_registry_service(tmp_path, monkeypatch):
             self.registry_path = registry_path
 
         def update_if_better(self, key, model_name, run_id, score, artifact_path):
-            registry_calls.append({
-                "key": key,
-                "model_name": model_name,
-                "run_id": run_id,
-                "score": score,
-                "artifact_path": artifact_path,
-            })
+            registry_calls.append(
+                {
+                    "key": key,
+                    "model_name": model_name,
+                    "run_id": run_id,
+                    "score": score,
+                    "artifact_path": artifact_path,
+                }
+            )
             return True
 
     config = ExperimentConfig(
@@ -37,6 +39,7 @@ def test_trainer_uses_registry_service(tmp_path, monkeypatch):
 
     # Monkey patch before creating trainer
     import core.engine.trainer
+
     original_registry = core.engine.trainer.RegistryService
     monkeypatch.setattr(core.engine.trainer, "RegistryService", MockRegistryService)
 
@@ -48,7 +51,7 @@ def test_trainer_uses_registry_service(tmp_path, monkeypatch):
         model_name="catboost",
         run_id="test_run",
         score=0.95,
-        artifact_path="/tmp/test.pkl"
+        artifact_path="/tmp/test.pkl",
     )
 
     # Verify the method was called and returns True

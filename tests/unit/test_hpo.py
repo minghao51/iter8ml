@@ -165,6 +165,7 @@ def test_optimize_model_preserves_exception_context():
 
     # First trial fails, second succeeds
     call_count = [0]
+
     def side_effect(*args, **kwargs):
         call_count[0] += 1
         if call_count[0] == 1:

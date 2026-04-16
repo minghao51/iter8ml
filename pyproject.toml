@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "tabular-blueprint"
 version = "0.1.0"
@@ -53,3 +57,12 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts   = "-v --tb=short"
+
+[tool.setuptools]
+py-modules = ["main"]
+
+[tool.setuptools.package-data]
+core = ["py.typed"]
+
+[tool.setuptools.packages.find]
+include = ["configs*", "core*", "mcp_server*", "pipelines*"]

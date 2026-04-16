@@ -10,7 +10,5 @@ RUN curl -Ls https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:$PATH"
 
 WORKDIR /workspace
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen
-
 COPY . .
+RUN uv sync --frozen

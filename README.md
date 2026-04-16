@@ -81,14 +81,17 @@ docker run -v $(pwd):/workspace tabular-blueprint tabblueprint run --data data.c
 ## Development
 
 ```bash
+# Install development/test extras
+uv sync --extra dev --extra llm
+
 # Run tests
-uv run pytest tests/unit -v
+uv run --extra dev --extra llm pytest tests/unit -v
 
 # Lint
-uv run ruff check .
+uv run --extra dev ruff check .
 
 # Format
-uv run ruff format .
+uv run --extra dev ruff format .
 ```
 
 ## License

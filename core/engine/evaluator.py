@@ -85,8 +85,7 @@ class Evaluator:
 
         # Cache metric functions outside the fold loop
         metric_fns = {
-            metric_name: METRICS_REGISTRY[model_task][metric_name]
-            for metric_name in self.metrics
+            metric_name: METRICS_REGISTRY[model_task][metric_name] for metric_name in self.metrics
         }
 
         for train_idx, val_idx in cv.split(X, y):

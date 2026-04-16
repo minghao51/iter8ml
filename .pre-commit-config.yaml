@@ -3,17 +3,17 @@ repos:
     hooks:
       - id: ruff-format
         name: ruff format
-        entry: uv run ruff format
+        entry: uv run --extra dev ruff format
         language: system
         types: [python]
       - id: ruff-check
         name: ruff check
-        entry: uv run ruff check --fix
+        entry: uv run --extra dev ruff check --fix
         language: system
         types: [python]
       - id: pytest
         name: pytest unit tests
-        entry: uv run pytest tests/unit -v
+        entry: uv run --extra dev --extra llm pytest tests/unit -v
         language: system
         types: [python]
         pass_filenames: false
