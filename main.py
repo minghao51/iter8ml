@@ -44,9 +44,10 @@ def run(
     experiment_config = None
     if config:
         spec = importlib.util.spec_from_file_location("experiment_config", config)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        experiment_config = getattr(module, "config", None)
+        if spec and spec.loader:
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            experiment_config = getattr(module, "config", None)
 
     if experiment_config is None:
         experiment_config = ExperimentConfig(

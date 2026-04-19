@@ -80,7 +80,7 @@ class Evaluator:
             **model_kwargs: Passed to model_cls constructor.
         """
         cv = get_cv_split(self.cv_strategy, self.cv_folds)
-        fold_scores = {m: [] for m in self.metrics}
+        fold_scores: dict[str, list[float]] = {m: [] for m in self.metrics}
         model_task = task or self.task
 
         # Cache metric functions outside the fold loop

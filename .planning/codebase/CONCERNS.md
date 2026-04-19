@@ -1,35 +1,35 @@
 # Concerns
 
-## HIGH SEVERITY
-
-### main.py Monolith
-- `main.py` (~6500 lines) — extremely large entry point doing too much
-- Needs split into smaller modules (CLI commands, config loading, orchestration)
-
-### Secret Management
-- Environment variables in `core/services/registry_service.py` and `core/services/report_service.py` lack validation
-- No secret management system — configs in `configs/experiment.py` may have insecure defaults
-
 ## MEDIUM SEVERITY
 
-### Circular Dependencies
-- Potential circular imports between `core/engine/` and `core/services/`
-- `core/engine/trainer.py` imports from services layer
+### Type Stub Gaps
+- Many optional dependencies (polars, optuna, catboost, etc.) lack type stubs
+- Causes ~92 mypy errors, mostly import-not-found and import-untyped
+- Currently mitigated with `ignore_missing_imports = true`
 
 ### Error Handling
-- Bare `except` clauses in `core/engine/trainer.py`
+- Bare `except` clause in `core/engine/trainer.py:241`
 - Missing custom exceptions in `core/models/base.py`
 
-### Performance
-- Synchronous blocking calls in `core/engine/trainer.py`
-- Missing pagination in `core/services/registry_service.py`
-- Potential N+1 pattern in `core/engine/hpo.py` hyperparameter sweeps
+### Example Config Type Safety
+- `configs/examples/credit_risk.py` previously used strings instead of enum values
+- Should consistently use TaskType, CVStrategy, TrackerType enums
 
 ## LOW SEVERITY
 
 ### Test Coverage Gaps
-- No tests for: `mcp_server/tools.py`, `core/engine/state_observer.py`, `core/models/tabular_foundation/tabpfn_model.py`
-- Limited integration tests for model selection and training pipeline
+- No tests for: `mcp_server/tools.py`, `core/models/tabular_foundation/tabpfn_model.py`
+- Integration tests for model selection and training pipeline exist but may need expansion
 
 ### No Explicit Tech Debt Tracking
 - Zero TODO/FIXME/HACK/XXX comments found in source — debt not tracked in code
+
+## RESOLVED
+
+### main.py Monolith
+- Previously was ~6500 lines; refactored to ~200 lines with proper CLI commands
+- Each command (init, run, leaderboard, registry, hardware, drift, state, hpo) is now a discrete function
+
+### Secret Management
+- Environment variables in services layer now use pydantic-settings for validation
+- No secret management system — but no obvious security holes either

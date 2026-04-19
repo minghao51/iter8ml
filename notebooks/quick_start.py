@@ -44,11 +44,12 @@ print(result.stdout)
 # ## 3. Run a Quick Experiment
 
 from configs.experiment import ExperimentConfig
+from core.constants import TaskType
 from core.engine.trainer import Trainer
 
 config = ExperimentConfig(
     name="quick_start",
-    task="classification",
+    task=TaskType.CLASSIFICATION,
     target_col="target",
     data_path="",
     models=["catboost", "lightgbm"],
@@ -81,14 +82,23 @@ print(result.stdout)
 from core.engine.hpo import optimize_model
 from core.data.adapter import DataAdapter
 from core.engine.evaluator import Evaluator
-from core.engine.trainer import _get_model_class
+from core.models.factory import get_model_class
 from configs.model_configs import ModelConfigs
+from configs.experiment import ExperimentConfig
+from core.constants import TaskType
 
 adapter = DataAdapter(target_format="numpy")
 X, y = adapter.transform(df_cls, "target")
 
-evaluator = Evaluator(task="classification", cv_folds=3)
-model_cls = _get_model_class("catboost")
+eval_config = ExperimentConfig(
+    name="hpo",
+    task=TaskType.CLASSIFICATION,
+    target_col="target",
+    data_path="data/classification_sample.parquet",
+    cv_folds=3,
+)
+evaluator = Evaluator(eval_config)
+model_cls = get_model_class("catboost")
 model_configs = ModelConfigs()
 search_space = model_configs.catboost.hpo_search_space()
 

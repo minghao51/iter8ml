@@ -10,18 +10,19 @@ Usage:
 """
 
 from configs.experiment import ExperimentConfig
+from core.constants import CVStrategy, TaskType, TrackerType
 
 config = ExperimentConfig(
     name="credit_risk_v2",
-    task="classification",
+    task=TaskType.CLASSIFICATION,
     target_col="default",
     data_path="data/credit_risk_v2.parquet",
     cv_folds=5,
-    cv_strategy="stratified",
+    cv_strategy=CVStrategy.STRATIFIED,
     run_hpo=False,
     hpo_n_trials=100,
     models="auto",
     metrics=["roc_auc", "f1_macro", "log_loss"],
-    tracker="jsonl",
+    tracker=TrackerType.JSONL,
     run_quality_audit=True,
 )

@@ -5,8 +5,11 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
+from configs.experiment import ExperimentConfig
+from core.constants import from_task_type
 from core.data.loaders import load_data
 from core.engine.state_observer import StateObserver
+from core.engine.trainer import Trainer
 from core.models.factory import get_model_class
 from core.services.registry_service import RegistryService
 from core.utils.jsonl import load_events
@@ -39,14 +42,11 @@ def get_column_stats(data_path: str) -> str:
 @mcp.tool()
 def run_baseline(data_path: str, target_col: str, task: str = "classification") -> str:
     """Triggers a TabPFN/CatBoost quick baseline run."""
-    from configs.experiment import ExperimentConfig
-    from core.engine.trainer import Trainer
-
     df = load_data(data_path)
 
     config = ExperimentConfig(
         name="baseline",
-        task=task,
+        task=from_task_type(task),
         target_col=target_col,
         data_path=data_path,
         models=["tabpfn", "catboost"],
