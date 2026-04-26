@@ -8,9 +8,9 @@ functions in core/ are already ZenML-compatible as steps.
 #
 # import polars as pl
 #
-# from configs.experiment import ExperimentConfig
-# from core.data.loaders import load_parquet
-# from core.engine.trainer import Trainer
+# from tabular_blueprint.config import ExperimentConfig
+# from tabular_blueprint.data.loaders import load_parquet
+# from tabular_blueprint.engine.trainer import Trainer
 #
 #
 # @step

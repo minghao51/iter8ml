@@ -33,7 +33,7 @@ print(df_cls.describe())
 # %% [markdown]
 # ## 2. Initialize Workspace
 
-from main import app
+from tabular_blueprint.cli import app
 from typer.testing import CliRunner
 
 runner = CliRunner()
@@ -43,9 +43,9 @@ print(result.stdout)
 # %% [markdown]
 # ## 3. Run a Quick Experiment
 
-from configs.experiment import ExperimentConfig
-from core.constants import TaskType
-from core.engine.trainer import Trainer
+from tabular_blueprint.config import ExperimentConfig
+from tabular_blueprint.constants import TaskType
+from tabular_blueprint.engine.trainer import Trainer
 
 config = ExperimentConfig(
     name="quick_start",
@@ -79,13 +79,13 @@ print(result.stdout)
 # %% [markdown]
 # ## 5. Hyperparameter Optimization
 
-from core.engine.hpo import optimize_model
-from core.data.adapter import DataAdapter
-from core.engine.evaluator import Evaluator
-from core.models.factory import get_model_class
-from configs.model_configs import ModelConfigs
-from configs.experiment import ExperimentConfig
-from core.constants import TaskType
+from tabular_blueprint.engine.hpo import optimize_model
+from tabular_blueprint.data.adapter import DataAdapter
+from tabular_blueprint.engine.evaluator import Evaluator
+from tabular_blueprint.models.factory import get_model_class
+from tabular_blueprint.models.model_configs import ModelConfigs
+from tabular_blueprint.config import ExperimentConfig
+from tabular_blueprint.constants import TaskType
 
 adapter = DataAdapter(target_format="numpy")
 X, y = adapter.transform(df_cls, "target")
@@ -119,7 +119,7 @@ print(f"Best value: {hpo_result['best_value']:.4f}")
 # %% [markdown]
 # ## 6. Data Quality Audit
 
-from core.data.quality import audit_data_quality
+from tabular_blueprint.data.quality import audit_data_quality
 
 quality_report = audit_data_quality(df_cls, "target", enabled=True)
 print(f"Quality audit: {quality_report['n_issues']} issues found")
@@ -143,7 +143,7 @@ df_shifted = df_shifted.with_columns(target=pl.Series(y_shifted))
 df_cls.write_parquet("workspace/reference.parquet")
 df_shifted.write_parquet("workspace/new_batch.parquet")
 
-from core.monitoring.drift import DriftDetector
+from tabular_blueprint.monitoring.drift import DriftDetector
 
 detector = DriftDetector(df_cls)
 report = detector.detect(df_shifted)
