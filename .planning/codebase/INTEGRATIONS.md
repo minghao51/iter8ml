@@ -1,116 +1,150 @@
-# Integrations - Tabular Blueprint
+# Integrations
 
-## External APIs & Services
+> Last updated: 2026-04-23
 
-### LLM Integration
-- **Anthropic** >=0.25 - LLM provider (optional dependency)
-- **MCP** >=0.9 - Model Context Protocol for LLM interactions
-- **File**: pyproject.toml (optional dependencies section)
+## External APIs
 
-### Experiment Tracking
-- **MLflow** >=2.13 - Experiment tracking and model registry
-  - **Docker service**: mlflow (port 5000)
-  - **Volume**: mlflow-data:/mlruns
-  - **Command**: mlflow server --host 0.0.0.0 --backend-store-uri /mlruns
-  - **File**: docker-compose.yml
+### LLM APIs (via LiteLLM)
 
-### Monitoring & Reporting
-- **WandB** >=0.17 - Experiment tracking (optional)
+- **LiteLLM** (`litellm>=1.40`, optional `llm` extra) — unified LLM API client
+  - Configured in `src/tabular_blueprint/llm/__init__.py`
+  - Default model: `claude-sonnet-4-20250514`
+  - Supports any LiteLLM-compatible provider (OpenAI, Anthropic, etc.)
+  - API key via environment variable (`LLMAgentConfig.api_key_env`)
+  - Optional custom base URL (`LLMAgentConfig.api_base`)
+  - Used for: SHAP explanation, performance commentary, feature summaries
+  - Graceful degradation when disabled or unavailable
 
-### Pipeline Orchestration
-- **ZenML** >=0.57 - ML pipeline orchestration (optional)
-- **Hamilton** >=1.70 - Workflow orchestration (optional)
+### Model Context Protocol (MCP)
 
-## Databases & Storage
+- **MCP SDK** (`mcp>=0.9`, optional `llm` extra) — exposes tools for LLM agent integration
+  - Server: `src/tabular_blueprint/mcp/tools.py` using `FastMCP`
+  - Exposes 8 tools: `get_experiment_state`, `get_column_stats`, `run_baseline`, `run_hpo`, `get_event_log`, `registry_show`, `registry_promote`, `detect_drift`, `export_champion`
+  - Allows external LLM agents to drive the ML workflow programmatically
 
-### Local Storage
-- **Workspace** - Local directory for experiments
-  - Path: `/workspace/`
-  - Subdirectories:
-    - `artifacts/` - Model artifacts
-    - `experiments.jsonl` - Experiment logs
-    - `registry.json` - Model registry
+## Databases
 
-### Model Registry
-- **JSON-based registry** - Local model registry at `workspace/registry.json`
-  - Stores model metadata, scores, and registration timestamps
+### SQLite
 
-## Compute & Hardware
+- Used for data ingestion via `src/tabular_blueprint/data/loaders.py::load_sqlite`
+- Security-validated: only SELECT queries, no multi-statement
+- Connects via `sqlite3` + `pl.read_database()`
+- Used for loading training data from `.db` files
 
-### GPU Support
-- **NVIDIA CUDA** 12.4.0 - GPU acceleration
-- **Docker configuration**: GPU-enabled service in docker-compose.yml
-  ```yaml
-  services:
-    app:
-      # ...
-      deploy:
-        resources:
-          reservations:
-            devices:
-              - driver: nvidia
-                count: all
-                capabilities: [gpu]
-  ```
+### File-Based Storage
 
-### Hardware Detection
-- **HardwareProfile** class - Detects available hardware (CPU, GPU, VRAM)
-- **File**: main.py (hardware command)
+- **JSONL** (`workspace/experiments.jsonl`) — primary experiment log
+  - Rotation: max 100MB, 5 backups (`src/tabular_blueprint/engine/tracker.py`)
+  - Thread-safe with locking
+- **JSON** (`workspace/registry.json`) — model champion registry
+  - File-lock protected via `fcntl` (`src/tabular_blueprint/services/registry_service.py`)
+- **JSON** (`workspace/registry.lock`) — lock file for concurrent registry access
 
-## Data Processing
+## Experiment Tracking
 
-### Data Loading
-- **Polars** - Primary DataFrame library
-- **skrub** - Preprocessing utilities
-- **Custom loaders** - Located in `core/data/loaders.py`
+### W&B (Weights & Biases)
 
-### Model Management
-- **Model registry** - Built-in model registry
-- **ReportService** - Experiment reporting and leaderboard generation
-- **File**: main.py (leaderboard and registry commands)
+- **wandb** (`wandb>=0.17`, optional `wandb` extra)
+  - Tracker: `src/tabular_blueprint/engine/tracker.py::WandbTracker`
+  - Mirrors all events to W&B runs
+  - Logs metrics, params, artifacts
+  - Default project: `tabular-blueprint`
+  - Selected via `ExperimentConfig.tracker = TrackerType.WANDB`
+
+### MLflow
+
+- **mlflow** (`mlflow>=2.13`, optional `mlflow` extra)
+  - Tracker: `src/tabular_blueprint/engine/tracker.py::MLflowTracker`
+  - Logs metrics, params, artifacts, dicts
+  - Default experiment: `tabular-blueprint`
+  - Docker service: `ghcr.io/mlflow/mlflow:v2.13.0` on port 5000
+  - Backend store: `/mlruns` volume
+  - Selected via `ExperimentConfig.tracker = TrackerType.MLFLOW`
+
+### ZenML
+
+- **zenml** (`zenml>=0.57`, optional `zenml` extra) — listed but no source integration found yet
+
+## Cloud Services
+
+### NVIDIA GPU (CUDA)
+
+- **Docker**: `nvidia/cuda:12.4.0-runtime-ubuntu22.04` base image
+- **GPU passthrough**: configured in `docker-compose.yml` with NVIDIA device driver
+- **Detection**: `src/tabular_blueprint/config.py::HardwareProfile.detect()` via `torch.cuda`
+- **Models requiring GPU**: TabPFN (enforces CUDA), FT-Transformer (uses Accelerate)
+- **Auto-fallback**: ModelSelector routes to CPU models when GPU unavailable or low VRAM
+
+## Data Sources
+
+### File Formats
+
+- **CSV** — `src/tabular_blueprint/data/loaders.py::load_csv` via `pl.read_csv`
+- **Parquet** — `src/tabular_blueprint/data/loaders.py::load_parquet` via `pl.read_parquet`
+- **SQLite** — `src/tabular_blueprint/data/loaders.py::load_sqlite`
+
+### Data Adapters
+
+- **NumPy** — GBDT models (default)
+- **PyTorch Tensor** — deep learning models via Polars native `to_torch()`
+- **HuggingFace Dataset** — transformer models via `datasets` library
+
+## Model Persistence
+
+### Artifact Storage
+
+- **Filesystem** — `workspace/artifacts/` directory
+- **CatBoost**: native `.cbm` format via `save_model/load_model`
+- **LightGBM/XGBoost**: native binary formats
+- **PyTorch** (FT-Transformer): state dict via `accelerator.save` or `torch.save`
+- **TabPFN**: pickle serialization
+- **Export**: `src/tabular_blueprint/services/export_service.py` packages models as portable directories with preprocessing pipeline + predictor script
 
 ## Monitoring & Drift Detection
 
-### Drift Detection
-- **Custom DriftDetector** - Distribution drift detection
-- **File**: main.py (drift command)
-- **Features**:
-  - Statistical testing for distribution shifts
-  - Column-by-column drift reporting
-  - P-value and test statistics
+### Statistical Tests (built-in, no external service)
 
-## CLI Interface
+- **KS Test** — numeric column drift (`src/tabular_blueprint/monitoring/drift.py` via `scipy.stats.ks_2samp`)
+- **Chi-squared Test** — categorical column drift (`src/tabular_blueprint/monitoring/drift.py` via `scipy.stats.chi2_contingency`)
 
-### Commands
-- **init** - Initialize workspace
-- **run** - Run experiments
-- **leaderboard** - Show experiment results
-- **registry** - Manage model registry
-- **hardware** - Show hardware profile
-- **drift** - Detect data drift
-- **state** - Generate experiment state
-- **hpo** - Hyperparameter optimization
+### PSI Drift
 
-### Configuration
-- **ExperimentConfig** - Experiment configuration
-- **HardwareProfile** - Hardware profile configuration
-- **File**: configs/experiment.py, configs/hardware.py
+- **PSI (Population Stability Index)** — `src/tabular_blueprint/monitoring/psi_drift.py`
+- Thresholds: <0.1 negligible, 0.1–0.25 moderate, >0.25 severe
 
-## Integration Points
+### Domain Classifier Drift
 
-### Data Flow
-1. Data loaded via `core/data/loaders.py`
-2. Experiments configured via `configs/experiment.py`
-3. Models trained via `core/engine/trainer.py`
-4. Results stored in `workspace/experiments.jsonl`
-5. Registry updated in `workspace/registry.json`
+- **Domain Classifier** — `src/tabular_blueprint/monitoring/domain_classifier.py`
+- Trains a classifier to distinguish reference vs. new data
+- Uses AUC score to detect drift (threshold default: 0.7)
 
-### External Service Integration
-- No external APIs required - designed for local execution
-- Optional integrations available: MLflow, WandB, ZenML
-- GPU support through local NVIDIA CUDA installation
+## Explainability
 
-## Docker Services
-- **app** - Main application service
-- **mlflow** - MLflow server for experiment tracking
-- **Volumes**: workspace-data, mlflow-data
+### SHAP
+
+- **SHAP** library (`shap>=0.44`, optional `shap` extra)
+  - `src/tabular_blueprint/monitoring/explainability.py`
+  - TreeExplainer for GBDT models
+  - KernelExplainer for other models
+  - Generates beeswarm and dependence plots (matplotlib, saved as PNG)
+
+## Data Quality
+
+### Cleanlab
+
+- **Cleanlab** (`cleanlab>=2.6`)
+  - `src/tabular_blueprint/data/quality.py`
+  - Label noise detection via `find_label_issues` and `get_label_quality_scores`
+  - Auto-cleaning with configurable threshold
+
+## Webhooks
+
+No incoming or outgoing webhooks. The system is CLI-driven and file-based.
+
+## Email/Notifications
+
+No email or notification integrations. All output is via CLI (Typer/Rich) or file-based reports.
+
+## CDN/Storage
+
+No CDN integration. All storage is local filesystem (`workspace/` directory).

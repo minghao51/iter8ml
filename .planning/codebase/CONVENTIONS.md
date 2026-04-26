@@ -1,278 +1,231 @@
-# Codebase Conventions
+# Conventions
 
-Derived from pyproject.toml, source files, and test files.
+> Last updated: 2026-04-23
 
-## Linting and Formatting
+## Code Style
 
-### Ruff (configured in pyproject.toml)
+### Formatting
 
-- **Line length:** 100
-- **Target version:** Python 3.11
-- **Enabled rule sets:**
-  - `E` -- pycodestyle errors
-  - `F` -- pyflakes
-  - `I` -- isort (import ordering)
-  - `UP` -- pyupgrade (modernize syntax)
-  - `B` -- flake8-bugbear
-  - `SIM` -- flake8-simplify
-- **Per-file ignores:**
-  - `main.py`: `B008` (typer requires `Option()` in function signatures)
-  - `notebooks/*`: `E402`, `I001` (notebook-style imports per cell)
-- No separate ruff.toml or .ruff.toml file -- all config is in `[tool.ruff]` in pyproject.toml.
+- **Formatter**: Ruff (`ruff format`) — replaces Black
+- **Line length**: 100 characters (`pyproject.toml` → `[tool.ruff] line-length = 100`)
+- **Target Python**: 3.11+ (`target-version = "py311"`)
+- **Indentation**: 4 spaces
+- **Quotes**: Double quotes (Ruff default)
+- **Trailing commas**: Follows Ruff defaults (multi-line collections)
 
-### Mypy
+### Linting
 
-- Not configured in pyproject.toml. No mypy section found. Type checking relies on inline annotations only.
+- **Linter**: Ruff (`ruff check`)
+- **Config**: `pyproject.toml` → `[tool.ruff.lint]`
+- **Selected rules** (`select`): `E` (pycodestyle errors), `F` (pyflakes), `I` (isort), `UP` (pyupgrade), `B` (flake8-bugbear), `SIM` (flake8-simplify), `C4` (flake8-comprehensions), `PT` (flake8-pytest-style), `RUF` (Ruff-specific)
+- **Fixable**: `["ALL"]` — all rules are auto-fixable via `ruff check --fix`
+- **Per-file ignores**:
+  - `src/tabular_blueprint/cli.py`: `B008` (function-call-in-default-argument — needed for Typer)
+  - `notebooks/*`: `E402` (import not at top), `I001` (import sorting)
+
+### Pre-commit
+
+- **Config**: `.pre-commit-config.yaml`
+- **Hooks**:
+  - `trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, `debug-statements` (pre-commit-hooks v6.0.0)
+  - `ruff` (with `--fix`), `ruff-format` (astral-sh/ruff-pre-commit v0.11.2)
+  - Local `pytest` hook: runs `uv run --group dev --extra llm pytest tests/unit -v` on all Python files
+
+## Type System
+
+- **Config**: `pyproject.toml` → `[tool.mypy]`
+- **Python version**: 3.11
+- **Strictness**: `disallow_untyped_defs = true` — all function signatures must have type annotations
+- **Pragmatism**: `ignore_missing_imports = true` — third-party libs without stubs are not blocked
+- **Package marker**: `src/tabular_blueprint/py.typed` (PEP 561 compliant)
+- **Modern union syntax**: Uses `X | Y` instead of `Union[X, Y]` (Python 3.11+ style, enforced by `UP` rule)
+- **Common type patterns**:
+  - `dict[str, Any]` instead of `Dict[str, Any]`
+  - `list[str]` instead of `List[str]`
+  - `str | None` instead of `Optional[str]`
+  - `ClassVar` for class-level constants (e.g., `Trainer._GBDT_PRIORITY`)
 
 ## Naming Conventions
 
-| Element            | Convention       | Example                                      |
-|--------------------|------------------|----------------------------------------------|
-| Modules            | snake_case       | `evaluator.py`, `report_service.py`, `hpo.py`|
-| Classes            | PascalCase       | `Evaluator`, `ExperimentConfig`, `Trainer`   |
-| Functions          | snake_case       | `create_study()`, `get_model_class()`        |
-| Constants (module) | UPPER_SNAKE      | `METRICS_REGISTRY`, `_MODEL_REGISTRY`        |
-| Private helpers    | Leading underscore | `_validate_bounds()`, `_is_numeric()`       |
-| Enums              | PascalCase members | `TaskType.CLASSIFICATION`, `CVStrategy.KFOLD`|
-| Dataclasses        | PascalCase       | `LeaderboardEntry`, `PromotionResult`        |
+### Variables and Functions
 
-### Module-level naming
+- **snake_case**: All variables, functions, methods (e.g., `cv_scores`, `get_model_class`, `detect_leakage`)
+- **Private methods**: Single underscore prefix (e.g., `_train_single_model`, `_fit_quick_gbdt`, `_to_numpy`)
+- **Double-underscore**: Not used
 
-- Registry dicts use `UPPER_SNAKE_CASE` (e.g., `METRICS_REGISTRY`, `_MODEL_REGISTRY`).
-- Caches use `UPPER_SNAKE_CASE` with a leading underscore for module-private (e.g., `_MODEL_CLASS_CACHE`).
-- Sentinel singletons use `UPPER_SNAKE_CASE` (e.g., `WORKSPACE_DIR`).
+### Classes
 
-## Import Ordering
+- **PascalCase**: All classes (e.g., `ExperimentConfig`, `DriftDetector`, `JSONLTracker`, `BaseGBDTModel`)
+- **Suffix patterns**:
+  - `*Model` — model implementations (e.g., `LightGBMModel`, `CatBoostModel`)
+  - `*Service` — service layer classes (e.g., `RegistryService`, `ExportService`, `ReportService`)
+  - `*Detector` — monitoring components (e.g., `DriftDetector`, `PSIDriftDetector`)
+  - `*Tracker` — experiment tracking backends (e.g., `JSONLTracker`, `WandbTracker`, `MLflowTracker`)
+  - `*Result` / `*Report` — Pydantic/dataclass result objects (e.g., `DriftReport`, `PromotionResult`)
+  - `*Config` — configuration models (e.g., `ExperimentConfig`, `HardwareProfile`)
+  - `*Error` — exception hierarchy (e.g., `TabularBlueprintError`, `ModelFitError`)
 
-Ruff's `I` rule enforces isort-style ordering. Observed pattern:
+### Constants and Enums
 
-```python
-# 1. Standard library
-import hashlib
-import json
-from pathlib import Path
+- **UPPER_SNAKE_CASE**: Module-level constants (e.g., `BASELINE_MODELS`, `WORKSPACE_DIR`, `METRICS_REGISTRY`, `LOWER_IS_BETTER_METRICS`)
+- **Enums**: PascalCase class names, UPPER_SNAKE_CASE members (e.g., `TaskType.CLASSIFICATION`, `CVStrategy.STRATIFIED`)
+- Enum values are lowercase strings (e.g., `"classification"`, `"kfold"`)
 
-# 2. Third-party
-import numpy as np
-import polars as pl
-from pydantic import BaseModel, Field
+### Files and Directories
 
-# 3. Local / project
-from configs.experiment import ExperimentConfig
-from core.constants import TaskType
-from core.engine.evaluator import Evaluator
+- **Source files**: `snake_case.py` (e.g., `feature_engine.py`, `psi_drift.py`, `domain_classifier.py`)
+- **Test files**: `test_{module}.py` (e.g., `test_drift.py`, `test_baselines.py`, `test_model_factory.py`)
+- **Packages**: `snake_case` directories with `__init__.py` (e.g., `data/`, `models/`, `engine/`, `monitoring/`, `services/`, `utils/`, `pipelines/`, `mcp/`, `llm/`)
+
+## Import Patterns
+
+### Organization
+
+Imports follow Ruff's `I` (isort) rule with these groups (separated by blank lines):
+
+1. **Standard library**: `import json`, `from pathlib import Path`, `from typing import Any`
+2. **Third-party**: `import numpy as np`, `import polars as pl`, `from pydantic import BaseModel`
+3. **First-party**: `from tabular_blueprint.config import ExperimentConfig`
+
+### Conventions
+
+- **Absolute imports** for first-party code: `from tabular_blueprint.config import ExperimentConfig`
+- **Relative imports not used** in source code
+- **Lazy imports** for optional/heavy dependencies inside function bodies to avoid import-time failures:
+  - `import torch` inside `HardwareProfile.detect()`
+  - `from cleanlab.filter import find_label_issues` inside `audit_data_quality()`
+  - `import lightgbm as lgb` at module level (but guarded by model-specific paths)
+- **`noqa: E402`** used sparingly when module-level initialization forces late imports (e.g., `trainer.py:16-34`)
+- **Common aliases**: `numpy as np`, `polars as pl`, `lightgbm as lgb`
+
+## Error Handling
+
+### Exception Hierarchy
+
+Defined in `src/tabular_blueprint/exceptions.py`:
+
+```
+TabularBlueprintError (base)
+├── DataLoadError     — data loading/validation failures
+├── ModelFitError     — model training failures
+└── RegistryError     — registry operation failures
 ```
 
-- Blank line between each group.
-- Within a group: alphabetical, with `import X` before `from X import Y`.
-- In `trainer.py`, post-configuration imports use `# noqa: E402` to suppress module-level-import-not-at-top warnings, since `HardwareProfile.configure_omp_threads()` must run first.
+### Error Context
 
-## Type Hint Usage
-
-### Union syntax (Python 3.10+ style)
-
-The codebase uses the `X | Y` union syntax (not `Union[X, Y]`) everywhere:
-
+All custom exceptions accept a `context` keyword dict:
 ```python
-def load(path: str | Path) -> dict[str, Any] | None: ...
-def evaluate(self, ..., task: str | None = None) -> dict[str, float]: ...
-search_space: dict | None = None
+raise ModelFitError("Model catboost failed", context={"model": "catboost", "error": str(e)})
 ```
 
-### Protocols (structural subtyping)
+### `@track_errors` Decorator
 
-`core/models/base.py` uses `typing.Protocol` for model interface:
+A class-method decorator that:
+1. Passes through `TabularBlueprintError` subclasses unchanged
+2. Converts `ValueError` → `DataLoadError`
+3. Converts `RuntimeError` → `ModelFitError`
+4. Converts all other exceptions → `ModelFitError` (with `original_type` context)
+5. Logs error events to the instance's tracker before re-raising
 
+Usage:
 ```python
-class AbstractModel(Protocol):
-    def fit(self, X: np.ndarray, y: np.ndarray, **kwargs) -> None: ...
-    def predict(self, X: np.ndarray) -> np.ndarray: ...
-    def predict_proba(self, X: np.ndarray) -> np.ndarray | None: ...
-    def save(self, path: str) -> None: ...
-    def load(self, path: str) -> None: ...
-
-    @property
-    def model_name(self) -> str: ...
+class Trainer:
+    @track_errors()
+    def _train_single_model(self, ...):
+        ...
 ```
 
-### Abstract base classes
+### CLI Error Handling
 
-`core/models/gbdt_base.py` uses `abc.ABC` / `abc.abstractmethod` for GBDT models:
+- Typer CLI uses `typer.Exit(1)` for graceful exits
+- Catches `ValueError` / `FileNotFoundError` and converts to user-friendly messages
+- Uses `raise ... from e` pattern for exception chaining throughout
 
-```python
-class BaseGBDTModel:
-    @abstractmethod
-    def _build_params(self) -> dict: ...
-    @abstractmethod
-    def _create_model(self, params: dict): ...
-```
+## Logging and Tracking
 
-### Pydantic for config
+### Structured Event Logging
 
-`ExperimentConfig` in `configs/experiment.py` uses Pydantic v2 `BaseModel` with `model_validator` and `field_serializer` decorators. Enums (`TaskType`, `CVStrategy`, `TrackerType`) are used directly as field types.
+- **No use of Python's `logging` module** — all tracking goes through the `Tracker` protocol
+- **Tracker Protocol** (`src/tabular_blueprint/engine/tracker.py`):
+  - `log_event(event: dict)` — primary method, adds `run_id` and `timestamp` automatically
+  - `log_metrics(metrics: dict)` — convenience: wraps as `{"event": "metrics", ...}`
+  - `log_params(params: dict)` — convenience: wraps as `{"event": "params", ...}`
+  - `log_artifact(path: str)` — convenience: wraps as `{"event": "artifact", ...}`
+  - `finish()` — logs `run_completed` and clears run ID
 
-### Generic containers
+### JSONL Tracker (Default)
 
-All dict/list types use lowercase generics (`dict[str, float]`, `list[str]`), not `Dict`, `List`.
+- Writes to `workspace/experiments.jsonl`
+- Thread-safe (uses `threading.Lock`)
+- Log rotation: max 100MB per file, 5 backup files
+- Events include structured event types: `experiment_started`, `model_completed`, `baseline_completed`, `drift_check`, `leakage_audit`, `noise_cleaned`, `shap_explainability`, `metrics`, `params`, `run_completed`, etc.
 
-## Error Handling Patterns
+### Console Output
 
-### ValueError for business logic validation
+- CLI uses `typer.echo()` for plain text, `rich.console.Console` and `rich.table.Table` for formatted output
+- Rich is used for colored warnings and tables (e.g., experiment diff, leaderboard)
 
-The primary exception type. Used for invalid arguments, unknown model names, bad search spaces:
+## Code Patterns
 
-```python
-raise ValueError(f"Unknown model '{model_name}'. Available models: {available}")
-raise ValueError(f"Invalid search space for '{param_name}': bounds must be numeric")
-raise ValueError(f"Unsupported file format: {path.suffix}. Supported: .csv, .parquet")
-```
+### Pydantic Models for Configuration and Data
 
-### FileNotFoundError for missing files
+- `ExperimentConfig(BaseModel)` — central config with validators and serializers
+- `HardwareProfile(BaseModel)` — hardware detection with `@classmethod detect()`
+- Drift/monitoring results use Pydantic `BaseModel` (e.g., `DriftReport`, `ColumnDriftResult`)
+- Service results use `@dataclass(frozen=True)` (e.g., `PromotionResult`, `LeaderboardEntry`)
 
-```python
-if not db_path.exists():
-    raise FileNotFoundError(f"Database file not found: {db_path}")
-```
+### Protocol-Based Interfaces
 
-### Exception chaining with `from e`
+- `AbstractModel(Protocol)` in `src/tabular_blueprint/models/base.py` — structural subtyping for models
+- `Tracker(Protocol)` in `src/tabular_blueprint/engine/tracker.py` — pluggable tracking backends
+- No ABC inheritance; Protocols used for duck-typing contracts
 
-Used consistently to preserve original exception context:
+### Template Method for GBDT Models
 
-```python
-except json.JSONDecodeError as e:
-    raise ValueError(f"Invalid JSON at line {line_num} in {path}: {e}") from e
-except sqlite3.Error as e:
-    raise ValueError(f"Database error: {e}") from e
-```
+- `BaseGBDTModel` (ABC) in `src/tabular_blueprint/models/gbdt_base.py`
+- Subclasses implement: `_build_params()`, `_create_model()`, `_train_model()`, `_predict_proba_impl()`, `load()`, `model_name`
+- Common `fit()`, `predict_proba()`, `save()` provided by base
 
-### Try/except in HPO objective
+### Lazy Factory Pattern
 
-The HPO module catches `optuna.TrialPruned` separately to re-raise, and wraps other exceptions:
+- `get_model_class(name)` in `src/tabular_blueprint/models/factory.py` — lazy imports with caching
+- Model registry maps string names → `(module_path, class_name)` tuples
+- Avoids importing all ML frameworks at startup
 
-```python
-try:
-    scores = evaluator.evaluate(...)
-except optuna.TrialPruned:
-    raise
-except Exception as e:
-    raise optuna.TrialPruned(f"Evaluation failed... Error: {e}") from e
-```
+### Data Format Adapter
 
-### Graceful degradation in Trainer
+- `DataAdapter` converts Polars DataFrames to model-specific formats (numpy, tensor, dataset)
+- Single point of truth for format conversion
 
-The trainer wraps individual model training in try/except and records failures as events rather than crashing:
+### Decorator Pattern
 
-```python
-except Exception as e:
-    self.tracker.log_event({"event": "model_failed", "model": model_name, "error": str(e)})
-    return {"error": str(e)}
-```
+- `@track_errors()` — error translation and tracking (see Error Handling above)
 
-## Logging and Event Tracking
+### Singleton Constants
 
-### No stdlib logging
+- Enum-based configuration in `constants.py` (e.g., `TaskType`, `CVStrategy`, `ModelName`, `TrackerType`)
+- Conversion functions for backward compat: `from_task_type()`, `from_cv_strategy()`, etc.
 
-The codebase does **not** use Python's `logging` module. Instead, it uses a custom `Tracker` system:
+## Shared Utilities
 
-- `JSONLTracker` writes structured events to `.jsonl` files.
-- `Tracker` is the Protocol base class.
-- Events are dicts with an `"event"` key (e.g., `"experiment_started"`, `"model_completed"`, `"model_failed"`).
+### `src/tabular_blueprint/utils/jsonl.py`
 
-### Event structure
+- `load_events(path)` — loads JSONL files, handles missing files, blank lines, malformed JSON
 
-```python
-{
-    "event": "model_completed",
-    "run_id": "exp_1713273600_a1b2c3",
-    "model": "CatBoost",
-    "task": "classification",
-    "cv_scores": {"roc_auc": 0.92, "f1_macro": 0.88},
-    "duration_seconds": 12.34,
-    "artifact_path": "workspace/artifacts/catboost_exp_...",
-    "hardware": {"device": "cuda", "vram_used_gb": 0.0},
-}
-```
+### `src/tabular_blueprint/services/report_service.py`
 
-### CLI output
+- `metric_value_is_better()` — direction-aware metric comparison
+- `metric_higher_is_better()` — checks if higher is better for a metric
+- `metric_sort_value()` — normalizes scores for descending sort
+- `resolve_primary_score()` — picks primary metric from cv_scores dict
+- `LOWER_IS_BETTER_METRICS` — set of metric names where lower values are better
 
-Uses `typer.echo()` for CLI output (no print statements).
+### `src/tabular_blueprint/data/loaders.py`
 
-## Architecture Patterns
+- `load_data(path)` — universal loader (CSV or Parquet)
+- `load_csv()`, `load_parquet()`, `load_sqlite()` — format-specific loaders
+- `get_data_hash(df)` — deterministic SHA-256 hash of DataFrame contents
 
-### Factory Pattern
+### `src/tabular_blueprint/constants.py`
 
-`core/models/factory.py` implements a lazy-import factory with a module-level registry dict and caching:
-
-```python
-_MODEL_REGISTRY = {
-    "catboost": ("core.models.conventional.catboost_model", "CatBoostModel"),
-    ...
-}
-def get_model_class(model_name: str) -> type:
-    # Lazy import + cache
-```
-
-### Strategy Pattern
-
-Cross-validation splitting uses a strategy selector:
-
-```python
-def get_cv_split(strategy: str, n_splits: int = 5):
-    if strategy == "kfold": return KFold(...)
-    elif strategy == "stratified": return StratifiedKFold(...)
-    elif strategy == "timeseries": return TimeSeriesSplit(...)
-```
-
-### Protocol (Structural Subtyping)
-
-`AbstractModel` in `core/models/base.py` is a `typing.Protocol`, not an abstract base class. Models conform structurally.
-
-### Template Method (ABC)
-
-`BaseGBDTModel` defines the skeleton (`fit`, `save`, `predict_proba`) and requires subclasses to implement `_build_params`, `_create_model`, `_train_model`, `predict`, `_predict_proba_impl`, `load`, and `model_name`.
-
-### Enum-based Configuration
-
-`core/constants.py` defines `Enum` classes for type-safe config values (`TaskType`, `CVStrategy`, `ModelName`, `TrackerType`) with converter functions (`from_task_type`, `from_cv_strategy`) that accept both strings and enum values.
-
-### Service Layer
-
-Business logic is organized into services under `core/services/`:
-
-- `RegistryService` -- model registry with file locking (`fcntl`).
-- `ReportService` -- builds structured experiment reports from JSONL logs.
-
-### Data Adapter
-
-`core/data/adapter.py` abstracts data format conversion (e.g., Polars DataFrame to NumPy arrays).
-
-## Constants and Config Patterns
-
-### Module-level constants
-
-Constants are defined at module scope with UPPER_SNAKE_CASE:
-
-```python
-# core/engine/evaluator.py
-METRICS_REGISTRY = {
-    "classification": {"roc_auc": roc_auc_score, ...},
-    "regression": {"rmse": ..., "mae": ..., "r2": ...},
-}
-
-# core/models/selector.py (class-level constants)
-TABPFN_ROW_LIMIT = 10_000
-FT_TRANSFORMER_ROW_MIN = 50_000
-```
-
-### Pydantic settings
-
-Configuration uses Pydantic v2 `BaseModel` with:
-
-- `Field(default_factory=...)` for mutable defaults.
-- `model_validator(mode="after")` for cross-field validation and defaults.
-- `field_serializer` for enum-to-string JSON serialization.
-- `Literal["auto"]` for sentinel values.
-
-### Config convention
-
-Experiment configs live in `configs/` as Python modules (not YAML/TOML). The CLI can load a config module dynamically via `importlib.util.spec_from_file_location`.
+- Enum definitions and string-to-enum conversion utilities
