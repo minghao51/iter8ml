@@ -5,7 +5,7 @@ import tempfile
 import polars as pl
 import pytest
 
-from core.data.loaders import get_data_hash, load_csv, load_parquet, load_sqlite
+from tabular_blueprint.data.loaders import get_data_hash, load_csv, load_parquet, load_sqlite
 
 
 def test_get_data_hash_consistency():

@@ -3,8 +3,8 @@
 import pytest
 from pydantic import ValidationError
 
-from configs.experiment import ExperimentConfig
-from core.constants import CVStrategy
+from tabular_blueprint.config import ExperimentConfig
+from tabular_blueprint.constants import CVStrategy
 
 
 def test_default_config():

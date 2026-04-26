@@ -4,9 +4,9 @@ import polars as pl
 import pytest
 from sklearn.datasets import make_classification, make_regression
 
-from configs.experiment import ExperimentConfig
-from core.engine.tracker import JSONLTracker
-from core.engine.trainer import Trainer
+from tabular_blueprint.config import ExperimentConfig
+from tabular_blueprint.engine.tracker import JSONLTracker
+from tabular_blueprint.engine.trainer import Trainer
 
 
 @pytest.fixture

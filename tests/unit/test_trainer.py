@@ -1,8 +1,8 @@
 """Tests for Trainer class."""
 
-from configs.experiment import ExperimentConfig
-from core.constants import TaskType
-from core.engine.trainer import Trainer
+from tabular_blueprint.config import ExperimentConfig
+from tabular_blueprint.constants import TaskType
+from tabular_blueprint.engine.trainer import Trainer
 
 
 def test_trainer_uses_registry_service(tmp_path, monkeypatch):
@@ -17,7 +17,7 @@ def test_trainer_uses_registry_service(tmp_path, monkeypatch):
         def __init__(self, registry_path):
             self.registry_path = registry_path
 
-        def update_if_better(self, key, model_name, run_id, score, artifact_path):
+        def update_if_better(self, key, model_name, run_id, score, artifact_path, metric_name=None):
             registry_calls.append(
                 {
                     "key": key,
@@ -25,6 +25,7 @@ def test_trainer_uses_registry_service(tmp_path, monkeypatch):
                     "run_id": run_id,
                     "score": score,
                     "artifact_path": artifact_path,
+                    "metric_name": metric_name,
                 }
             )
             return True
@@ -37,44 +38,41 @@ def test_trainer_uses_registry_service(tmp_path, monkeypatch):
         workspace_dir=tmp_path,
     )
 
-    # Monkey patch before creating trainer
-    import core.engine.trainer
+    # Monkey patch on the model_trainer module where RegistryService is imported
+    import tabular_blueprint.engine.model_trainer as mt
 
-    original_registry = core.engine.trainer.RegistryService
-    monkeypatch.setattr(core.engine.trainer, "RegistryService", MockRegistryService)
+    original_registry = mt.RegistryService
+    monkeypatch.setattr(mt, "RegistryService", MockRegistryService)
 
     trainer = Trainer(config)
 
-    # Test the method directly
-    result = trainer._update_champion_if_better(
-        key="test:classification",
+    result = trainer._model_trainer._update_champion(
         model_name="catboost",
         run_id="test_run",
         score=0.95,
         artifact_path="/tmp/test.pkl",
+        metric_name="roc_auc",
     )
 
-    # Verify the method was called and returns True
     assert result is True
 
-    # Verify RegistryService.update_if_better was called with correct args
     assert len(registry_calls) == 1
     call = registry_calls[0]
-    assert call["key"] == "test:classification"
+    assert "test:classification" in call["key"]
     assert call["model_name"] == "catboost"
     assert call["run_id"] == "test_run"
     assert call["score"] == 0.95
     assert call["artifact_path"] == "/tmp/test.pkl"
+    assert call["metric_name"] == "roc_auc"
 
-    # Restore original
-    monkeypatch.setattr(core.engine.trainer, "RegistryService", original_registry)
+    monkeypatch.setattr(mt, "RegistryService", original_registry)
 
 
 def test_omp_threads_configurable(monkeypatch):
     """Test that OMP threads can be configured via HardwareProfile."""
     import os
 
-    from configs.hardware import HardwareProfile
+    from tabular_blueprint.config import HardwareProfile
 
     # Test default
     thread_count = HardwareProfile.configure_omp_threads()

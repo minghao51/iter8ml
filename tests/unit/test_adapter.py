@@ -4,7 +4,7 @@ import numpy as np
 import polars as pl
 import pytest
 
-from core.data.adapter import DataAdapter
+from tabular_blueprint.data.adapter import DataAdapter
 
 
 def test_numpy_conversion():
@@ -18,10 +18,11 @@ def test_numpy_conversion():
 
 
 def test_tensor_conversion():
+    torch = pytest.importorskip("torch")
+
     df = pl.DataFrame({"a": [1.0, 2.0, 3.0], "b": [4.0, 5.0, 6.0], "target": [0, 1, 0]})
     adapter = DataAdapter(target_format="tensor")
     X, y = adapter.transform(df, "target")
-    import torch
 
     assert isinstance(X, torch.Tensor)
     assert isinstance(y, torch.Tensor)

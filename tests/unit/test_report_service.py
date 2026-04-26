@@ -2,7 +2,7 @@
 
 import json
 
-from core.services.report_service import ReportService
+from tabular_blueprint.services.report_service import ReportService
 
 
 def test_build_report_empty(tmp_path):
@@ -111,6 +111,38 @@ def test_build_report_respects_explicit_metric_override(tmp_path):
 
     assert [entry.model for entry in report.leaderboard] == ["Fast", "Balanced"]
     assert report.leaderboard[0].primary_metric == "f1_macro"
+
+
+def test_build_report_sorts_lower_is_better_metric_ascending(tmp_path):
+    log_path = tmp_path / "experiments.jsonl"
+    events = [
+        {
+            "event": "model_completed",
+            "run_id": "run_worse",
+            "model": "Worse",
+            "task": "regression",
+            "cv_scores": {"rmse": 10.0},
+            "timestamp": "2026-04-04T00:00:00Z",
+        },
+        {
+            "event": "model_completed",
+            "run_id": "run_better",
+            "model": "Better",
+            "task": "regression",
+            "cv_scores": {"rmse": 2.0},
+            "timestamp": "2026-04-05T00:00:00Z",
+        },
+    ]
+    log_path.write_text("\n".join(json.dumps(event) for event in events) + "\n")
+
+    report = ReportService(
+        log_path=log_path,
+        registry_path=tmp_path / "registry.json",
+    ).build_report(metric="rmse")
+
+    assert [entry.model for entry in report.leaderboard] == ["Better", "Worse"]
+    assert report.leaderboard[0].primary_metric == "rmse"
+    assert report.leaderboard[0].primary_score == 2.0
 
 
 def test_build_report_includes_registry_summary(tmp_path):

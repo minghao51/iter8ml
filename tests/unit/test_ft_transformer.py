@@ -1,5 +1,6 @@
 """Tests for FT-Transformer model."""
 
+import importlib.util
 import os
 import warnings
 
@@ -10,24 +11,33 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-import torch
+from sklearn.datasets import make_classification, make_regression
 
-from configs.model_configs import FTTransformerConfig
-from core.models.deep.ft_transformer import FTTransformerModel
+torch = pytest.importorskip("torch")
+_HAS_ACCELERATE = importlib.util.find_spec("accelerate") is not None
+pytestmark = pytest.mark.skipif(not _HAS_ACCELERATE, reason="accelerate not installed")
 
 
 @pytest.fixture
 def sample_data():
-    from sklearn.datasets import make_classification
-
     X, y = make_classification(n_samples=200, n_features=10, random_state=42)
     return X, y
 
 
+def _model_types():
+    """Resolve model classes lazily to support optional dependencies."""
+    from tabular_blueprint.models.deep.ft_transformer import FTTransformerModel
+    from tabular_blueprint.models.model_configs import FTTransformerConfig
+
+    return FTTransformerModel, FTTransformerConfig
+
+
 def _make_model(**kwargs):
     """Create model with explicit device handling."""
+    FTTransformerModel, FTTransformerConfig = _model_types()
+
     config = FTTransformerConfig(n_epochs=2, batch_size=32)
-    defaults = dict(task="classification", n_features=10, n_classes=2, config=config)
+    defaults = {"task": "classification", "n_features": 10, "n_classes": 2, "config": config}
     defaults.update(kwargs)
     return FTTransformerModel(**defaults)
 
@@ -60,6 +70,8 @@ def test_ft_transformer_predict_proba(sample_data):
 
 
 def test_ft_transformer_save_load(sample_data):
+    FTTransformerModel, FTTransformerConfig = _model_types()
+
     X, y = sample_data
     model = _make_model()
     model.fit(X, y)
@@ -83,12 +95,13 @@ def test_ft_transformer_save_load(sample_data):
 
 
 def test_ft_transformer_model_name():
+    FTTransformerModel, _ = _model_types()
     model = FTTransformerModel()
     assert model.model_name == "FT-Transformer"
 
 
 def test_ft_transformer_regression():
-    from sklearn.datasets import make_regression
+    FTTransformerModel, FTTransformerConfig = _model_types()
 
     X, y = make_regression(n_samples=100, n_features=10, random_state=42)
     config = FTTransformerConfig(n_epochs=2, batch_size=32)
@@ -106,7 +119,7 @@ def test_ft_transformer_regression():
 
 
 def test_ft_transformer_regression_does_not_broadcast_targets():
-    from sklearn.datasets import make_regression
+    FTTransformerModel, FTTransformerConfig = _model_types()
 
     X, y = make_regression(n_samples=64, n_features=10, random_state=42)
     config = FTTransformerConfig(n_epochs=1, batch_size=16)

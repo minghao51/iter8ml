@@ -3,10 +3,10 @@
 import numpy as np
 import pytest
 
-from configs.experiment import ExperimentConfig
-from core.constants import TaskType
-from core.engine.evaluator import Evaluator
-from core.engine.hpo import create_study, optimize_model
+from tabular_blueprint.config import ExperimentConfig
+from tabular_blueprint.constants import TaskType
+from tabular_blueprint.engine.evaluator import Evaluator
+from tabular_blueprint.engine.hpo import create_study, optimize_model
 
 
 class DummyModel:
@@ -154,8 +154,8 @@ def test_optimize_model_preserves_exception_context():
     """Test that evaluation failures preserve exception context."""
     from unittest.mock import Mock
 
-    from core.engine.hpo import optimize_model
-    from core.models.conventional.catboost_model import CatBoostModel
+    from tabular_blueprint.engine.hpo import optimize_model
+    from tabular_blueprint.models.conventional.catboost_model import CatBoostModel
 
     # Create invalid data to trigger error
     X = np.array([[1, 2], [3, 4]])

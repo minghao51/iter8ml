@@ -6,8 +6,8 @@ import polars as pl
 import pytest
 from sklearn.datasets import make_classification
 
-from core.monitoring.drift import DriftDetector
-from core.services.registry_service import RegistryService
+from tabular_blueprint.monitoring.drift import DriftDetector
+from tabular_blueprint.services.registry_service import RegistryService
 
 
 @pytest.fixture

@@ -2,7 +2,7 @@
 
 import json
 
-from core.engine.state_observer import StateObserver
+from tabular_blueprint.engine.state_observer import StateObserver
 
 
 def test_generate_no_events(tmp_path):

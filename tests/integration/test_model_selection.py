@@ -1,15 +1,17 @@
 """Integration tests for TabPFN and model selection routing."""
 
 import json
+import os
+from unittest.mock import patch
 
 import polars as pl
 import pytest
 from sklearn.datasets import make_classification
 
-from configs.experiment import ExperimentConfig
-from core.engine.tracker import JSONLTracker
-from core.engine.trainer import Trainer
-from core.models.selector import ModelSelector
+from tabular_blueprint.config import ExperimentConfig
+from tabular_blueprint.engine.tracker import JSONLTracker
+from tabular_blueprint.engine.trainer import Trainer
+from tabular_blueprint.models.selector import ModelSelector
 
 
 @pytest.fixture
@@ -28,7 +30,11 @@ def tiny_classification_data():
     return df.with_columns(target=pl.Series(y))
 
 
-@pytest.mark.skip(reason="TabPFN requires TABPFN_TOKEN for authentication")
+@pytest.mark.network
+@pytest.mark.skipif(
+    os.getenv("TABPFN_TOKEN") is None,
+    reason="TabPFN requires TABPFN_TOKEN",
+)
 def test_tabpfn_runs_on_small_data(small_classification_data, tmp_path):
     """TabPFN should run and produce results on small datasets."""
     config = ExperimentConfig(
@@ -50,7 +56,11 @@ def test_tabpfn_runs_on_small_data(small_classification_data, tmp_path):
     assert 0.0 < results["tabpfn"]["cv_scores"]["roc_auc"] <= 1.0
 
 
-@pytest.mark.skip(reason="TabPFN requires TABPFN_TOKEN for authentication")
+@pytest.mark.network
+@pytest.mark.skipif(
+    os.getenv("TABPFN_TOKEN") is None,
+    reason="TabPFN requires TABPFN_TOKEN",
+)
 def test_tabpfn_data_size_guardrail(tiny_classification_data, tmp_path):
     """TabPFN should handle small data correctly."""
     config = ExperimentConfig(
@@ -85,13 +95,14 @@ def test_model_selector_routes_large_data_to_gbdt(large_classification_data):
 
 
 def test_model_selector_includes_tabpfn_for_small_data(small_classification_data):
-    """ModelSelector should include TabPFN for small datasets."""
+    """ModelSelector should include TabPFN for small datasets with GPU."""
     selector = ModelSelector()
-    models = selector.select(
-        n_rows=len(small_classification_data),
-        task="classification",
-        vram_gb=0.0,
-    )
+    with patch.object(selector, "_has_gpu", return_value=True):
+        models = selector.select(
+            n_rows=len(small_classification_data),
+            task="classification",
+            vram_gb=0.0,
+        )
 
     assert "tabpfn" in models
 
@@ -147,3 +158,5 @@ def test_jsonl_event_logged_for_model_completion(small_classification_data, tmp_
     assert "model" in event
     assert "cv_scores" in event
     assert "run_id" in event
+    assert "params" in event
+    assert isinstance(event["params"], dict)

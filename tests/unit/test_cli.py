@@ -9,7 +9,7 @@ import pytest
 from sklearn.datasets import make_classification
 from typer.testing import CliRunner
 
-from main import app
+from tabular_blueprint.cli import app
 
 runner = CliRunner()
 
@@ -110,6 +110,39 @@ def test_run_unsupported_format():
     result = runner.invoke(app, ["run", "--data", "data.json"])
     assert result.exit_code == 1
     assert "Unsupported file format" in result.stdout
+
+
+def test_run_invalid_config_path_exits_with_error(tmp_path):
+    result = runner.invoke(
+        app,
+        ["run", "--config", str(tmp_path / "missing.py"), "--data", "data.csv"],
+    )
+    assert result.exit_code == 1
+    assert "config file not found" in result.stdout
+
+
+def test_run_non_python_config_exits_with_error(tmp_path):
+    config_path = tmp_path / "config.txt"
+    config_path.write_text("not python")
+
+    result = runner.invoke(
+        app,
+        ["run", "--config", str(config_path), "--data", "data.csv"],
+    )
+    assert result.exit_code == 1
+    assert "config must be a Python module" in result.stdout
+
+
+def test_run_config_missing_config_object_exits_with_error(tmp_path):
+    config_path = tmp_path / "config.py"
+    config_path.write_text("x = 1\n")
+
+    result = runner.invoke(
+        app,
+        ["run", "--config", str(config_path), "--data", "data.csv"],
+    )
+    assert result.exit_code == 1
+    assert "must define `config`" in result.stdout
 
 
 def test_run_with_csv(sample_csv):

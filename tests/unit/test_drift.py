@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import polars as pl
 
-from core.monitoring.drift import DriftDetector
+from tabular_blueprint.monitoring.drift import DriftDetector
 
 
 def test_no_drift_same_distribution():
