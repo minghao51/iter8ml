@@ -11,4 +11,4 @@ ENV PATH="/root/.local/bin:$PATH"
 
 WORKDIR /workspace
 COPY . .
-RUN uv sync --frozen
+RUN uv sync --frozen --no-dev

@@ -13,35 +13,36 @@ license = {text = "MIT"}
 dependencies = [
     "polars>=1.0",
     "pydantic>=2.0",
-    "pydantic-settings>=2.0",
     "catboost>=1.2",
     "lightgbm>=4.0",
     "xgboost>=2.0",
-    "tabpfn>=2.0",
-    "skrub>=0.3",
-    "cleanlab>=2.6",
     "optuna>=3.6",
-    "torch>=2.3",
-    "accelerate>=0.30",
-    "transformers>=4.40",
     "scikit-learn>=1.4",
     "numpy>=1.26",
     "typer>=0.12",
     "psutil>=5.9",
     "rich>=13.0",
+    "joblib>=1.3",
+    "filelock>=3.12",
+    "sf-hamilton>=1.70",
 ]
 
 [project.optional-dependencies]
-hamilton   = ["sf-hamilton>=1.70"]
-llm       = ["mcp>=0.9", "anthropic>=0.25"]
+deep      = ["torch>=2.3", "accelerate>=0.30", "transformers>=4.40", "tabpfn>=2.0", "pytorch-tabular>=1.0", "datasets>=2.14"]
+shap      = ["shap>=0.44"]
+cleanlab  = [
+    "cleanlab>=2.6",
+]
+llm       = ["mcp>=0.9", "litellm>=1.40"]
 wandb     = ["wandb>=0.17"]
 mlflow    = ["mlflow>=2.13"]
-zenml     = ["zenml>=0.57"]
-dev       = ["pytest>=8.0", "ruff>=0.4"]
-transformers = ["datasets>=2.14"]
+all       = ["tabular-blueprint[deep,shap,cleanlab,llm,wandb,mlflow]"]
+
+[dependency-groups]
+dev = ["pytest>=8.0", "ruff>=0.4", "pre-commit>=3.6"]
 
 [project.scripts]
-tabblueprint = "main:app"
+tabblueprint = "tabular_blueprint.cli:app"
 
 [tool.ruff]
 line-length = 100
@@ -49,24 +50,55 @@ target-version = "py311"
 
 [tool.mypy]
 python_version = "3.11"
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["catboost.*", "lightgbm.*", "xgboost.*", "optuna.*", "polars.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "cleanlab.*", "shap.*", "wandb.*", "mlflow.*", "litellm.*",
+    "sf_hamilton.*", "hamilton.*", "mcp.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pytorch_tabular.*", "tabpfn.*", "accelerate.*", "datasets.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "matplotlib.*", "sklearn.*", "scipy.*", "psutil.*", "pandas.*",
+]
 ignore_missing_imports = true
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4", "PT", "RUF"]
+fixable = ["ALL"]
 
 [tool.ruff.lint.per-file-ignores]
-"main.py" = ["B008"]  # typer requires Option() in function signatures
-"notebooks/*" = ["E402", "I001"]  # notebook-style imports per cell
+"src/tabular_blueprint/cli.py" = ["B008"]
+"notebooks/*" = ["E402", "I001"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts   = "-v --tb=short"
-
-[tool.setuptools]
-py-modules = ["main"]
-
-[tool.setuptools.package-data]
-core = ["py.typed"]
+pythonpath = ["src"]
+addopts   = ["--strict-markers", "-ra", "--durations=10", "--import-mode=importlib"]
+markers = [
+    "slow: >1s tests",
+    "integration: external services or slow tests",
+    "unit: fast isolated tests",
+    "e2e: full workflow tests",
+    "serial: cannot run in parallel",
+    "network: needs internet/auth",
+    "smoke: critical path tests",
+]
 
 [tool.setuptools.packages.find]
-include = ["configs*", "core*", "mcp_server*", "pipelines*"]
+where = ["src"]
+
+[tool.setuptools.package-data]
+tabular_blueprint = ["py.typed"]

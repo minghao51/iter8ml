@@ -14,6 +14,12 @@ htmlcov/
 .uv/
 .venv/
 
+# Secrets
+.env
+.env.keys
+.env.local
+.env.*.local
+
 # Workspace (keep .gitkeep)
 workspace/*
 !workspace/.gitkeep
@@ -48,6 +54,12 @@ catboost_info/
 # Frontend
 node_modules/
 
-# Test artifacts
-workspace/test_*.jsonl
-tests/fixtures/*.jsonl
+# Model serialization
+*.npz
+
+# Benchmark output
+benchmark_results*.csv
+benchmark_results*.json
+
+# Generated docs
+docs/*-benchmark-report.md
