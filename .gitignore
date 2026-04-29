@@ -63,3 +63,6 @@ benchmark_results*.json
 
 # Generated docs
 docs/*-benchmark-report.md
+
+# MkDocs build output
+site/

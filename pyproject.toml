@@ -39,7 +39,7 @@ mlflow    = ["mlflow>=2.13"]
 all       = ["tabular-blueprint[deep,shap,cleanlab,llm,hamilton,wandb,mlflow]"]
 
 [dependency-groups]
-dev = ["pytest>=8.0", "ruff>=0.4", "pre-commit>=3.6"]
+dev = ["pytest>=8.0", "ruff>=0.4", "pre-commit>=3.6", "mypy>=1.10", "pip-audit>=2.7"]
 
 [project.scripts]
 tabblueprint = "tabular_blueprint.cli:app"
@@ -67,8 +67,17 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = [
     "pytorch_tabular.*", "tabpfn.*", "accelerate.*", "datasets.*",
+    "torch.*", "torch.utils.*", "transformers.*",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "tabular_blueprint.engine.hpo",
+    "tabular_blueprint.engine.hpo_warmstart",
+    "tabular_blueprint.engine.hpo_importance",
+]
+ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = [

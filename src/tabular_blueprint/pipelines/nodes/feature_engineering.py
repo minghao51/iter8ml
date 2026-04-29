@@ -1,12 +1,20 @@
 from __future__ import annotations
 
-import contextlib
 from typing import Any
 
 import numpy as np
 
-with contextlib.suppress(ImportError):
+try:
     from hamilton.function_modifiers import config
+
+    _HAS_HAMILTON = True
+except ImportError:
+    _HAS_HAMILTON = False
+
+if not _HAS_HAMILTON:
+    from unittest.mock import MagicMock
+
+    config = MagicMock()
 
 
 def _passthrough(data_prep_result: object) -> tuple[np.ndarray, list[str]]:
@@ -95,33 +103,34 @@ def _run_afe(
     return X_aug, augmented_names
 
 
-@config.when_not(afe_enabled=True)
-def training_features__default(
-    data_prep_result: object,
-) -> tuple[np.ndarray, list[str]]:
-    return _passthrough(data_prep_result)
+if _HAS_HAMILTON:
 
+    @config.when_not(afe_enabled=True)
+    def training_features__default(
+        data_prep_result: object,
+    ) -> tuple[np.ndarray, list[str]]:
+        return _passthrough(data_prep_result)
 
-@config.when(afe_enabled=True)
-def training_features__afe_enabled(
-    data_prep_result: object,
-    models_to_run: list[str],
-    afe_top_k: int,
-    afe_lift_threshold: float,
-    afe_pruning: bool,
-    afe_prune_min_importance: float,
-    task: str,
-    random_seed: int,
-) -> tuple[np.ndarray, list[str]]:
-    return _run_afe(
-        data_prep_result.X,
-        data_prep_result.y,
-        models_to_run,
-        data_prep_result.feature_names,
-        afe_top_k,
-        afe_lift_threshold,
-        afe_pruning,
-        afe_prune_min_importance,
-        task,
-        random_seed,
-    )
+    @config.when(afe_enabled=True)
+    def training_features__afe_enabled(
+        data_prep_result: object,
+        models_to_run: list[str],
+        afe_top_k: int,
+        afe_lift_threshold: float,
+        afe_pruning: bool,
+        afe_prune_min_importance: float,
+        task: str,
+        random_seed: int,
+    ) -> tuple[np.ndarray, list[str]]:
+        return _run_afe(
+            data_prep_result.X,
+            data_prep_result.y,
+            models_to_run,
+            data_prep_result.feature_names,
+            afe_top_k,
+            afe_lift_threshold,
+            afe_pruning,
+            afe_prune_min_importance,
+            task,
+            random_seed,
+        )
