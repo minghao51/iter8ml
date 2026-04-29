@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 import polars as pl
+import pytest
 from sklearn.datasets import make_classification
 
 from tabular_blueprint.models.conventional.catboost_model import CatBoostModel
@@ -58,6 +59,7 @@ def _load_predictor(export_path: Path):
 
 
 def test_exported_package_predictor_runs_end_to_end(tmp_path: Path):
+    pytest.importorskip("hamilton")
     _, export_path, _ = _setup_export_workspace(tmp_path)
 
     X, _ = make_classification(n_samples=80, n_features=4, random_state=42)
@@ -73,6 +75,7 @@ def test_exported_package_predictor_runs_end_to_end(tmp_path: Path):
 
 
 def test_exported_predictor_uses_hamilton_preprocessing(tmp_path: Path):
+    pytest.importorskip("hamilton")
     _, export_path, _ = _setup_export_workspace(tmp_path)
 
     predictor = _load_predictor(export_path)
@@ -85,6 +88,7 @@ def test_exported_predictor_uses_hamilton_preprocessing(tmp_path: Path):
 
 
 def test_export_preprocessing_parity_with_training_pipeline(tmp_path: Path):
+    pytest.importorskip("hamilton")
     from tabular_blueprint.pipelines.executor import PipelineExecutor
 
     _, export_path, _ = _setup_export_workspace(tmp_path)
