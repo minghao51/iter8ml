@@ -5,7 +5,6 @@ import pytest
 
 from tabular_blueprint.models.tabular_foundation.tabpfn_model import (
     DataSizeError,
-    GPUUnavailableError,
     TabPFNModel,
 )
 
@@ -21,7 +20,7 @@ class TestTabPFNGuardrails:
         with pytest.raises(DataSizeError, match="max 100 rows"):
             model.fit(X, y)
 
-    def test_gpu_check_raises_on_no_gpu(self):
+    def test_resolve_device_returns_cpu_without_gpu(self):
         model = TabPFNModel(task="classification")
-        with pytest.raises(GPUUnavailableError):
-            model._check_gpu()
+        device = model._resolve_device()
+        assert device == "cpu"

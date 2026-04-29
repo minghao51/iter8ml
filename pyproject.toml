@@ -39,7 +39,7 @@ mlflow    = ["mlflow>=2.13"]
 all       = ["tabular-blueprint[deep,shap,cleanlab,llm,hamilton,wandb,mlflow]"]
 
 [dependency-groups]
-dev = ["pytest>=8.0", "ruff>=0.4", "pre-commit>=3.6", "mypy>=1.10", "pip-audit>=2.7"]
+dev = ["pytest>=9.0.3", "ruff>=0.4", "pre-commit>=3.6", "mypy>=1.10", "pip-audit>=2.7"]
 
 [project.scripts]
 tabblueprint = "tabular_blueprint.cli:app"

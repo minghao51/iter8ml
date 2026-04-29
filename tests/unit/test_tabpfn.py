@@ -1,4 +1,4 @@
-"""Tests for TabPFN model row-count and GPU guardrails."""
+"""Tests for TabPFN model row-count and device resolution."""
 
 from unittest.mock import Mock, patch
 
@@ -7,7 +7,6 @@ import pytest
 
 from tabular_blueprint.models.tabular_foundation.tabpfn_model import (
     DataSizeError,
-    GPUUnavailableError,
     TabPFNModel,
 )
 
@@ -20,10 +19,11 @@ def test_tabpfn_rejects_large_data():
         model.fit(X, y)
 
 
-def test_tabpfn_gpu_check_raises_without_gpu():
+def test_tabpfn_resolve_device_cpu_fallback():
     model = TabPFNModel(task="classification")
-    with pytest.raises(GPUUnavailableError):
-        model._check_gpu()
+    with patch.dict("sys.modules", {"torch": None}):
+        device = model._resolve_device()
+    assert device == "cpu"
 
 
 def test_tabpfn_max_rows_configurable():
@@ -35,11 +35,11 @@ def test_tabpfn_max_rows_configurable():
         model.fit(X, y)
 
 
-def test_tabpfn_accepts_small_data_with_mocked_gpu():
+def test_tabpfn_accepts_small_data_with_mocked_build():
     model = TabPFNModel(task="classification")
     X = np.random.randn(100, 5)
     y = np.random.randint(0, 2, 100)
-    model._build_model = Mock()
-    with patch.object(model, "_check_gpu"):
-        model.fit(X, y)
-    model.model.fit.assert_called_once()
+    mock_inner = Mock()
+    model._build_model = Mock(return_value=mock_inner)
+    model.fit(X, y)
+    mock_inner.fit.assert_called_once_with(X, y)
