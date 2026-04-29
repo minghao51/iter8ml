@@ -95,9 +95,7 @@ class FeatureEngineer:
 
         return X_augmented, feature_names
 
-    def _fit_importance_model(
-        self, X: np.ndarray, y: np.ndarray, models_to_run: list[str]
-    ) -> Any:
+    def _fit_importance_model(self, X: np.ndarray, y: np.ndarray, models_to_run: list[str]) -> Any:
         gbdt_name = next(
             (m for m in self._GBDT_PRIORITY if m in models_to_run),
             None,

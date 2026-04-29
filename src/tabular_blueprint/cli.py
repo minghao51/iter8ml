@@ -155,6 +155,39 @@ def drift(
     ref_df = load_data(reference)
     new_df = load_data(new)
 
+    if method in ("psi", "domain", "both"):
+        from tabular_blueprint.pipelines.executor import PipelineExecutor
+
+        executor = PipelineExecutor()
+        drift_method_map = {"psi": "psi", "domain": "domain_classifier", "both": "both"}
+        hamilton_method = drift_method_map.get(method, method)
+
+        if executor.available:
+            report = executor.run_drift(ref_df, new_df, drift_method=hamilton_method)
+            if report is not None:
+                typer.echo("\n# Drift Detection Report")
+                typer.echo(f"Drift detected: {report.drift_detected}")
+                if report.psi_report is not None:
+                    pr = report.psi_report
+                    typer.echo("\n## PSI Report")
+                    typer.echo(f"Features tested: {pr.n_features_tested}")
+                    typer.echo(f"Moderate drift: {pr.n_moderate}")
+                    typer.echo(f"Severe drift: {pr.n_severe}\n")
+                    for f_psi in pr.feature_psi:
+                        level = f_psi.drift_level.upper()
+                        typer.echo(f"{level:>8} | {f_psi.feature} | PSI={f_psi.psi_value:.6f}")
+                if report.domain_report is not None:
+                    dr_report = report.domain_report
+                    typer.echo("\n## Domain Classifier Report")
+                    typer.echo(f"Drift detected: {dr_report.drift_detected}")
+                    typer.echo(
+                        f"AUC score: {dr_report.auc_score:.6f} (threshold: {dr_report.threshold})"
+                    )
+                    typer.echo(
+                        f"Reference rows: {dr_report.n_reference}, Live rows: {dr_report.n_live}"
+                    )
+                return
+
     if method in ("ks", "both"):
         from tabular_blueprint.monitoring.drift import DriftDetector
 

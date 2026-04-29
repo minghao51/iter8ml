@@ -1,7 +1,7 @@
 # Technical Roadmap: Modular Tabular ML Blueprint
 
-> **Status:** Living document — v0.1 draft  
-> **Audience:** Personal toolkit (near-term) → Open-source template (long-term)  
+> **Status:** Living document — v0.1 draft
+> **Audience:** Personal toolkit (near-term) → Open-source template (long-term)
 > **Philosophy:** Composable Lego bricks, not a monolith. Every module should be independently usable in a production microservice.
 
 ---
@@ -238,7 +238,7 @@ class DataAdapter:
     """
     Single point of truth for format conversion.
     Detects target format from the model type and converts accordingly.
-    
+
     Supported outputs:
       - "numpy"   → (np.ndarray, np.ndarray) for GBDTs
       - "tensor"  → (torch.Tensor, torch.Tensor) for PyTorch models
@@ -666,10 +666,10 @@ Once a champion model is registered, you need to know if incoming data differs f
 class DriftDetector:
     """
     Compares a reference DataFrame (training) against a new DataFrame (production).
-    
+
     Numeric columns : Kolmogorov-Smirnov test
     Categorical cols : Chi-squared test
-    
+
     Returns a DriftReport with per-column p-values and a global drift flag.
     """
     def __init__(self, reference_df: pl.DataFrame, alpha: float = 0.05): ...

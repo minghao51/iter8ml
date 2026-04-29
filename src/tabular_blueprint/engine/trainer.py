@@ -16,7 +16,7 @@ from tabular_blueprint.engine.model_trainer import ModelTrainer
 from tabular_blueprint.engine.tracker import JSONLTracker, Tracker
 from tabular_blueprint.models.baselines import LinearBaseline, NaiveBaseline
 from tabular_blueprint.models.selector import ModelSelector
-from tabular_blueprint.pipelines.hamilton_executor import HamiltonExecutor
+from tabular_blueprint.pipelines.executor import PipelineExecutor, PipelineMode
 
 BASELINE_MODELS = {
     "naive_baseline": NaiveBaseline,
@@ -38,15 +38,13 @@ class Trainer:
         if tracker is not None:
             _tracker = tracker
         else:
-            _tracker = JSONLTracker(
-                log_path=str(self.config.workspace_dir / "experiments.jsonl")
-            )
+            _tracker = JSONLTracker(log_path=str(self.config.workspace_dir / "experiments.jsonl"))
         self.tracker = _tracker
         self.hardware = HardwareProfile.detect()
         self.selector = ModelSelector()
         self.run_baselines = run_baselines
         self.run_leakage_audit = run_leakage_audit
-        self.executor = HamiltonExecutor()
+        self.executor = PipelineExecutor()
 
         self._data_prep = DataPreparationService(config, _tracker)
         self._feature_eng = FeatureEngineer(config, _tracker)
@@ -59,7 +57,56 @@ class Trainer:
         run_id = f"exp_{int(time.time())}_{str(uuid.uuid4())[:6]}"
         self.tracker.current_run_id = run_id
 
-        df = self.executor.run(df)
+        hamilton_result = self._try_hamilton_training(df, run_id)
+        if hamilton_result is not None:
+            self._update_state()
+            self.tracker.finish()
+            return hamilton_result
+
+        return self._run_imperative(df, run_id)
+
+    def _try_hamilton_training(self, df: pl.DataFrame, run_id: str) -> dict | None:
+        training_executor = PipelineExecutor(mode=PipelineMode.TRAINING)
+        if not training_executor.available:
+            return None
+
+        try:
+            state = training_executor.run_training(
+                df=df,
+                target_col=self.config.target_col,
+                task=self.config.task.value,
+                config_models=self.config.models,
+                experiment_name=self.config.name,
+                run_id=run_id,
+                workspace_dir=str(self.config.workspace_dir),
+                vram_gb=self.hardware.vram_gb,
+                cv_folds=self.config.cv_folds,
+                cv_strategy=self.config.cv_strategy.value,
+                metrics=self.config.metrics,
+                calibration=self.config.calibration,
+                afe_enabled=self.config.afe_enabled,
+                afe_top_k=self.config.afe_top_k,
+                afe_lift_threshold=self.config.afe_lift_threshold,
+                afe_pruning=self.config.afe_pruning,
+                afe_prune_min_importance=self.config.afe_prune_min_importance,
+                random_seed=self.config.random_seed,
+                run_quality_audit=self.config.run_quality_audit,
+                auto_clean_noise=self.config.auto_clean_noise,
+                noise_quality_threshold=self.config.noise_quality_threshold,
+                run_leakage_audit=self.run_leakage_audit,
+                target_transform=self.config.target_transform,
+                target_skewness_threshold=self.config.target_skewness_threshold,
+            )
+            if state is not None:
+                self._log_hamilton_state_events(state, run_id)
+                return state.results
+        except Exception:
+            pass
+        return None
+
+    def _run_imperative(self, df: pl.DataFrame, run_id: str) -> dict:
+        if self.executor.available:
+            df = self.executor.run_preprocessing(df)
 
         data_hash = get_data_hash(df)
         n_rows = len(df)
@@ -104,13 +151,24 @@ class Trainer:
         baseline_scores: dict[str, dict[str, float]] = {}
         if self.run_baselines:
             baseline_scores = self._model_trainer.run_baselines(
-                X, y, evaluator, run_id, data_hash, prep_result.n_rows, prep_result.n_features,
+                X,
+                y,
+                evaluator,
+                run_id,
+                data_hash,
+                prep_result.n_rows,
+                prep_result.n_features,
                 BASELINE_MODELS,
             )
 
         if self.config.afe_enabled:
             X, feature_names = self._feature_eng.run_afe(
-                X, y, run_id, data_hash, models_to_run, feature_names,
+                X,
+                y,
+                run_id,
+                data_hash,
+                models_to_run,
+                feature_names,
             )
 
         max_workers = self.config.max_workers
@@ -118,14 +176,18 @@ class Trainer:
             max_workers = 1
 
         results = self._model_trainer.train_all(
-            models_to_run, X, y, evaluator, run_id, data_hash,
-            prep_result.n_rows, prep_result.n_features, max_workers,
+            models_to_run,
+            X,
+            y,
+            evaluator,
+            run_id,
+            data_hash,
+            prep_result.n_rows,
+            prep_result.n_features,
+            max_workers,
             baseline_scores=baseline_scores,
             feature_names=feature_names,
         )
-
-        if self.config.drift_detection != "none":
-            self._drift.check(df, run_id)
 
         self._update_state()
         self.tracker.finish()
@@ -136,6 +198,35 @@ class Trainer:
         from tabular_blueprint.engine.evaluator import Evaluator as Ev
 
         return Ev(self.config)
+
+    def _log_hamilton_state_events(self, state: object, run_id: str) -> None:
+        self.tracker.log_event(
+            {
+                "event": "experiment_started",
+                "config": self.config.model_dump(mode="json"),
+                "run_id": run_id,
+            }
+        )
+        for model_name, entry in state.results.items():
+            if entry.get("is_baseline"):
+                continue
+            if "error" in entry:
+                self.tracker.log_event(
+                    {"event": "model_failed", "model": model_name, "error": entry["error"]}
+                )
+                continue
+            self.tracker.log_event(
+                {
+                    "event": "model_completed",
+                    "run_id": run_id,
+                    "model": entry.get("model_name", model_name),
+                    "task": self.config.task.value,
+                    "params": entry.get("params", {}),
+                    "cv_scores": entry.get("cv_scores", {}),
+                    "duration_seconds": entry.get("duration_seconds", 0),
+                    "artifact_path": entry.get("artifact_path", ""),
+                }
+            )
 
     def _update_state(self) -> None:
         from tabular_blueprint.engine.state_observer import StateObserver

@@ -81,12 +81,29 @@ class ModelTrainer:
     ) -> dict:
         if max_workers == 1:
             return self._train_sequential(
-                models_to_run, X, y, evaluator, run_id, data_hash,
-                n_rows, n_features, baseline_scores or {}, feature_names or [],
+                models_to_run,
+                X,
+                y,
+                evaluator,
+                run_id,
+                data_hash,
+                n_rows,
+                n_features,
+                baseline_scores or {},
+                feature_names or [],
             )
         return self._train_concurrent(
-            models_to_run, X, y, evaluator, run_id, data_hash,
-            n_rows, n_features, max_workers, baseline_scores or {}, feature_names or [],
+            models_to_run,
+            X,
+            y,
+            evaluator,
+            run_id,
+            data_hash,
+            n_rows,
+            n_features,
+            max_workers,
+            baseline_scores or {},
+            feature_names or [],
         )
 
     def _train_sequential(
@@ -109,8 +126,16 @@ class ModelTrainer:
         for model_name in models_to_run:
             try:
                 result = self._train_single_model(
-                    model_name, X, y, evaluator, run_id, data_hash,
-                    n_rows, n_features, baseline_scores, feature_names,
+                    model_name,
+                    X,
+                    y,
+                    evaluator,
+                    run_id,
+                    data_hash,
+                    n_rows,
+                    n_features,
+                    baseline_scores,
+                    feature_names,
                 )
                 results[model_name] = result
             except ModelFitError as e:
@@ -153,8 +178,16 @@ class ModelTrainer:
             futures = {
                 executor.submit(
                     self._train_single_model,
-                    model_name, X, y, evaluator, run_id, data_hash,
-                    n_rows, n_features, baseline_scores, feature_names,
+                    model_name,
+                    X,
+                    y,
+                    evaluator,
+                    run_id,
+                    data_hash,
+                    n_rows,
+                    n_features,
+                    baseline_scores,
+                    feature_names,
                 ): model_name
                 for model_name in models_to_run
             }
@@ -172,8 +205,11 @@ class ModelTrainer:
                         ):
                             best_score = score
                             self._update_champion(
-                                result["model_name"], run_id, score,
-                                result["artifact_path"], primary_metric,
+                                result["model_name"],
+                                run_id,
+                                score,
+                                result["artifact_path"],
+                                primary_metric,
                             )
                 except ModelFitError as e:
                     results[model_name] = {"error": str(e)}

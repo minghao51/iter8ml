@@ -39,7 +39,6 @@ class Explainer:
         max_display: int = 20,
         generate_plots: bool = True,
     ) -> SHAPExplanationResult:
-
         explainer = self._create_explainer(X)
         shap_values = explainer(X)
 

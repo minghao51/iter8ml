@@ -6,56 +6,53 @@ on:
   pull_request:
     branches: [main, develop]
 
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
-        with:
-          python-version: "3.11"
-      - name: Install dependencies
-        run: uv sync --frozen --group dev --extra llm
-      - name: Lint
-        run: uv run ruff check .
+permissions:
+  contents: read
 
-  format:
-    runs-on: ubuntu-latest
+jobs:
+  pre-commit:
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@v6
         with:
+          enable-cache: true
           python-version: "3.11"
-      - name: Install dependencies
-        run: uv sync --frozen --group dev --extra llm
-      - name: Format
-        run: uv run ruff format --check .
+      - run: uv sync --frozen --group dev --extra llm
+      - uses: pre-commit/action@v3.0.1
+
+  typecheck:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.11"
+      - run: uv sync --frozen --group dev --extra llm
+      - run: uv run mypy .
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
-        python-version: ['3.11', '3.12', '3.13']
+        python-version: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@v6
         with:
+          enable-cache: true
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: uv sync --frozen --group dev --extra llm
-      - name: Unit tests
-        run: uv run pytest tests/unit/ -v --tb=short
-      - name: Integration tests
-        run: uv run pytest tests/integration/ -v --tb=short
+      - run: uv sync --frozen --group dev --extra llm
+      - run: uv run pytest tests/unit/ -v --tb=short
+      - run: uv run pytest tests/integration/ -v --tb=short
 
-  pre-commit:
-    runs-on: ubuntu-latest
+  security:
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@v6
         with:
-          python-version: "3.11"
-      - name: Install dependencies
-        run: uv sync --frozen --group dev --extra llm
-      - name: Run pre-commit
-        run: uvx pre-commit run --all-files
+          enable-cache: true
+      - run: uv sync --frozen --group dev
+      - run: uv run pip-audit

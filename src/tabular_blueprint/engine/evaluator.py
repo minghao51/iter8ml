@@ -120,7 +120,9 @@ class Evaluator:
                             f"'{getattr(model, 'model_name', type(model).__name__)}' "
                             "returned None."
                         )
-                    auc_input = y_proba[:, 1] if y_proba.ndim == 2 and y_proba.shape[1] > 1 else y_proba
+                    auc_input = (
+                        y_proba[:, 1] if y_proba.ndim == 2 and y_proba.shape[1] > 1 else y_proba
+                    )
                     fold_scores[metric_name].append(metric_fn(y_val, auc_input))
                 else:
                     fold_scores[metric_name].append(metric_fn(y_val, y_pred))

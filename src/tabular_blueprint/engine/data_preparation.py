@@ -1,5 +1,7 @@
 """Data preparation: noise cleaning, leakage detection, target transformation."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 import numpy as np
@@ -10,6 +12,7 @@ from tabular_blueprint.data.adapter import DataAdapter
 from tabular_blueprint.data.feature_engine import transform_target
 from tabular_blueprint.data.leakage import LeakageReport, detect_leakage
 from tabular_blueprint.engine.tracker import Tracker
+from tabular_blueprint.pipelines.executor import PipelineExecutor
 
 
 @dataclass
@@ -33,6 +36,49 @@ class DataPreparationService:
         df: pl.DataFrame,
         run_id: str,
         run_leakage_audit: bool = True,
+    ) -> DataPrepResult:
+        executor = PipelineExecutor(tracker=self.tracker)
+        if executor.available:
+            return self._prepare_via_hamilton(df, run_id, run_leakage_audit, executor)
+        return self._prepare_imperative(df, run_id, run_leakage_audit)
+
+    def _prepare_via_hamilton(
+        self,
+        df: pl.DataFrame,
+        run_id: str,
+        run_leakage_audit: bool,
+        executor: PipelineExecutor,
+    ) -> DataPrepResult:
+        result = executor.run_data_prep(
+            df=df,
+            target_col=self.config.target_col,
+            task=self.config.task.value,
+            run_id=run_id,
+            run_quality_audit=self.config.run_quality_audit,
+            auto_clean_noise=self.config.auto_clean_noise,
+            noise_quality_threshold=self.config.noise_quality_threshold,
+            run_leakage_audit=run_leakage_audit,
+            target_transform=self.config.target_transform,
+            target_skewness_threshold=self.config.target_skewness_threshold,
+        )
+        if result is None:
+            return self._prepare_imperative(df, run_id, run_leakage_audit)
+
+        return DataPrepResult(
+            X=result.X,
+            y=result.y,
+            feature_names=result.feature_names,
+            leakage_report=result.leakage_report,
+            target_transformer=result.target_transformer,
+            n_rows=result.n_rows,
+            n_features=result.n_features,
+        )
+
+    def _prepare_imperative(
+        self,
+        df: pl.DataFrame,
+        run_id: str,
+        run_leakage_audit: bool,
     ) -> DataPrepResult:
         if self.config.target_col not in df.columns:
             raise ValueError(

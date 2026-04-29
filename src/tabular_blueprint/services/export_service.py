@@ -25,6 +25,13 @@ import polars as pl
 _HERE = Path(__file__).parent
 
 
+def _build_preprocessing_driver():
+    from hamilton import driver as h_driver
+    from pipelines import preprocessing
+
+    return h_driver.Builder().with_modules(preprocessing).build()
+
+
 class Predictor:
     def __init__(self):
         with open(_HERE / "metadata.json") as f:
@@ -34,6 +41,11 @@ class Predictor:
         self.model = model_cls(task=self.meta["task"])
         self.model.load(str(_HERE / "model.artifact"))
 
+        try:
+            self._dr = _build_preprocessing_driver()
+        except ImportError:
+            self._dr = None
+
     def _load_model_class(self):
         module_path, class_name = self.meta["model_class"]
         import importlib
@@ -41,19 +53,22 @@ class Predictor:
         return getattr(module, class_name)
 
     def _preprocess(self, df: pl.DataFrame) -> pl.DataFrame:
-        numeric_cols = df.select(pl.col(pl.Int64, pl.Float64, pl.Int32, pl.Float32)).columns
-        cat_cols = df.select(pl.col(pl.Utf8, pl.Categorical)).columns
-        date_cols = [
-            c for c, dtype in df.schema.items()
-            if dtype in (pl.Datetime, pl.Date)
-        ]
-        # Apply preprocessing steps
+        if self._dr is not None:
+            result = self._dr.execute(["processed_dataframe"], inputs={{"df": df}})
+            return result["processed_dataframe"]
+
         from pipelines.preprocessing import (
             fill_nulls_numeric,
             fill_nulls_categorical,
             decomposed_dates_df,
             encoded_df,
         )
+        numeric_cols = df.select(pl.col(pl.Int64, pl.Float64, pl.Int32, pl.Float32)).columns
+        cat_cols = df.select(pl.col(pl.Utf8, pl.Categorical)).columns
+        date_cols = [
+            c for c, dtype in df.schema.items()
+            if dtype in (pl.Datetime, pl.Date)
+        ]
         df = fill_nulls_numeric(df, numeric_cols)
         df = fill_nulls_categorical(df, cat_cols)
         df = decomposed_dates_df(df, date_cols)
@@ -152,7 +167,7 @@ class ExportService:
         pipelines_dir = export_path / "pipelines"
         pipelines_dir.mkdir(exist_ok=True)
 
-        src = Path(__file__).parent.parent / "pipelines" / "preprocessing.py"
+        src = Path(__file__).parent.parent / "pipelines" / "nodes" / "preprocessing.py"
         if src.exists():
             shutil.copy2(src, pipelines_dir / "preprocessing.py")
 

@@ -138,7 +138,10 @@ def make_reg_df(n_samples: int, n_features: int, seed: int = DEFAULT_SEED) -> pl
 
 
 def make_numpy(
-    n_samples: int, n_features: int, task: str = "classification", seed: int = DEFAULT_SEED,
+    n_samples: int,
+    n_features: int,
+    task: str = "classification",
+    seed: int = DEFAULT_SEED,
 ) -> tuple[np.ndarray, np.ndarray]:
     if task == "classification":
         X, y = make_classification(
@@ -224,25 +227,36 @@ def _print_plain(results: list[BenchResult]) -> None:
         print(f"  Benchmark: {cat}")
         print(f"{'=' * 80}")
         fmt = "{:<45} {:<25} {:>4} {:>10} {:>10} {:>10} {:>10} {:>10} {:>12}"
-        print(fmt.format(
-            "Scenario", "Params", "Runs", "Mean(s)", "Median(s)", "StdDev",
-            "Min(s)", "Max(s)", "Mem(MB)",
-        ))
+        print(
+            fmt.format(
+                "Scenario",
+                "Params",
+                "Runs",
+                "Mean(s)",
+                "Median(s)",
+                "StdDev",
+                "Min(s)",
+                "Max(s)",
+                "Mem(MB)",
+            )
+        )
         print("-" * 136)
         for r in cat_results:
             param_str = ", ".join(f"{k}={v}" for k, v in r.params.items()) if r.params else "-"
             mem_str = f"{r.memory_peak_mb:.1f}" if r.memory_peak_mb is not None else "-"
-            print(fmt.format(
-                r.name[:45],
-                param_str[:25],
-                str(len(r.times)),
-                f"{r.mean:.4f}",
-                f"{r.median:.4f}",
-                f"{r.stdev:.4f}",
-                f"{r.min:.4f}",
-                f"{r.max:.4f}",
-                mem_str,
-            ))
+            print(
+                fmt.format(
+                    r.name[:45],
+                    param_str[:25],
+                    str(len(r.times)),
+                    f"{r.mean:.4f}",
+                    f"{r.median:.4f}",
+                    f"{r.stdev:.4f}",
+                    f"{r.min:.4f}",
+                    f"{r.max:.4f}",
+                    mem_str,
+                )
+            )
         print()
 
 
@@ -256,8 +270,7 @@ def save_json(results: list[BenchResult], path: str | Path) -> None:
 def save_csv(results: list[BenchResult], path: str | Path) -> None:
     path = Path(path)
     lines: list[str] = [
-        "name,category,params,n_runs,mean_s,median_s,stdev_s,min_s,max_s,"
-        "memory_peak_mb"
+        "name,category,params,n_runs,mean_s,median_s,stdev_s,min_s,max_s,memory_peak_mb"
     ]
     for r in results:
         param_str = "; ".join(f"{k}={v}" for k, v in r.params.items())

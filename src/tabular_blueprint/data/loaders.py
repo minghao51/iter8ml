@@ -80,9 +80,9 @@ def load_sqlite(db_path: str | Path, query: str) -> pl.DataFrame:
     upper_no_select = upper_no_select.replace("GROUP", "").replace("ORDER", "").replace("BY", "")
     upper_no_select = upper_no_select.replace("HAVING", "").replace("LIMIT", "").replace("AS", "")
     upper_no_select = upper_no_select.replace("IN", "").replace("IS", "").replace("NULL", "")
-    upper_no_select = upper_no_select.replace(
-        "LIKE", ""
-    ).replace("BETWEEN", "").replace("DISTINCT", "")
+    upper_no_select = (
+        upper_no_select.replace("LIKE", "").replace("BETWEEN", "").replace("DISTINCT", "")
+    )
     for keyword in blocked_keywords:
         if keyword in upper_no_select:
             raise ValueError(f"Destructive keyword '{keyword}' is not allowed in queries")

@@ -87,23 +87,33 @@ def run_all(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run tabular-blueprint benchmark suite")
     parser.add_argument(
-        "--quick", action="store_true",
+        "--quick",
+        action="store_true",
         help="Run with minimal sizes for fast feedback",
     )
     parser.add_argument(
-        "--models", nargs="+", default=None,
+        "--models",
+        nargs="+",
+        default=None,
         help="Models to benchmark",
     )
     parser.add_argument(
-        "--json", type=str, default=None,
+        "--json",
+        type=str,
+        default=None,
         help="Save results as JSON to this path",
     )
     parser.add_argument(
-        "--csv", type=str, default=None,
+        "--csv",
+        type=str,
+        default=None,
         help="Save results as CSV to this path",
     )
     parser.add_argument(
-        "--sizes", nargs="+", type=int, default=None,
+        "--sizes",
+        nargs="+",
+        type=int,
+        default=None,
         help="Custom sizes as n_samples n_features pairs",
     )
     args = parser.parse_args()

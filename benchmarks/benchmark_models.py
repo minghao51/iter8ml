@@ -182,16 +182,33 @@ def run_all_model_benchmarks(
             try:
                 results.append(
                     bench_model_fit(
-                        model_name, X, y, task, warmup=warmup, runs=runs,
+                        model_name,
+                        X,
+                        y,
+                        task,
+                        warmup=warmup,
+                        runs=runs,
                     )
                 )
                 results.append(
                     bench_model_predict(
-                        model_name, X, y, X_test, task, warmup=warmup, runs=runs,
+                        model_name,
+                        X,
+                        y,
+                        X_test,
+                        task,
+                        warmup=warmup,
+                        runs=runs,
                     )
                 )
                 proba_result = bench_model_predict_proba(
-                    model_name, X, y, X_test, task, warmup=warmup, runs=runs,
+                    model_name,
+                    X,
+                    y,
+                    X_test,
+                    task,
+                    warmup=warmup,
+                    runs=runs,
                 )
                 if proba_result is not None:
                     results.append(proba_result)

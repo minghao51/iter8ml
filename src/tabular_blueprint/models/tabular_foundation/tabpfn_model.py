@@ -1,8 +1,11 @@
-"""TabPFN v2 wrapper with row-count and GPU guardrails."""
+"""TabPFN v2 wrapper with row-count guardrails and CPU fallback."""
 
+import logging
 from typing import Any
 
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 class DataSizeError(ValueError):
@@ -22,30 +25,29 @@ class TabPFNModel:
         self.params = kwargs
         self.model: Any = None
 
-    def _check_gpu(self) -> None:
+    def _resolve_device(self) -> str:
         try:
             import torch
 
-            if not torch.cuda.is_available():
-                raise GPUUnavailableError(
-                    "TabPFN requires a CUDA GPU but none was detected. "
-                    "Use CatBoost or LightGBM instead (auto-fallback recommended)."
-                )
+            if torch.cuda.is_available():
+                return "cuda"
         except ImportError:
-            raise GPUUnavailableError(
-                "PyTorch is not installed. TabPFN requires PyTorch with CUDA support."
-            ) from None
+            pass
+        logger.warning("No CUDA GPU detected — TabPFN will run on CPU (expect slower performance).")
+        return "cpu"
 
     def _build_model(self) -> Any:
         from tabpfn import TabPFNClassifier, TabPFNRegressor
 
+        device = self.params.get("device") or self._resolve_device()
+
         if self.task == "classification":
             return TabPFNClassifier(
-                device=self.params.get("device", "cuda"),
+                device=device,
                 random_state=self.params.get("random_seed", 42),
             )
         return TabPFNRegressor(
-            device=self.params.get("device", "cuda"),
+            device=device,
             random_state=self.params.get("random_seed", 42),
         )
 
@@ -55,7 +57,6 @@ class TabPFNModel:
                 f"TabPFN supports max {self.max_rows} rows, got {len(X)}. "
                 f"Use CatBoost/LightGBM for larger datasets."
             )
-        self._check_gpu()
         self.model = self._build_model()
         self.model.fit(X, y)
 

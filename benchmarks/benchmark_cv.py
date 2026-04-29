@@ -95,14 +95,16 @@ def bench_cv_strategies(
                 ) -> None:
                     e.evaluate(mc, xx, yy, task=t)
 
-                results.append(bench_fn(
-                    ev,
-                    name=f"cv_strategy/{strategy}/folds={folds}",
-                    category="cross_validation",
-                    params={"strategy": strategy, "cv_folds": folds, "n_samples": X.shape[0]},
-                    warmup=warmup,
-                    runs=runs,
-                ))
+                results.append(
+                    bench_fn(
+                        ev,
+                        name=f"cv_strategy/{strategy}/folds={folds}",
+                        category="cross_validation",
+                        params={"strategy": strategy, "cv_folds": folds, "n_samples": X.shape[0]},
+                        warmup=warmup,
+                        runs=runs,
+                    )
+                )
     return results
 
 
@@ -134,14 +136,16 @@ def bench_calibration(
             calibrated = CalibratedModel(base, method=mt)
             calibrated.fit(xx, yy)
 
-        results.append(bench_fn(
-            calibrate,
-            name=f"calibration/{model_name}/{method}",
-            category="calibration",
-            params={"model": model_name, "method": method, "n_samples": X.shape[0]},
-            warmup=warmup,
-            runs=runs,
-        ))
+        results.append(
+            bench_fn(
+                calibrate,
+                name=f"calibration/{model_name}/{method}",
+                category="calibration",
+                params={"model": model_name, "method": method, "n_samples": X.shape[0]},
+                warmup=warmup,
+                runs=runs,
+            )
+        )
     return results
 
 
@@ -165,8 +169,12 @@ def run_all_cv_benchmarks(
             try:
                 results.append(
                     bench_cv_evaluate(
-                        model_name, X, y, "classification",
-                        warmup=warmup, runs=runs,
+                        model_name,
+                        X,
+                        y,
+                        "classification",
+                        warmup=warmup,
+                        runs=runs,
                     )
                 )
             except Exception as e:

@@ -107,5 +107,5 @@ def test_export_predictor_script_contains_class(export_workspace):
     script = (export_path / "predictor.py").read_text()
     assert "class Predictor" in script
     assert "def predict(" in script
-    assert "from pipelines.preprocessing import (" in script
-    assert "from tabular_blueprint.pipelines.preprocessing import (" not in script
+    assert "_build_preprocessing_driver" in script
+    assert "_preprocess" in script
