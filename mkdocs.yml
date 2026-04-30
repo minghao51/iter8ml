@@ -1,0 +1,45 @@
+site_name: Tabular Blueprint
+site_url: https://minghao51.github.io/iter8ml/
+repo_url: https://github.com/minghao51/iter8ml
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            show_source: true
+            show_root_heading: true
+            docstring_style: google
+extra:
+  version:
+    provider: mike
+markdown_extensions:
+  - pymdownx.blocks.caption
+  - md_in_html
+nav:
+  - Home: index.md
+  - Architecture: pipeline-architecture.md
+  - Guides:
+    - Data Loading: data-loading.md
+    - Preprocessing: preprocessing.md
+    - Feature Engineering: feature-engineering.md
+    - Models: models.md
+    - Evaluation: evaluation.md
+    - HPO: hpo.md
+    - Drift Detection: drift-detection.md
+    - Explainability: explainability.md
+  - Notebooks:
+    - Overview: notebooks.md
+    - Quick Start: notebooks/exports/01_quick_start.html
+    - Model Comparison: notebooks/exports/02_model_comparison.html
+    - Drift Monitoring: notebooks/exports/03_drift_monitoring.html
+    - HPO Optimization: notebooks/exports/04_hpo_optimization.html
+    - Methodology Benchmarks: notebooks/exports/05_methodology_benchmarks.html

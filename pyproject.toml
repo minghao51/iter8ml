@@ -39,7 +39,20 @@ mlflow    = ["mlflow>=2.13"]
 all       = ["tabular-blueprint[deep,shap,cleanlab,llm,hamilton,wandb,mlflow]"]
 
 [dependency-groups]
-dev = ["pytest>=9.0.3", "ruff>=0.4", "pre-commit>=3.6", "mypy>=1.10", "pip-audit>=2.7"]
+dev = [
+    "pytest>=9.0.3",
+    "ruff>=0.4",
+    "pre-commit>=3.6",
+    "mypy>=1.10",
+    "pip-audit>=2.7",
+    "marimo>=0.23.4",
+]
+docs = [
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.25",
+    "mike>=2.0",
+    "pymdown-extensions>=10.0",
+]
 
 [project.scripts]
 tabblueprint = "tabular_blueprint.cli:app"
@@ -51,7 +64,7 @@ target-version = "py311"
 [tool.mypy]
 python_version = "3.11"
 disallow_untyped_defs = true
-exclude = ["tests/", "benchmarks/"]
+exclude = ["tests/", "benchmarks/", "notebooks/", "workspace/"]
 
 [[tool.mypy.overrides]]
 module = ["catboost.*", "lightgbm.*", "xgboost.*", "optuna.*", "polars.*"]
@@ -98,7 +111,7 @@ fixable = ["ALL"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/tabular_blueprint/cli.py" = ["B008"]
-"notebooks/*" = ["E402", "I001"]
+"notebooks/*" = ["E402", "I001", "B018", "E501", "RUF001", "F841"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -14,5 +14,9 @@
   - Sync: `uv sync`.
 - **Frontend:**
   - Verify: Run `npm run check` and `npm test` after changes.
-- **Docs:** Update `ARCHITECTURE.md` if structure changes.
+- **Docs:**
+  - Update `ARCHITECTURE.md` if structure changes.
+  - Build: `bash scripts/export-notebooks.sh && uv run mkdocs build`.
+  - Preview: `uv run mkdocs serve` (re-export notebooks first if they changed).
+  - Deploy: `bash scripts/export-notebooks.sh && uv run mike deploy --push --update-aliases <version> latest`. See `.github/workflows/docs.yml` for CI.
 - **Files:** Markdown files must follow `YYYYMMDD-filename.md` format.

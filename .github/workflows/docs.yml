@@ -1,0 +1,41 @@
+name: docs
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            **/pyproject.toml
+            **/uv.lock
+      - run: uv sync --group docs
+      - name: Check for notebook changes
+        id: notebooks-changed
+        run: |
+          before="${{ github.event.before }}"
+          if [ "$before" = "0000000000000000000000000000000000000000" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "$before" "${{ github.sha }}" | grep -q "^notebooks/"; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Export notebook static HTML
+        if: steps.notebooks-changed.outputs.changed == 'true'
+        run: bash scripts/export-notebooks.sh
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Deploy
+        run: uv run mike deploy --push --update-aliases ${{ github.ref_name }} latest
