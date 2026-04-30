@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if command -v md5sum &>/dev/null; then
+  md5hash() { md5sum "$1" | cut -d' ' -f1; }
+else
+  md5hash() { md5 -q "$1"; }
+fi
+
 export_dir="docs/notebooks/exports"
 cache_file="$export_dir/.export-cache"
 mkdir -p "$export_dir"
@@ -15,7 +21,7 @@ for f in notebooks/*.py; do
   fi
 
   name=$(basename "$f" .py)
-  hash=$(md5 -q "$f")
+  hash=$(md5hash "$f")
   cached=$(grep "^$name " "$cache_file" 2>/dev/null || true)
 
   if [ "$cached" = "$name $hash" ] && [ -f "$export_dir/$name.html" ]; then
@@ -28,7 +34,7 @@ for f in notebooks/*.py; do
 
   # Update cache
   if grep -q "^$name " "$cache_file" 2>/dev/null; then
-    sed -i '' "s/^$name .*/$name $hash/" "$cache_file"
+    sed -i.bak "s/^$name .*/$name $hash/" "$cache_file" && rm -f "$cache_file.bak"
   else
     echo "$name $hash" >> "$cache_file"
   fi
