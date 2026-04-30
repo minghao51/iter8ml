@@ -66,3 +66,7 @@ docs/*-benchmark-report.md
 
 # MkDocs build output
 site/
+
+# Planning & handoffs
+docs/plans/
+.claude/handoffs/
