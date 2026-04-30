@@ -1,0 +1,2366 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://minghao51.github.io/iter8ml/main/pipeline-architecture/">
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../data-loading/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Architecture - Tabular Blueprint</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#pipeline-architecture-hamilton-dag" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Tabular Blueprint" class="md-header__button md-logo" aria-label="Tabular Blueprint" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Tabular Blueprint
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Architecture
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/minghao51/iter8ml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../data-loading/" class="md-tabs__link">
+          
+  
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../notebooks/" class="md-tabs__link">
+          
+  
+  
+  Notebooks
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Tabular Blueprint" class="md-nav__button md-logo" aria-label="Tabular Blueprint" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Tabular Blueprint
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/minghao51/iter8ml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#entry-point-trainerrun" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Entry Point: Trainer.run()
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pipeline-executor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pipeline Executor
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pipeline Executor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pipeline-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pipeline Modes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Methods
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#training-pipeline-dag-7-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Training Pipeline DAG (7 Modules)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Training Pipeline DAG (7 Modules)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#full-dag-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full DAG Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module Details
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Module Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-preprocessing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Preprocessing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-data-preparation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Data Preparation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-model-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Model Selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-baselines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Baselines
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-feature-engineering-config-variant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Feature Engineering (Config Variant)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-model-training" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Model Training
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-state-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. State Generation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#drift-detection-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Drift Detection Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tracking-hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tracking Hooks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tracking Hooks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hook-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hook Points
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attachment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attachment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#experimentconfig-pipeline-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ExperimentConfig — Pipeline Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-extend-the-dag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to Extend the DAG
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How to Extend the DAG">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#adding-a-new-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding a New Node
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-a-config-variant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding a Config Variant
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-a-new-pipeline-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding a New Pipeline Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-a-new-tracking-hook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding a New Tracking Hook
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dag-visualization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG Visualization
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../preprocessing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Preprocessing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature-engineering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Engineering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hpo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HPO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../drift-detection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drift Detection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../explainability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explainability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Notebooks
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Notebooks
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/exports/01_quick_start.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/exports/02_model_comparison.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Comparison
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/exports/03_drift_monitoring.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drift Monitoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/exports/04_hpo_optimization.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HPO Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/exports/05_methodology_benchmarks.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methodology Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#entry-point-trainerrun" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Entry Point: Trainer.run()
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pipeline-executor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pipeline Executor
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pipeline Executor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pipeline-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pipeline Modes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Methods
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#training-pipeline-dag-7-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Training Pipeline DAG (7 Modules)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Training Pipeline DAG (7 Modules)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#full-dag-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full DAG Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module Details
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Module Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-preprocessing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Preprocessing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-data-preparation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Data Preparation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-model-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Model Selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-baselines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Baselines
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-feature-engineering-config-variant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Feature Engineering (Config Variant)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-model-training" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Model Training
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-state-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. State Generation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#drift-detection-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Drift Detection Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tracking-hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tracking Hooks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tracking Hooks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hook-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hook Points
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attachment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attachment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#experimentconfig-pipeline-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ExperimentConfig — Pipeline Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-extend-the-dag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to Extend the DAG
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How to Extend the DAG">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#adding-a-new-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding a New Node
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-a-config-variant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding a Config Variant
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-a-new-pipeline-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding a New Pipeline Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-a-new-tracking-hook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding a New Tracking Hook
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dag-visualization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG Visualization
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="pipeline-architecture-hamilton-dag">Pipeline Architecture (Hamilton DAG)</h1>
+<p>Reference for the Hamilton-based DAG pipeline orchestration: how nodes are composed into pipelines, config variants, tracking hooks, and how to extend the graph.</p>
+<hr />
+<h2 id="overview">Overview</h2>
+<p>The pipeline layer uses <a href="https://github.com/DAGWorks-Inc/hamilton">Hamilton</a> to compose processing stages into a directed acyclic graph (DAG). Each Python function is a <strong>node</strong> — its parameters declare dependencies (other nodes), and Hamilton resolves execution order automatically.</p>
+<p><strong>Key benefits:</strong>
+- <strong>Declarative wiring:</strong> Function signatures define the DAG — no manual orchestration
+- <strong>Config variants:</strong> <code>@config.when(...)</code> activates different node implementations based on config
+- <strong>Observability:</strong> Every node execution can be tracked via lifecycle hooks
+- <strong>Two paths:</strong> The system tries Hamilton first; falls back to an imperative path if unavailable</p>
+<hr />
+<h2 id="architecture">Architecture</h2>
+<pre><code>                        ┌─────────────┐
+                        │   Trainer    │
+                        └──────┬───────┘
+                               │
+                    ┌──────────┴──────────┐
+                    │ try Hamilton DAG?   │
+                    └──┬──────────────┬───┘
+                 yes   │              │  no
+                ┌──────┴──────┐  ┌────┴─────┐
+                │ Pipeline    │  │ Imperative│
+                │ Executor    │  │ Path      │
+                └─────────────┘  └──────────┘
+</code></pre>
+<h3 id="entry-point-trainerrun">Entry Point: <code>Trainer.run()</code></h3>
+<p><strong>Source:</strong> <code>src/tabular_blueprint/engine/trainer.py:55</code></p>
+<ol>
+<li>Calls <code>_try_hamilton_training()</code> — builds and executes the full DAG</li>
+<li>If Hamilton is unavailable or fails, calls <code>_run_imperative()</code> — runs stages sequentially</li>
+</ol>
+<hr />
+<h2 id="pipeline-executor">Pipeline Executor</h2>
+<p><strong>Source:</strong> <code>src/tabular_blueprint/pipelines/executor.py:77</code></p>
+<p><strong>Class:</strong> <code>PipelineExecutor</code></p>
+<h3 id="pipeline-modes">Pipeline Modes</h3>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Enum</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TRAINING</code></td>
+<td><code>PipelineMode.TRAINING</code></td>
+<td>Full experiment: preprocessing → data prep → model selection → baselines → feature engineering → training → state</td>
+</tr>
+<tr>
+<td><code>DRIFT</code></td>
+<td><code>PipelineMode.DRIFT</code></td>
+<td>Drift detection between two datasets</td>
+</tr>
+<tr>
+<td><code>EXPORT</code></td>
+<td><code>PipelineMode.EXPORT</code></td>
+<td>Export champion model</td>
+</tr>
+<tr>
+<td><code>HPO</code></td>
+<td><code>PipelineMode.HPO</code></td>
+<td>Hyperparameter optimization</td>
+</tr>
+<tr>
+<td><code>INFERENCE</code></td>
+<td><code>PipelineMode.INFERENCE</code></td>
+<td>Batch prediction</td>
+</tr>
+</tbody>
+</table>
+<h3 id="key-methods">Key Methods</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Final Variables</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>run_preprocessing(df)</code></td>
+<td><code>["processed_dataframe"]</code></td>
+<td>Preprocessing-only pipeline</td>
+</tr>
+<tr>
+<td><code>run_data_prep(df, target_col, ...)</code></td>
+<td><code>["data_prep_result"]</code></td>
+<td>Preprocessing + quality audit + leakage + target transform</td>
+</tr>
+<tr>
+<td><code>run_training(df, target_col, ...)</code></td>
+<td><code>["training_state"]</code></td>
+<td>Full training pipeline (all 7 modules)</td>
+</tr>
+<tr>
+<td><code>run_drift(reference_df, live_df, method)</code></td>
+<td><code>["drift_report"]</code></td>
+<td>Drift detection pipeline</td>
+</tr>
+<tr>
+<td><code>get_mermaid_graph()</code></td>
+<td>—</td>
+<td>Returns Mermaid diagram of the DAG</td>
+</tr>
+<tr>
+<td><code>execute(inputs, final_vars, overrides)</code></td>
+<td>Custom</td>
+<td>Generic execution with custom targets</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="training-pipeline-dag-7-modules">Training Pipeline DAG (7 Modules)</h2>
+<p><strong>Source:</strong> <code>pipelines/executor.py:29</code></p>
+<p>The full training pipeline composes 7 node modules in order:</p>
+<pre><code class="language-python">modules = [
+    preprocessing,        # 1. Column detection + imputation + encoding
+    data_preparation,     # 2. Quality audit + leakage + target transform
+    model_selection,      # 3. Hardware-aware model routing
+    baselines,            # 4. Naive + Linear baseline CV
+    feature_engineering,  # 5. AFE (config-variant: enabled/disabled)
+    model_training,       # 6. Per-model train + calibrate + save
+    state_generation,     # 7. Leaderboard + registry + champion update
+]
+</code></pre>
+<h3 id="full-dag-flow">Full DAG Flow</h3>
+<pre><code>df (input)
+ │
+ ├─→ raw_dataframe
+ │     ├─→ numeric_columns
+ │     ├─→ categorical_columns
+ │     └─→ date_columns
+ │           │
+ ├─→ fill_nulls_numeric ─→ fill_nulls_categorical
+ │           │
+ ├─→ null_filled_df
+ │           │
+ ├─→ decomposed_dates_df
+ │           │
+ ├─→ encoded_df
+ │           │
+ ├─→ processed_dataframe ──→ validate_target
+ │                             │
+ │              ┌──────────────┤
+ │              │              │
+ │     quality_cleaned_df   (run_quality_audit,
+ │              │            auto_clean_noise,
+ │              │            noise_quality_threshold)
+ │              │
+ │     ┌────────┴────────┐
+ │     │                 │
+ │  adapter_result    feature_names
+ │     │
+ │  leakage_report ──→ (run_leakage_audit, task)
+ │     │
+ │  target_transform_result
+ │     │
+ │  data_prep_result
+ │     │
+ │  models_to_run ──→ (config_models, vram_gb, task)
+ │     │
+ │  baseline_models → baseline_scores
+ │     │                 │
+ │  training_features ──┤  ← @config.when(afe_enabled=True/False)
+ │     │                 │
+ │  training_results ←───┘  (per-model loop)
+ │     │
+ │  training_state ──→ (leaderboard, registry, champion)
+</code></pre>
+<hr />
+<h2 id="module-details">Module Details</h2>
+<h3 id="1-preprocessing">1. Preprocessing</h3>
+<p><strong>Source:</strong> <code>pipelines/nodes/preprocessing.py</code></p>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th>Input Dependencies</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>raw_dataframe</code></td>
+<td><code>df</code> (input)</td>
+<td><code>pl.DataFrame</code></td>
+</tr>
+<tr>
+<td><code>numeric_columns</code></td>
+<td><code>raw_dataframe</code></td>
+<td><code>list[str]</code></td>
+</tr>
+<tr>
+<td><code>categorical_columns</code></td>
+<td><code>raw_dataframe</code></td>
+<td><code>list[str]</code></td>
+</tr>
+<tr>
+<td><code>date_columns</code></td>
+<td><code>raw_dataframe</code></td>
+<td><code>list[str]</code></td>
+</tr>
+<tr>
+<td><code>fill_nulls_numeric</code></td>
+<td><code>raw_dataframe</code>, <code>numeric_columns</code></td>
+<td><code>pl.DataFrame</code></td>
+</tr>
+<tr>
+<td><code>fill_nulls_categorical</code></td>
+<td><code>fill_nulls_numeric</code>, <code>categorical_columns</code></td>
+<td><code>pl.DataFrame</code></td>
+</tr>
+<tr>
+<td><code>null_filled_df</code></td>
+<td><code>fill_nulls_numeric</code>, <code>fill_nulls_categorical</code>, <code>numeric_columns</code>, <code>categorical_columns</code></td>
+<td><code>pl.DataFrame</code></td>
+</tr>
+<tr>
+<td><code>decomposed_dates_df</code></td>
+<td><code>null_filled_df</code>, <code>date_columns</code></td>
+<td><code>pl.DataFrame</code></td>
+</tr>
+<tr>
+<td><code>encoded_df</code></td>
+<td><code>decomposed_dates_df</code>, <code>categorical_columns</code></td>
+<td><code>pl.DataFrame</code></td>
+</tr>
+<tr>
+<td><code>processed_dataframe</code></td>
+<td><code>encoded_df</code></td>
+<td><code>pl.DataFrame</code></td>
+</tr>
+</tbody>
+</table>
+<p>See <a href="../preprocessing/">preprocessing.md</a> for method details.</p>
+<h3 id="2-data-preparation">2. Data Preparation</h3>
+<p><strong>Source:</strong> <code>pipelines/nodes/data_preparation.py</code></p>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th>Input Dependencies</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>validate_target</code></td>
+<td><code>processed_dataframe</code>, <code>target_col</code></td>
+<td><code>pl.DataFrame</code></td>
+</tr>
+<tr>
+<td><code>quality_cleaned_df</code></td>
+<td><code>validate_target</code>, <code>target_col</code>, <code>run_quality_audit</code>, <code>auto_clean_noise</code>, <code>noise_quality_threshold</code></td>
+<td><code>tuple[df, cleaned, n_dropped]</code></td>
+</tr>
+<tr>
+<td><code>adapter_result</code></td>
+<td><code>quality_cleaned_df</code>, <code>target_col</code></td>
+<td><code>(X, y)</code> numpy arrays</td>
+</tr>
+<tr>
+<td><code>feature_names</code></td>
+<td><code>quality_cleaned_df</code>, <code>target_col</code></td>
+<td><code>list[str]</code></td>
+</tr>
+<tr>
+<td><code>leakage_report</code></td>
+<td><code>adapter_result</code>, <code>run_leakage_audit</code>, <code>task</code></td>
+<td><code>LeakageReport \| None</code></td>
+</tr>
+<tr>
+<td><code>target_transform_result</code></td>
+<td><code>adapter_result</code>, <code>target_transform</code>, <code>target_skewness_threshold</code></td>
+<td><code>(y, transformer, method, skew_orig, skew_trans, applied)</code></td>
+</tr>
+<tr>
+<td><code>data_prep_result</code></td>
+<td><code>adapter_result</code>, <code>target_transform_result</code>, <code>feature_names</code>, <code>leakage_report</code>, <code>quality_cleaned_df</code></td>
+<td><code>DataPrepResult</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="3-model-selection">3. Model Selection</h3>
+<p><strong>Source:</strong> <code>pipelines/nodes/model_selection.py</code></p>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th>Input Dependencies</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>models_to_run</code></td>
+<td><code>data_prep_result</code>, <code>task</code>, <code>vram_gb</code>, <code>config_models</code></td>
+<td><code>list[str]</code></td>
+</tr>
+</tbody>
+</table>
+<p>If <code>config_models="auto"</code>, uses <code>ModelSelector.select()</code>. Otherwise uses the provided list.</p>
+<h3 id="4-baselines">4. Baselines</h3>
+<p><strong>Source:</strong> <code>pipelines/nodes/baselines.py</code></p>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th>Input Dependencies</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>baseline_models</code></td>
+<td>(none)</td>
+<td><code>dict[str, type]</code></td>
+</tr>
+<tr>
+<td><code>baseline_scores</code></td>
+<td><code>data_prep_result</code>, <code>baseline_models</code>, <code>task</code>, <code>cv_folds</code>, <code>cv_strategy</code>, <code>metrics</code></td>
+<td><code>dict[str, dict[str, float]]</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="5-feature-engineering-config-variant">5. Feature Engineering (Config Variant)</h3>
+<p><strong>Source:</strong> <code>pipelines/nodes/feature_engineering.py</code></p>
+<p>Uses <code>@config.when()</code> to activate different implementations:</p>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th>Config Condition</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>training_features__default</code></td>
+<td><code>afe_enabled != True</code></td>
+<td>Pass-through: returns <code>(X, feature_names)</code> from <code>data_prep_result</code></td>
+</tr>
+<tr>
+<td><code>training_features__afe_enabled</code></td>
+<td><code>afe_enabled == True</code></td>
+<td>Runs full AFE: top-K → interactions → pruning</td>
+</tr>
+</tbody>
+</table>
+<p>Config is set via <code>builder.with_config({"afe_enabled": True/False})</code>.</p>
+<h3 id="6-model-training">6. Model Training</h3>
+<p><strong>Source:</strong> <code>pipelines/nodes/model_training.py</code></p>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th>Input Dependencies</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>training_results</code></td>
+<td><code>training_features</code>, <code>data_prep_result</code>, <code>models_to_run</code>, <code>baseline_scores</code>, <code>task</code>, <code>cv_folds</code>, <code>cv_strategy</code>, <code>metrics</code>, <code>calibration</code>, <code>workspace_dir</code>, <code>run_id</code></td>
+<td><code>list[ModelResult]</code></td>
+</tr>
+</tbody>
+</table>
+<p>For each model in <code>models_to_run</code> (excluding baselines):
+1. Resolve class via <code>get_model_class(name)</code>
+2. Cross-validate via <code>Evaluator.evaluate()</code>
+3. Fit on full data (with optional calibration)
+4. Save artifact
+5. Compute lift over baselines</p>
+<h3 id="7-state-generation">7. State Generation</h3>
+<p><strong>Source:</strong> <code>pipelines/nodes/state_generation.py</code></p>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th>Input Dependencies</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>training_state</code></td>
+<td><code>training_results</code>, <code>baseline_scores</code>, <code>metrics</code>, <code>run_id</code>, <code>experiment_name</code>, <code>task</code>, <code>workspace_dir</code></td>
+<td><code>TrainingState</code></td>
+</tr>
+</tbody>
+</table>
+<p>Aggregates all results, builds leaderboard, promotes champion to registry.</p>
+<hr />
+<h2 id="drift-detection-pipeline">Drift Detection Pipeline</h2>
+<p><strong>Source:</strong> <code>pipelines/nodes/drift_detection.py</code></p>
+<p>Uses <code>@config.when(drift_method=...)</code> for three variants:</p>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th>Config</th>
+<th>Method</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>drift_report__psi</code></td>
+<td><code>drift_method="psi"</code></td>
+<td>PSI drift detection</td>
+</tr>
+<tr>
+<td><code>drift_report__domain</code></td>
+<td><code>drift_method="domain_classifier"</code></td>
+<td>Domain classifier AUC</td>
+</tr>
+<tr>
+<td><code>drift_report__both</code></td>
+<td><code>drift_method="both"</code></td>
+<td>Both methods, merged report</td>
+</tr>
+</tbody>
+</table>
+<p>Config is set via <code>builder.with_config({"drift_method": "psi"})</code>.</p>
+<hr />
+<h2 id="tracking-hooks">Tracking Hooks</h2>
+<p><strong>Source:</strong> <code>src/tabular_blueprint/pipelines/hooks/tracking_hook.py</code></p>
+<p><strong>Class:</strong> <code>TrackingHook</code> — a Hamilton lifecycle adapter that logs node execution to the experiment tracker.</p>
+<h3 id="hook-points">Hook Points</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Trigger</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>run_on_node_success</code></td>
+<td>Node completes</td>
+<td>Logs <code>{"event": "node_completed", "node": name, "duration_seconds": ...}</code></td>
+</tr>
+<tr>
+<td><code>run_on_node_error</code></td>
+<td>Node raises exception</td>
+<td>Logs <code>{"event": "node_error", "node": name, "error": str(exception)}</code></td>
+</tr>
+<tr>
+<td><code>run_before_node_execution</code></td>
+<td>Before node runs</td>
+<td>No-op (placeholder for future use)</td>
+</tr>
+<tr>
+<td><code>run_after_node_execution</code></td>
+<td>After node runs</td>
+<td>No-op (placeholder for future use)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="attachment">Attachment</h3>
+<p>Hooks are attached when building the Hamilton driver:</p>
+<pre><code class="language-python">builder = driver.Builder().with_modules(*modules)
+hook = TrackingHook(tracker, run_id)
+builder = builder.with_adapters(hook)
+dr = builder.build()
+</code></pre>
+<hr />
+<h2 id="configuration">Configuration</h2>
+<p><strong>Source:</strong> <code>src/tabular_blueprint/config.py</code></p>
+<h3 id="experimentconfig-pipeline-parameters"><code>ExperimentConfig</code> — Pipeline Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>task</code></td>
+<td>required</td>
+<td><code>CLASSIFICATION</code> or <code>REGRESSION</code></td>
+</tr>
+<tr>
+<td><code>target_col</code></td>
+<td>required</td>
+<td>Target column name</td>
+</tr>
+<tr>
+<td><code>data_path</code></td>
+<td>required</td>
+<td>Path to data file</td>
+</tr>
+<tr>
+<td><code>cv_folds</code></td>
+<td>5</td>
+<td>Cross-validation folds</td>
+</tr>
+<tr>
+<td><code>cv_strategy</code></td>
+<td>auto (STRATIFIED for classification, KFOLD for regression)</td>
+<td>CV splitting strategy</td>
+</tr>
+<tr>
+<td><code>models</code></td>
+<td><code>"auto"</code></td>
+<td><code>"auto"</code> for hardware-aware selection, or list of model names</td>
+</tr>
+<tr>
+<td><code>metrics</code></td>
+<td>auto (<code>["roc_auc", "f1_macro"]</code> or <code>["rmse", "r2"]</code>)</td>
+<td>Evaluation metrics</td>
+</tr>
+<tr>
+<td><code>afe_enabled</code></td>
+<td><code>False</code></td>
+<td>Enable automated feature engineering</td>
+</tr>
+<tr>
+<td><code>afe_top_k</code></td>
+<td>10</td>
+<td>Top-K features for AFE</td>
+</tr>
+<tr>
+<td><code>afe_lift_threshold</code></td>
+<td>0.01</td>
+<td>Minimum lift to keep an interaction</td>
+</tr>
+<tr>
+<td><code>afe_pruning</code></td>
+<td><code>False</code></td>
+<td>Enable feature pruning after AFE</td>
+</tr>
+<tr>
+<td><code>target_transform</code></td>
+<td><code>"none"</code></td>
+<td>Target transformation: <code>"none"</code>, <code>"auto"</code>, <code>"log1p"</code>, <code>"yeo-johnson"</code>, <code>"box-cox"</code></td>
+</tr>
+<tr>
+<td><code>calibration</code></td>
+<td><code>"none"</code></td>
+<td>Probability calibration: <code>"none"</code>, <code>"platt"</code>, <code>"isotonic"</code></td>
+</tr>
+<tr>
+<td><code>drift_detection</code></td>
+<td><code>"psi"</code></td>
+<td>Drift method: <code>"none"</code>, <code>"psi"</code>, <code>"domain_classifier"</code>, <code>"both"</code></td>
+</tr>
+<tr>
+<td><code>shap_enabled</code></td>
+<td><code>False</code></td>
+<td>Enable SHAP explainability</td>
+</tr>
+<tr>
+<td><code>max_workers</code></td>
+<td>1</td>
+<td>Concurrent model training (auto-reduced to 1 for low-VRAM GPUs)</td>
+</tr>
+<tr>
+<td><code>run_quality_audit</code></td>
+<td><code>True</code></td>
+<td>Enable Cleanlab label noise detection</td>
+</tr>
+<tr>
+<td><code>auto_clean_noise</code></td>
+<td><code>False</code></td>
+<td>Auto-drop noisy labels</td>
+</tr>
+<tr>
+<td><code>tracker</code></td>
+<td><code>JSONL</code></td>
+<td>Tracker backend: <code>JSONL</code>, <code>WANDB</code>, <code>MLFLOW</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="how-to-extend-the-dag">How to Extend the DAG</h2>
+<h3 id="adding-a-new-node">Adding a New Node</h3>
+<ol>
+<li>Create a function in the appropriate module under <code>pipelines/nodes/</code></li>
+<li>Its parameters are automatically resolved as dependencies by Hamilton</li>
+<li>The function name becomes the node name in the DAG</li>
+</ol>
+<pre><code class="language-python"># In pipelines/nodes/my_module.py
+def my_custom_feature(processed_dataframe: pl.DataFrame) -&gt; pl.DataFrame:
+    # processed_dataframe is auto-resolved from the preprocessing module
+    return processed_dataframe.with_columns(...)
+</code></pre>
+<h3 id="adding-a-config-variant">Adding a Config Variant</h3>
+<p>Use <code>@config.when()</code> to create conditional node implementations:</p>
+<pre><code class="language-python">from hamilton.function_modifiers import config
+
+@config.when(feature_method=&quot;advanced&quot;)
+def training_features__advanced(
+    data_prep_result: object,
+    task: str,
+) -&gt; tuple[np.ndarray, list[str]]:
+    # Advanced feature engineering
+    ...
+
+@config.when_not(feature_method=&quot;advanced&quot;)
+def training_features__default(
+    data_prep_result: object,
+) -&gt; tuple[np.ndarray, list[str]]:
+    return data_prep_result.X, data_prep_result.feature_names
+</code></pre>
+<p>Then set the config when building: <code>builder.with_config({"feature_method": "advanced"})</code>.</p>
+<h3 id="adding-a-new-pipeline-mode">Adding a New Pipeline Mode</h3>
+<ol>
+<li>Add a new value to <code>PipelineMode</code> enum in <code>executor.py</code></li>
+<li>Register modules and final variables in <code>_MODE_MODULES</code> and <code>_MODE_FINAL_VARS</code></li>
+<li>Add a <code>run_&lt;mode&gt;()</code> method to <code>PipelineExecutor</code></li>
+</ol>
+<h3 id="adding-a-new-tracking-hook">Adding a New Tracking Hook</h3>
+<p>Extend <code>TrackingHook</code> or create a new adapter implementing the Hamilton lifecycle methods:</p>
+<ul>
+<li><code>run_before_node_execution</code></li>
+<li><code>run_after_node_execution</code></li>
+<li><code>run_on_node_error</code></li>
+<li><code>run_on_node_success</code></li>
+</ul>
+<p>Attach via <code>builder.with_adapters(hook)</code>.</p>
+<hr />
+<h2 id="dag-visualization">DAG Visualization</h2>
+<p>The executor can generate a Mermaid diagram of the current DAG:</p>
+<pre><code class="language-python">executor = PipelineExecutor(mode=PipelineMode.TRAINING)
+print(executor.get_mermaid_graph())
+</code></pre>
+<p>This is also logged automatically in the <code>experiment_started</code> event under <code>pipeline_lineage</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
