@@ -6,7 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from tabular_blueprint.utils.jsonl import load_events
+from tabular_blueprint.utils.jsonl import iter_events
 
 LOWER_IS_BETTER_METRICS = {"rmse", "mae", "mse", "log_loss", "loss", "error"}
 
@@ -149,7 +149,7 @@ class ReportService:
 
     def _load_completed_events(self) -> list[dict[str, Any]]:
         return [
-            event for event in load_events(self.log_path) if event.get("event") == "model_completed"
+            event for event in iter_events(self.log_path) if event.get("event") == "model_completed"
         ]
 
     def _load_registry(self) -> dict[str, Any]:

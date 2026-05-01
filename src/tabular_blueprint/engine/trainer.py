@@ -2,6 +2,7 @@
 
 import time
 import uuid
+from pathlib import Path
 from typing import Any
 
 import polars as pl
@@ -10,6 +11,7 @@ from tabular_blueprint.config import ExperimentConfig, HardwareProfile
 from tabular_blueprint.data.loaders import get_data_hash
 from tabular_blueprint.engine.data_preparation import DataPreparationService
 from tabular_blueprint.engine.drift_checker import DriftChecker
+from tabular_blueprint.engine.embedding_trainer import EmbeddingEngine
 from tabular_blueprint.engine.explainability_service import ExplainabilityService
 from tabular_blueprint.engine.feature_engineer import FeatureEngineer
 from tabular_blueprint.engine.model_trainer import ModelTrainer
@@ -24,6 +26,18 @@ BASELINE_MODELS = {
 }
 
 
+def _load_completed_models(log_path: Path, run_id: str) -> set[str]:
+    """Load model names that already completed in a given run."""
+    from tabular_blueprint.utils.jsonl import load_events
+
+    events = load_events(log_path)
+    return {
+        e["model"]
+        for e in events
+        if e.get("event") == "model_completed" and e.get("run_id") == run_id and "model" in e
+    }
+
+
 class Trainer:
     def __init__(
         self,
@@ -31,9 +45,26 @@ class Trainer:
         tracker: Tracker | None = None,
         run_baselines: bool = True,
         run_leakage_audit: bool = True,
+        use_cache: bool = True,
+        resume_run_id: str | None = None,
     ):
         HardwareProfile.configure_omp_threads()
         self.config = config
+        self.use_cache = use_cache
+        self.resume_run_id = resume_run_id
+        self._completed_models: set[str] = set()
+        self._hamilton_warning_emitted = False
+        if resume_run_id:
+            self._completed_models = _load_completed_models(
+                config.workspace_dir / "experiments.jsonl", resume_run_id
+            )
+            if self._completed_models:
+                import typer
+
+                typer.echo(
+                    f"[resume] Skipping completed models: "
+                    f"{', '.join(sorted(self._completed_models))}"
+                )
         _tracker: Tracker
         if tracker is not None:
             _tracker = tracker
@@ -48,6 +79,7 @@ class Trainer:
 
         self._data_prep = DataPreparationService(config, _tracker)
         self._feature_eng = FeatureEngineer(config, _tracker)
+        self._embedding_eng = EmbeddingEngine(config, _tracker)
         self._model_trainer = ModelTrainer(config, _tracker, self.hardware)
         self._drift = DriftChecker(config, _tracker)
         self._explainer = ExplainabilityService(config, _tracker)
@@ -96,21 +128,72 @@ class Trainer:
                 run_leakage_audit=self.run_leakage_audit,
                 target_transform=self.config.target_transform,
                 target_skewness_threshold=self.config.target_skewness_threshold,
+                embedding_enabled=self.config.embedding_enabled,
+                embedding_method=self.config.embedding_method.value,
+                embedding_dim=self.config.embedding_dim,
+                embedding_max_categories=self.config.embedding_max_categories,
+                embedding_epochs=self.config.embedding_epochs,
+                embedding_lr=self.config.embedding_lr,
+                embedding_mlp_width=self.config.embedding_mlp_width,
+                embedding_mlp_depth=self.config.embedding_mlp_depth,
+                embedding_ae_latent_dim=self.config.embedding_ae_latent_dim,
+                embedding_ae_dropout=self.config.embedding_ae_dropout,
             )
             if state is not None:
                 self._log_hamilton_state_events(state, run_id)
                 return state.results
-        except Exception:
-            pass
+        except Exception as e:
+            self.tracker.log_event(
+                {
+                    "event": "hamilton_fallback",
+                    "run_id": run_id,
+                    "error_type": type(e).__name__,
+                    "error": str(e),
+                }
+            )
+            if not self._hamilton_warning_emitted:
+                import typer
+
+                typer.echo(
+                    "[warning] Hamilton training path failed; falling back to imperative execution."
+                )
+                self._hamilton_warning_emitted = True
         return None
 
     def _run_imperative(self, df: pl.DataFrame, run_id: str) -> dict:
         if self.executor.available:
             df = self.executor.run_preprocessing(df)
 
+        if self.config.data_sample < 1.0:
+            fraction = max(0.01, min(1.0, self.config.data_sample))
+            df = df.sample(fraction=fraction, seed=self.config.random_seed, shuffle=True)
+
         data_hash = get_data_hash(df)
         n_rows = len(df)
         n_features = len(df.columns) - 1
+
+        cached = None
+        if self.use_cache:
+            from tabular_blueprint.data.cache import PreprocessingCache
+
+            cache = PreprocessingCache(self.config.workspace_dir)
+            cached = cache.load(data_hash, self.config)
+            if cached is not None:
+                import typer
+
+                typer.echo(f"[cache] Loaded preprocessed data (hit for {data_hash})")
+                X, y, feature_names = cached
+
+        if cached is None:
+            prep_result = self._data_prep.prepare(df, run_id, self.run_leakage_audit)
+            X, y = prep_result.X, prep_result.y
+            feature_names = prep_result.feature_names
+
+            if self.use_cache:
+                from tabular_blueprint.data.cache import PreprocessingCache
+
+                cache = PreprocessingCache(self.config.workspace_dir)
+                cache.save(data_hash, self.config, X, y, feature_names)
 
         models_to_run = (
             self.selector.select(
@@ -142,9 +225,16 @@ class Trainer:
             }
         )
 
-        prep_result = self._data_prep.prepare(df, run_id, self.run_leakage_audit)
-        X, y = prep_result.X, prep_result.y
-        feature_names = prep_result.feature_names
+        if self.config.embedding_enabled:
+            X, feature_names = self._embedding_eng.fit_transform(
+                df=df,
+                X=X,
+                y=y,
+                feature_names=feature_names,
+                target_col=self.config.target_col,
+                run_id=run_id,
+                data_hash=data_hash,
+            )
 
         evaluator = self._build_evaluator()
 
@@ -156,8 +246,8 @@ class Trainer:
                 evaluator,
                 run_id,
                 data_hash,
-                prep_result.n_rows,
-                prep_result.n_features,
+                n_rows,
+                n_features,
                 BASELINE_MODELS,
             )
 
@@ -175,6 +265,8 @@ class Trainer:
         if self.hardware.has_gpu and self.hardware.vram_gb < 16:
             max_workers = 1
 
+        models_to_run = [m for m in models_to_run if m not in self._completed_models]
+
         results = self._model_trainer.train_all(
             models_to_run,
             X,
@@ -182,8 +274,8 @@ class Trainer:
             evaluator,
             run_id,
             data_hash,
-            prep_result.n_rows,
-            prep_result.n_features,
+            n_rows,
+            n_features,
             max_workers,
             baseline_scores=baseline_scores,
             feature_names=feature_names,

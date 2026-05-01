@@ -113,6 +113,8 @@ def optimize_model(
         Dict with best_params, best_value, n_trials, and optionally
         warmstart_trials (number injected) and param_importances.
     """
+    warnings: list[dict[str, str]] = []
+
     if log_path is not None:
         from tabular_blueprint.engine.hpo_warmstart import create_warmstarted_study
 
@@ -142,6 +144,30 @@ def optimize_model(
             "task": task,
             "params": params,
             "cv_scores": cv_scores,
+        }
+        path = Path(log_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(event) + "\n")
+
+    def _log_warning_event(
+        *,
+        source: str,
+        warning_type: str,
+        message: str,
+    ) -> None:
+        warning = {"source": source, "warning_type": warning_type, "message": message}
+        warnings.append(warning)
+        if log_path is None:
+            return
+        event = {
+            "event": "hpo_warning",
+            "run_id": f"hpo_{model_name}",
+            "timestamp": datetime.now(UTC).isoformat(),
+            "model": model_name,
+            "warning_source": source,
+            "warning_type": warning_type,
+            "message": message,
         }
         path = Path(log_path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -207,6 +233,13 @@ def optimize_model(
 
     if injection is not None:
         result["warmstart_trials"] = injection.n_trials_injected
+        result["warmstart_summary"] = {
+            "n_runs_scanned": injection.n_runs_scanned,
+            "n_trials_injected": injection.n_trials_injected,
+            "n_skipped_missing_scores": injection.n_skipped_missing_scores,
+            "n_skipped_missing_params": injection.n_skipped_missing_params,
+            "n_skipped_invalid_trials": injection.n_skipped_invalid_trials,
+        }
 
     try:
         from tabular_blueprint.engine.hpo_importance import compute_param_importance
@@ -216,7 +249,14 @@ def optimize_model(
             {"param": p.param_name, "importance": p.importance}
             for p in importance_report.importances
         ]
-    except Exception:
-        pass
+    except Exception as e:
+        _log_warning_event(
+            source="hpo_importance",
+            warning_type=type(e).__name__,
+            message=f"Failed to compute parameter importances: {e}",
+        )
+
+    if warnings:
+        result["warnings"] = warnings
 
     return result

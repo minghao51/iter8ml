@@ -50,6 +50,40 @@ def test_init_command():
             os.chdir(orig)
 
 
+def test_init_preserves_existing_registry_without_force_reset():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        orig = os.getcwd()
+        os.chdir(tmpdir)
+        try:
+            workspace = Path(tmpdir, "workspace")
+            workspace.mkdir(parents=True, exist_ok=True)
+            registry_path = workspace / "registry.json"
+            registry_path.write_text('{"existing":"champion"}')
+
+            result = runner.invoke(app, ["init"])
+            assert result.exit_code == 0
+            assert registry_path.read_text() == '{"existing":"champion"}'
+        finally:
+            os.chdir(orig)
+
+
+def test_init_force_reset_registry_overwrites_existing_registry():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        orig = os.getcwd()
+        os.chdir(tmpdir)
+        try:
+            workspace = Path(tmpdir, "workspace")
+            workspace.mkdir(parents=True, exist_ok=True)
+            registry_path = workspace / "registry.json"
+            registry_path.write_text('{"existing":"champion"}')
+
+            result = runner.invoke(app, ["init", "--force-reset-registry"])
+            assert result.exit_code == 0
+            assert registry_path.read_text() == "{}"
+        finally:
+            os.chdir(orig)
+
+
 def test_init_with_data(sample_csv):
     result = runner.invoke(app, ["init", "--data", sample_csv])
     assert result.exit_code == 0
@@ -127,10 +161,10 @@ def test_run_non_python_config_exits_with_error(tmp_path):
 
     result = runner.invoke(
         app,
-        ["run", "--config", str(config_path), "--data", "data.csv"],
+        ["run", "--config", str(config_path), "--allow-unsafe-config", "--data", "data.csv"],
     )
     assert result.exit_code == 1
-    assert "config must be a Python module" in result.stdout
+    assert "Unsupported config format" in result.stdout
 
 
 def test_run_config_missing_config_object_exits_with_error(tmp_path):
@@ -139,10 +173,44 @@ def test_run_config_missing_config_object_exits_with_error(tmp_path):
 
     result = runner.invoke(
         app,
-        ["run", "--config", str(config_path), "--data", "data.csv"],
+        ["run", "--config", str(config_path), "--allow-unsafe-config", "--data", "data.csv"],
     )
     assert result.exit_code == 1
     assert "must define `config`" in result.stdout
+
+
+def test_run_python_config_rejected_without_unsafe_flag(tmp_path):
+    config_path = tmp_path / "config.py"
+    config_path.write_text(
+        "from tabular_blueprint.config import ExperimentConfig\n"
+        "from tabular_blueprint.constants import TaskType\n"
+        "config = ExperimentConfig("
+        "name='x', task=TaskType.CLASSIFICATION, target_col='target', data_path='d.csv')\n"
+    )
+    result = runner.invoke(
+        app,
+        ["run", "--config", str(config_path), "--data", "data.csv"],
+    )
+    assert result.exit_code == 1
+    assert "disabled by default for safety" in result.stdout
+
+
+def test_run_python_config_allowed_with_unsafe_flag(tmp_path):
+    config_path = tmp_path / "config.py"
+    data_path = tmp_path / "data.txt"
+    data_path.write_text("x")
+    config_path.write_text(
+        "from tabular_blueprint.config import ExperimentConfig\n"
+        "from tabular_blueprint.constants import TaskType\n"
+        f"config = ExperimentConfig("
+        f"name='x', task=TaskType.CLASSIFICATION, target_col='target', data_path='{data_path}')\n"
+    )
+    result = runner.invoke(
+        app,
+        ["run", "--config", str(config_path), "--allow-unsafe-config"],
+    )
+    assert result.exit_code == 1
+    assert "Unsupported file format: .txt" in result.stdout
 
 
 def test_run_with_csv(sample_csv):

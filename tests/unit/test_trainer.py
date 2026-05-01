@@ -82,3 +82,42 @@ def test_omp_threads_configurable(monkeypatch):
     custom_count = HardwareProfile.configure_omp_threads(threads=4)
     assert custom_count == 4
     assert os.environ.get("OMP_NUM_THREADS") == "4"
+
+
+def test_hamilton_fallback_logs_warning_event(monkeypatch, tmp_path):
+    import polars as pl
+
+    from tabular_blueprint.engine.tracker import JSONLTracker
+    from tabular_blueprint.engine.trainer import PipelineMode
+
+    class FailingExecutor:
+        available = True
+
+        def run_training(self, **kwargs):
+            raise RuntimeError("Hamilton failure")
+
+    config = ExperimentConfig(
+        name="test",
+        task=TaskType.CLASSIFICATION,
+        target_col="target",
+        data_path="test.csv",
+    )
+    trainer = Trainer(config, tracker=JSONLTracker(log_path=str(tmp_path / "events.jsonl")))
+    trainer.tracker.current_run_id = "exp_test"
+    monkeypatch.setattr(
+        "tabular_blueprint.engine.trainer.PipelineExecutor",
+        lambda mode=PipelineMode.TRAINING: FailingExecutor(),
+    )
+
+    events = []
+    original_log_event = trainer.tracker.log_event
+
+    def _capture(event):
+        events.append(event)
+        original_log_event(event)
+
+    monkeypatch.setattr(trainer.tracker, "log_event", _capture)
+    result = trainer._try_hamilton_training(pl.DataFrame({"a": [1], "target": [0]}), "exp_test")
+
+    assert result is None
+    assert any(event.get("event") == "hamilton_fallback" for event in events)

@@ -181,6 +181,7 @@ class TestCreateWarmstartedStudy:
             log_path=str(sample_jsonl),
         )
         assert injection.n_trials_injected == 2
+        assert injection.n_skipped_missing_scores == 1
 
     def test_skips_malformed_params(self, tmp_path: Path):
         path = tmp_path / "events.jsonl"
@@ -198,6 +199,25 @@ class TestCreateWarmstartedStudy:
             log_path=str(path),
         )
         assert injection.n_trials_injected == 0
+        assert injection.n_skipped_missing_params == 1
+
+    def test_counts_invalid_trial_payloads(self, tmp_path: Path):
+        path = tmp_path / "events.jsonl"
+        bad_event = {
+            "event": "hpo_trial_completed",
+            "model": "catboost",
+            "cv_scores": {"roc_auc": 0.8},
+            "params": {"depth": None},
+        }
+        path.write_text(json.dumps(bad_event) + "\n")
+
+        _study, injection = create_warmstarted_study(
+            model_name="catboost",
+            direction="maximize",
+            log_path=str(path),
+        )
+        assert injection.n_trials_injected == 0
+        assert injection.n_skipped_invalid_trials == 1
 
     def test_does_not_include_wrong_model(self, sample_jsonl):
         _study, injection = create_warmstarted_study(

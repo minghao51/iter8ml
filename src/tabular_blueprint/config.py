@@ -1,14 +1,17 @@
 """Application configuration: experiment settings and hardware profiles."""
 
+import importlib.util
+import json
 import os
 import platform
 from pathlib import Path
 from typing import Any, Literal
 
 import psutil
+import yaml  # type: ignore[import]
 from pydantic import BaseModel, Field, field_serializer, model_validator
 
-from tabular_blueprint.constants import CVStrategy, TaskType, TrackerType
+from tabular_blueprint.constants import CVStrategy, EmbeddingMethod, TaskType, TrackerType
 
 _omp_configured: bool = False
 
@@ -31,6 +34,9 @@ class ExperimentConfig(BaseModel):
     noise_quality_threshold: float = 0.5
     workspace_dir: Path = Field(default_factory=lambda: Path("workspace"))
     max_workers: int = Field(default=1, description="Number of models to train concurrently")
+    data_sample: float = Field(
+        default=1.0, description="Fraction of data to use (0.0-1.0). 1.0 = full dataset"
+    )
     afe_enabled: bool = False
     afe_top_k: int = 10
     afe_lift_threshold: float = 0.01
@@ -43,6 +49,16 @@ class ExperimentConfig(BaseModel):
     shap_enabled: bool = False
     llm_enabled: bool = False
     llm_model: str = "claude-sonnet-4-20250514"
+    embedding_enabled: bool = False
+    embedding_method: EmbeddingMethod = EmbeddingMethod.ENTITY
+    embedding_dim: int = 16
+    embedding_max_categories: int = 50
+    embedding_epochs: int = 10
+    embedding_lr: float = 1e-3
+    embedding_mlp_width: int = 128
+    embedding_mlp_depth: int = 2
+    embedding_ae_latent_dim: int = 32
+    embedding_ae_dropout: float = 0.2
 
     @model_validator(mode="after")
     def apply_task_defaults(self) -> "ExperimentConfig":
@@ -56,11 +72,61 @@ class ExperimentConfig(BaseModel):
             )
         return self
 
-    @field_serializer("task", "cv_strategy", "tracker", when_used="json")
+    @classmethod
+    def from_file(
+        cls, path: str | Path, *, allow_unsafe_python: bool = False
+    ) -> "ExperimentConfig":
+        """Load config from a .yaml, .toml, .json, or .py file."""
+        path = Path(path)
+        if not path.exists():
+            raise FileNotFoundError(f"Config file not found: {path}")
+
+        suffix = path.suffix.lower()
+
+        if suffix in (".yaml", ".yml"):
+            with open(path) as f:
+                data = yaml.safe_load(f)
+            return cls.model_validate(data)
+
+        if suffix == ".toml":
+            try:
+                import tomllib
+            except ModuleNotFoundError:
+                import tomli as tomllib  # type: ignore[no-redef]
+            with open(path, "rb") as f:
+                data = tomllib.load(f)
+            return cls.model_validate(data)
+
+        if suffix == ".json":
+            with open(path) as f:
+                data = json.load(f)
+            return cls.model_validate(data)
+
+        if suffix == ".py":
+            if not allow_unsafe_python:
+                raise ValueError(
+                    "Python config files are disabled by default for safety. "
+                    "Use --allow-unsafe-config to enable loading .py config files."
+                )
+            spec = importlib.util.spec_from_file_location("experiment_config", path)
+            if spec is None or spec.loader is None:
+                raise ValueError(f"Could not load config module: {path}")
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            experiment_config = getattr(module, "config", None)
+            if experiment_config is None:
+                raise ValueError(f"Config module must define `config`: {path}")
+            return experiment_config
+
+        raise ValueError(
+            f"Unsupported config format: {suffix}. Use .yaml, .yml, .toml, .json, or .py"
+        )
+
+    @field_serializer("task", "cv_strategy", "tracker", "embedding_method", when_used="json")
     def serialize_enum(self, value: Any) -> str:
-        if isinstance(value, TaskType | CVStrategy | TrackerType):
+        if isinstance(value, TaskType | CVStrategy | TrackerType | EmbeddingMethod):
             return value.value
-        return value
+        return str(value)
 
     @field_serializer("workspace_dir", when_used="json")
     def serialize_path(self, value: Path) -> str:

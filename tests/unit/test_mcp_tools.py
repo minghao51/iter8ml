@@ -124,7 +124,9 @@ def test_registry_promote_missing_run(tmp_path):
         Path("workspace/experiments.jsonl").write_text("")
         Path("workspace/registry.json").write_text("{}")
         result = registry_promote("nonexistent_run", "test_key")
-        assert "not found" in result
+        data = json.loads(result)
+        assert data["status"] == "not_found"
+        assert "not found" in data["message"]
     finally:
         os.chdir(orig_cwd)
 
@@ -149,9 +151,12 @@ def test_registry_promote_regression_uses_r2_score(tmp_path):
         Path("workspace/registry.json").write_text("{}")
 
         result = registry_promote("run_123", "regression:test")
+        data = json.loads(result)
 
         registry = json.loads(Path("workspace/registry.json").read_text())
-        assert "Promoted run_123" in result
+        assert data["status"] == "promoted"
+        assert data["selected_metric"] == "r2"
+        assert data["selected_score"] == 0.81
         assert registry["regression:test"]["score"] == 0.81
     finally:
         os.chdir(orig_cwd)

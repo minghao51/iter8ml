@@ -187,3 +187,43 @@ def test_optimize_model_preserves_exception_context():
     # Should have completed trials without crashing
     assert result["n_trials"] == 2
     assert "best_params" in result
+
+
+def test_optimize_model_reports_warmstart_summary_and_warnings(sample_data, tmp_path, monkeypatch):
+    X, y = sample_data
+    config = ExperimentConfig(
+        name="hpo_test",
+        task=TaskType.CLASSIFICATION,
+        target_col="target",
+        data_path="test.csv",
+        cv_folds=2,
+        metrics=["roc_auc"],
+    )
+    evaluator = Evaluator(config)
+    log_path = tmp_path / "events.jsonl"
+    log_path.write_text(
+        '{"event":"hpo_trial_completed","model":"dummy","cv_scores":{"roc_auc":0.7},"params":"bad"}\n'
+    )
+
+    import tabular_blueprint.engine.hpo_importance as hpo_importance
+
+    def _raise_importance(study):
+        raise RuntimeError("importance failed")
+
+    monkeypatch.setattr(hpo_importance, "compute_param_importance", _raise_importance)
+
+    result = optimize_model(
+        DummyModel,
+        X,
+        y,
+        evaluator,
+        "dummy",
+        n_trials=1,
+        search_space={"lr": [0.001, 0.01]},
+        task="classification",
+        log_path=str(log_path),
+    )
+
+    assert "warmstart_summary" in result
+    assert "warnings" in result
+    assert any(w["source"] == "hpo_importance" for w in result["warnings"])

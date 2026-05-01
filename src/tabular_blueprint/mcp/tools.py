@@ -116,7 +116,7 @@ def registry_promote(run_id: str, key: str) -> str:
 
     registry = RegistryService("workspace/registry.json")
     result = registry.promote_run(run_id=run_id, key=key, log_path=log_path)
-    return result.message
+    return result.model_dump_json(indent=2)
 
 
 @mcp.tool()

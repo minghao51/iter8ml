@@ -2,6 +2,14 @@
 
 A high-velocity iteration framework for tabular machine learning. Built for single-node efficiency with Polars-native speed.
 
+## Core Philosophy & Design Goals
+
+- **Fast feedback loops** – from data change to model metric in minutes (not hours/days).
+- **Low boilerplate** – common operations (splits, encoding, scaling, evaluation) are one-liners or config-driven.
+- **Reproducibility** – every run is tracked (code, data hash, hyperparameters, metrics).
+- **Config over code** – hyperparameters, feature lists, model types, and even pipeline steps are defined in YAML/TOML.
+- **Extensible** – easy to drop in custom transformers, metrics, or models.
+
 ## Quick Start
 
 **Option A: Project install (recommended for development)**
@@ -11,7 +19,6 @@ uv sync
 
 # Optional extras
 uv sync --extra deep        # torch, transformers, tabpfn
-uv sync --extra hamilton    # DAG pipelines
 uv sync --extra shap        # explainability
 uv sync --extra all         # everything
 
@@ -46,7 +53,18 @@ uv run tabblueprint init --data path/to/data.csv
 
 # Run experiments
 uv run tabblueprint run --data data.csv --target label
-uv run tabblueprint run --config examples/credit_risk.py --models catboost lightgbm
+uv run tabblueprint run --config examples/credit_risk.yaml --models catboost lightgbm
+uv run tabblueprint run --config examples/credit_risk.toml
+uv run tabblueprint run --config examples/credit_risk.json
+
+# Quick iteration mode (2 folds, 20% data, skip SHAP/AFE/calibration)
+uv run tabblueprint run --data data.csv --target label --quick
+
+# Resume a previous run (skip already-completed models)
+uv run tabblueprint run --data data.csv --target label --resume
+
+# Disable preprocessing cache
+uv run tabblueprint run --data data.csv --target label --no-cache
 
 # Compare runs (Side-by-side config & metric diff)
 uv run tabblueprint diff exp_id_1 exp_id_2
@@ -240,7 +258,6 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the detailed design document.
 uv sync --extra wandb       # Weights & Biases tracking
 uv sync --extra mlflow      # MLflow tracking
 uv sync --extra llm         # LLM/MCP server (Claude Desktop / Agentic loop)
-uv sync --extra hamilton    # Hamilton DAG pipelines
 uv sync --extra shap        # SHAP explainability
 uv sync --extra cleanlab    # Label noise detection
 uv sync --extra deep        # Deep learning models (torch, tabpfn, etc.)

@@ -17,6 +17,9 @@ from tabular_blueprint.utils.jsonl import load_events
 class WarmstartInjection(BaseModel):
     n_trials_injected: int
     n_runs_scanned: int
+    n_skipped_missing_scores: int = 0
+    n_skipped_missing_params: int = 0
+    n_skipped_invalid_trials: int = 0
     model_name: str
     source_log: str
 
@@ -118,17 +121,23 @@ def create_warmstarted_study(
     matching_events = list(_parse_model_completed_events(events, model_name))
 
     injected = 0
+    skipped_missing_scores = 0
+    skipped_missing_params = 0
+    skipped_invalid_trials = 0
     for event in matching_events:
         cv_scores = event.get("cv_scores", {})
         if not cv_scores:
+            skipped_missing_scores += 1
             continue
 
         primary_score = next(iter(cv_scores.values()), None)
         if primary_score is None:
+            skipped_missing_scores += 1
             continue
 
         params = event.get("params", {})
         if not _valid_params(params):
+            skipped_missing_params += 1
             continue
 
         try:
@@ -142,11 +151,15 @@ def create_warmstarted_study(
             study.add_trial(trial)
             injected += 1
         except Exception:
+            skipped_invalid_trials += 1
             continue
 
     injection = WarmstartInjection(
         n_trials_injected=injected,
         n_runs_scanned=len(matching_events),
+        n_skipped_missing_scores=skipped_missing_scores,
+        n_skipped_missing_params=skipped_missing_params,
+        n_skipped_invalid_trials=skipped_invalid_trials,
         model_name=model_name,
         source_log=str(log_path),
     )

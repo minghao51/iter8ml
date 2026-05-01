@@ -135,3 +135,42 @@ def test_promote_run_lower_is_better_metric_replaces_existing(temp_registry, tmp
     assert result.status == "promoted"
     assert service.load()["regression:test"]["score"] == 2.0
     assert service.load()["regression:test"]["metric_name"] == "rmse"
+
+
+def test_promote_run_uses_best_score_then_latest_timestamp(temp_registry, tmp_path):
+    log_path = tmp_path / "experiments.jsonl"
+    events = [
+        {
+            "event": "model_completed",
+            "run_id": "run_multi",
+            "model": "ModelA",
+            "cv_scores": {"roc_auc": 0.90},
+            "artifact_path": "/tmp/model_a",
+            "timestamp": "2026-04-01T00:00:00+00:00",
+        },
+        {
+            "event": "model_completed",
+            "run_id": "run_multi",
+            "model": "ModelB",
+            "cv_scores": {"roc_auc": 0.92},
+            "artifact_path": "/tmp/model_b",
+            "timestamp": "2026-04-02T00:00:00+00:00",
+        },
+        {
+            "event": "model_completed",
+            "run_id": "run_multi",
+            "model": "ModelC",
+            "cv_scores": {"roc_auc": 0.92},
+            "artifact_path": "/tmp/model_c",
+            "timestamp": "2026-04-03T00:00:00+00:00",
+        },
+    ]
+    log_path.write_text("\n".join(json.dumps(event) for event in events) + "\n")
+    service = RegistryService(temp_registry)
+    result = service.promote_run("run_multi", "key1", log_path)
+
+    assert result.status == "promoted"
+    assert result.selected_model == "ModelC"
+    assert result.selected_metric == "roc_auc"
+    assert result.selected_score == 0.92
+    assert service.load()["key1"]["artifact_path"] == "/tmp/model_c"

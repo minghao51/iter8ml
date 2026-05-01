@@ -54,6 +54,7 @@ def test_export_metadata_is_valid_json(export_workspace):
     assert metadata["model_name"] == "CatBoost"
     assert metadata["score"] == 0.91
     assert "model_class" in metadata
+    assert "allowlisted_model_classes" in metadata
 
 
 def test_export_copies_model_artifact(export_workspace):
@@ -109,3 +110,23 @@ def test_export_predictor_script_contains_class(export_workspace):
     assert "def predict(" in script
     assert "_build_preprocessing_driver" in script
     assert "_preprocess" in script
+
+
+def test_exported_predictor_rejects_non_allowlisted_model_class(export_workspace):
+    import importlib.util
+
+    service = ExportService(workspace_dir=export_workspace)
+    export_path = service.export("credit_risk:classification")
+    metadata_path = export_path / "metadata.json"
+    metadata = json.loads(metadata_path.read_text())
+    metadata["model_class"] = ["os", "system"]
+    metadata_path.write_text(json.dumps(metadata))
+
+    spec = importlib.util.spec_from_file_location("predictor_module", export_path / "predictor.py")
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    with pytest.raises(ValueError, match="not allowlisted"):
+        module.Predictor()

@@ -103,6 +103,55 @@ def _run_afe(
     return X_aug, augmented_names
 
 
+def _run_embedding(
+    data_prep_result: object,
+    task: str,
+    random_seed: int,
+    embedding_method: str = "entity",
+    embedding_dim: int = 16,
+    embedding_max_categories: int = 50,
+    embedding_epochs: int = 10,
+    embedding_lr: float = 1e-3,
+    embedding_mlp_width: int = 128,
+    embedding_mlp_depth: int = 2,
+    embedding_ae_latent_dim: int = 32,
+    embedding_ae_dropout: float = 0.2,
+) -> tuple[np.ndarray, list[str]]:
+    from tabular_blueprint.config import ExperimentConfig
+    from tabular_blueprint.constants import EmbeddingMethod, TaskType
+    from tabular_blueprint.engine.embedding_trainer import EmbeddingEngine
+    from tabular_blueprint.engine.tracker import Tracker
+
+    tracker = Tracker.__new__(Tracker)
+    cfg = ExperimentConfig(
+        name="embedding_node",
+        task=TaskType(task),
+        target_col="_target_",
+        data_path="",
+        embedding_enabled=True,
+        embedding_method=EmbeddingMethod(embedding_method),
+        embedding_dim=embedding_dim,
+        embedding_max_categories=embedding_max_categories,
+        embedding_epochs=embedding_epochs,
+        embedding_lr=embedding_lr,
+        embedding_mlp_width=embedding_mlp_width,
+        embedding_mlp_depth=embedding_mlp_depth,
+        embedding_ae_latent_dim=embedding_ae_latent_dim,
+        embedding_ae_dropout=embedding_ae_dropout,
+        random_seed=random_seed,
+    )
+    engine = EmbeddingEngine(cfg, tracker)
+    return engine.fit_transform(
+        df=getattr(data_prep_result, "_df", None),
+        X=data_prep_result.X,
+        y=data_prep_result.y,
+        feature_names=data_prep_result.feature_names,
+        target_col="_target_",
+        run_id="hamilton_embedding",
+        data_hash="",
+    )
+
+
 if _HAS_HAMILTON:
 
     @config.when_not(afe_enabled=True)
@@ -133,4 +182,34 @@ if _HAS_HAMILTON:
             afe_prune_min_importance,
             task,
             random_seed,
+        )
+
+    @config.when(embedding_enabled=True)
+    def training_features__embedding_enabled(
+        data_prep_result: object,
+        task: str,
+        random_seed: int,
+        embedding_method: str = "entity",
+        embedding_dim: int = 16,
+        embedding_max_categories: int = 50,
+        embedding_epochs: int = 10,
+        embedding_lr: float = 1e-3,
+        embedding_mlp_width: int = 128,
+        embedding_mlp_depth: int = 2,
+        embedding_ae_latent_dim: int = 32,
+        embedding_ae_dropout: float = 0.2,
+    ) -> tuple[np.ndarray, list[str]]:
+        return _run_embedding(
+            data_prep_result,
+            task,
+            random_seed,
+            embedding_method,
+            embedding_dim,
+            embedding_max_categories,
+            embedding_epochs,
+            embedding_lr,
+            embedding_mlp_width,
+            embedding_mlp_depth,
+            embedding_ae_latent_dim,
+            embedding_ae_dropout,
         )

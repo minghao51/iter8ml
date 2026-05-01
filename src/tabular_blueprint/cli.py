@@ -1,6 +1,5 @@
 """CLI entry point for tabular-blueprint."""
 
-import importlib
 import json
 from pathlib import Path
 
@@ -20,14 +19,23 @@ app = typer.Typer(name="tabblueprint", help="A high-velocity iteration framework
 
 
 @app.command()
-def init(data: str | None = None) -> None:
+def init(
+    data: str | None = None,
+    force_reset_registry: bool = typer.Option(
+        False,
+        "--force-reset-registry",
+        help="Reset registry.json even if it already exists (destructive).",
+    ),
+) -> None:
     """Initialize workspace and optionally load data."""
     workspace = Path("workspace")
     workspace.mkdir(exist_ok=True)
     (workspace / "artifacts").mkdir(exist_ok=True)
 
     (workspace / "experiments.jsonl").touch(exist_ok=True)
-    (workspace / "registry.json").write_text("{}")
+    registry_path = workspace / "registry.json"
+    if force_reset_registry or not registry_path.exists():
+        registry_path.write_text("{}")
 
     typer.echo("Workspace initialized.")
     if data:
@@ -36,11 +44,25 @@ def init(data: str | None = None) -> None:
 
 @app.command()
 def run(
-    config: str = typer.Option(None, "--config", "-c", help="Path to experiment config module"),
+    config: str = typer.Option(
+        None, "--config", "-c", help="Config file (.yaml/.yml/.toml/.json/.py)"
+    ),
     data_path: str = typer.Option(None, "--data", "-d", help="Path to data file"),
     target_col: str = typer.Option(None, "--target", "-t", help="Target column name"),
     task: str = typer.Option("classification", "--task", help="classification or regression"),
     models: list[str] | None = typer.Option(None, "--models", "-m", help="Model names to run"),
+    quick: bool = typer.Option(
+        False, "--quick", help="Fast mode: 2 folds, 20% data, skip SHAP/AFE"
+    ),
+    no_cache: bool = typer.Option(False, "--no-cache", help="Disable preprocessing cache"),
+    resume: bool = typer.Option(
+        False, "--resume", help="Resume previous run, skip completed models"
+    ),
+    allow_unsafe_config: bool = typer.Option(
+        False,
+        "--allow-unsafe-config",
+        help="Allow loading .py config files (unsafe, executes code).",
+    ),
 ) -> None:
     """Run an experiment."""
     experiment_config = None
@@ -49,21 +71,14 @@ def run(
         if not config_path.exists() or not config_path.is_file():
             typer.echo(f"Error: config file not found: {config}")
             raise typer.Exit(1)
-        if config_path.suffix != ".py":
-            typer.echo(f"Error: config must be a Python module (.py): {config}")
-            raise typer.Exit(1)
 
-        spec = importlib.util.spec_from_file_location("experiment_config", config)
-        if spec is None or spec.loader is None:
-            typer.echo(f"Error: could not load config module: {config}")
-            raise typer.Exit(1)
-
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        experiment_config = getattr(module, "config", None)
-        if experiment_config is None:
-            typer.echo(f"Error: config module must define `config`: {config}")
-            raise typer.Exit(1)
+        try:
+            experiment_config = ExperimentConfig.from_file(
+                config_path, allow_unsafe_python=allow_unsafe_config
+            )
+        except (ValueError, FileNotFoundError) as e:
+            typer.echo(f"Error loading config: {e}")
+            raise typer.Exit(1) from e
 
     if experiment_config is None:
         experiment_config = ExperimentConfig(
@@ -89,10 +104,22 @@ def run(
         typer.echo(f"Error loading data: {e}")
         raise typer.Exit(code=1) from e
 
+    if quick:
+        experiment_config.cv_folds = 2
+        experiment_config.afe_enabled = False
+        experiment_config.shap_enabled = False
+        experiment_config.calibration = "none"
+        experiment_config.data_sample = 0.2
+        typer.echo("[quick mode] 2 folds, 20% data, SHAP/AFE/calibration disabled")
+
     typer.echo(f"Loaded {len(df)} rows, {len(df.columns)} columns")
     typer.echo(f"Task: {experiment_config.task}, Target: {experiment_config.target_col}")
 
-    trainer = Trainer(experiment_config)
+    trainer = Trainer(
+        experiment_config,
+        use_cache=not no_cache,
+        resume_run_id=None if not resume else _find_last_run_id(experiment_config),
+    )
     results = trainer.run(df)
 
     typer.echo("\nResults:")
@@ -289,6 +316,25 @@ def hpo(
 
     if result.get("warmstart_trials", 0) > 0:
         typer.echo(f"Warmstart: injected {result['warmstart_trials']} historical trials")
+    warmstart_summary = result.get("warmstart_summary")
+    if isinstance(warmstart_summary, dict):
+        typer.echo(
+            "Warmstart summary: "
+            f"scanned={warmstart_summary.get('n_runs_scanned', 0)}, "
+            f"injected={warmstart_summary.get('n_trials_injected', 0)}, "
+            f"skipped_missing_scores={warmstart_summary.get('n_skipped_missing_scores', 0)}, "
+            f"skipped_missing_params={warmstart_summary.get('n_skipped_missing_params', 0)}, "
+            f"skipped_invalid_trials={warmstart_summary.get('n_skipped_invalid_trials', 0)}"
+        )
+
+    warnings = result.get("warnings", [])
+    if warnings:
+        typer.echo(f"HPO warnings: {len(warnings)}")
+        for warning in warnings:
+            typer.echo(
+                f"  [{warning.get('source', 'unknown')}] "
+                f"{warning.get('warning_type', 'Warning')}: {warning.get('message', '')}"
+            )
 
     if result.get("param_importances"):
         typer.echo("\nHyperparameter Importance (PedAnova):")
@@ -413,6 +459,18 @@ def export(
     except FileNotFoundError as e:
         typer.echo(f"Error: {e}")
         raise typer.Exit(1) from e
+
+
+def _find_last_run_id(config: ExperimentConfig) -> str | None:
+    """Find the most recent run_id from the experiment log."""
+    log_path = config.workspace_dir / "experiments.jsonl"
+    events = load_events(log_path)
+    run_ids = [
+        e.get("run_id")
+        for e in events
+        if e.get("event") == "experiment_started" and e.get("run_id")
+    ]
+    return run_ids[-1] if run_ids else None
 
 
 if __name__ == "__main__":

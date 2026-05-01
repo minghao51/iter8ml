@@ -194,13 +194,26 @@ class PipelineExecutor:
         run_leakage_audit: bool = True,
         target_transform: str = "none",
         target_skewness_threshold: float = 1.0,
+        embedding_enabled: bool = False,
+        embedding_method: str = "entity",
+        embedding_dim: int = 16,
+        embedding_max_categories: int = 50,
+        embedding_epochs: int = 10,
+        embedding_lr: float = 1e-3,
+        embedding_mlp_width: int = 128,
+        embedding_mlp_depth: int = 2,
+        embedding_ae_latent_dim: int = 32,
+        embedding_ae_dropout: float = 0.2,
     ) -> Any:
         if self._driver_mod is None:
             return None
 
         modules = _get_training_modules()
         builder = self._driver_mod.Builder().with_modules(*modules)
-        builder = builder.with_config({"afe_enabled": afe_enabled})
+        hamilton_config: dict[str, Any] = {"afe_enabled": afe_enabled}
+        if embedding_enabled:
+            hamilton_config["embedding_enabled"] = True
+        builder = builder.with_config(hamilton_config)
         if self._tracker is not None:
             from tabular_blueprint.pipelines.hooks.tracking_hook import TrackingHook
 
@@ -232,6 +245,15 @@ class PipelineExecutor:
             "run_leakage_audit": run_leakage_audit,
             "target_transform": target_transform,
             "target_skewness_threshold": target_skewness_threshold,
+            "embedding_method": embedding_method,
+            "embedding_dim": embedding_dim,
+            "embedding_max_categories": embedding_max_categories,
+            "embedding_epochs": embedding_epochs,
+            "embedding_lr": embedding_lr,
+            "embedding_mlp_width": embedding_mlp_width,
+            "embedding_mlp_depth": embedding_mlp_depth,
+            "embedding_ae_latent_dim": embedding_ae_latent_dim,
+            "embedding_ae_dropout": embedding_ae_dropout,
         }
         result = dr.execute(["training_state"], inputs=inputs)
         return result.get("training_state")

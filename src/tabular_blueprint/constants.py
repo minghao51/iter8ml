@@ -31,6 +31,13 @@ class ModelName(Enum):
     LINEAR_BASELINE = "linear_baseline"
 
 
+class EmbeddingMethod(Enum):
+    """Available embedding methods for high-cardinality features."""
+
+    ENTITY = "entity"
+    AUTOENCODER = "autoencoder"
+
+
 class TrackerType(Enum):
     """Supported tracking backends."""
 

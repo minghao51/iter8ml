@@ -48,6 +48,16 @@ class Predictor:
 
     def _load_model_class(self):
         module_path, class_name = self.meta["model_class"]
+        allowlisted = set()
+        for item in self.meta.get("allowlisted_model_classes", []):
+            if isinstance(item, list) and len(item) == 2:
+                allowlisted.add((item[0], item[1]))
+        requested = (module_path, class_name)
+        if requested not in allowlisted:
+            raise ValueError(
+                "Model class in metadata is not allowlisted. "
+                "This export may be tampered or incompatible."
+            )
         import importlib
         module = importlib.import_module(module_path)
         return getattr(module, class_name)
@@ -195,6 +205,7 @@ class ExportService:
         metadata = {
             "model_name": model_name,
             "model_class": list(model_class_info),
+            "allowlisted_model_classes": [list(v) for v in _MODEL_REGISTRY.values()],
             "task": task,
             "metric": entry.get("metric_name", ""),
             "score": entry.get("score"),

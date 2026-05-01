@@ -12,13 +12,16 @@ from filelock import FileLock
 from pydantic import BaseModel
 
 from tabular_blueprint.services.report_service import metric_value_is_better, resolve_primary_score
-from tabular_blueprint.utils.jsonl import load_events
+from tabular_blueprint.utils.jsonl import iter_events
 
 
 class PromotionResult(BaseModel):
     status: str
     message: str
     entry: dict[str, Any] | None = None
+    selected_model: str | None = None
+    selected_metric: str | None = None
+    selected_score: float | None = None
 
 
 class RegistryService:
@@ -92,16 +95,13 @@ class RegistryService:
 
     def promote_run(self, run_id: str, key: str, log_path: str | Path) -> PromotionResult:
         """Promote a completed run into the registry."""
-        events = load_events(log_path)
-        run_event = next(
-            (
-                event
-                for event in events
-                if event.get("run_id") == run_id and event.get("event") == "model_completed"
-            ),
-            None,
-        )
-        if not run_event:
+        run_events = [
+            event
+            for event in iter_events(log_path)
+            if event.get("run_id") == run_id and event.get("event") == "model_completed"
+        ]
+        run_event = self._select_best_run_event(run_events)
+        if run_event is None:
             return PromotionResult(
                 status="not_found",
                 message=f"Run {run_id} not found.",
@@ -125,13 +125,58 @@ class RegistryService:
                 status="promoted",
                 message=f"Promoted {run_id} to champion for {key} using {metric_name}.",
                 entry=entry,
+                selected_model=run_event.get("model"),
+                selected_metric=metric_name,
+                selected_score=score,
             )
 
         return PromotionResult(
             status="rejected",
             message=f"Existing champion for {key} has better score.",
             entry=entry,
+            selected_model=run_event.get("model"),
+            selected_metric=metric_name,
+            selected_score=score,
         )
+
+    def _select_best_run_event(self, events: list[dict[str, Any]]) -> dict[str, Any] | None:
+        if not events:
+            return None
+        best_event: dict[str, Any] | None = None
+        best_metric: str | None = None
+        best_score: float | None = None
+        best_timestamp: datetime | None = None
+        for event in events:
+            metric_name, score = resolve_primary_score(event.get("cv_scores", {}))
+            timestamp = self._parse_timestamp(event.get("timestamp"))
+            if best_event is None:
+                best_event = event
+                best_metric = metric_name
+                best_score = score
+                best_timestamp = timestamp
+                continue
+
+            assert best_score is not None
+            assert best_metric is not None
+            assert best_timestamp is not None
+            if metric_value_is_better(metric_name, score, best_score):
+                best_event = event
+                best_metric = metric_name
+                best_score = score
+                best_timestamp = timestamp
+                continue
+            if score == best_score and timestamp > best_timestamp:
+                best_event = event
+                best_metric = metric_name
+                best_score = score
+                best_timestamp = timestamp
+        return best_event
+
+    def _parse_timestamp(self, value: Any) -> datetime:
+        if isinstance(value, str):
+            with contextlib.suppress(ValueError):
+                return datetime.fromisoformat(value)
+        return datetime.min.replace(tzinfo=UTC)
 
     def _update_if_better_locked(
         self,

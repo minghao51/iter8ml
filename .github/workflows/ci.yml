@@ -46,6 +46,25 @@ jobs:
       - run: uv sync --frozen --group dev --extra llm
       - run: uv run pytest tests/unit/ -v --tb=short
       - run: uv run pytest tests/integration/ -v --tb=short
+      - run: uv run pytest tests/e2e/ -v --tb=short
+
+  coverage:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.11"
+      - run: uv sync --frozen --group dev --extra llm
+      - run: >
+          uv run pytest tests/unit/ tests/integration/ tests/e2e/
+          --cov=src/tabular_blueprint/engine
+          --cov=src/tabular_blueprint/services
+          --cov=src/tabular_blueprint/config.py
+          --cov-report=xml
+          --cov-report=term-missing
+          --cov-fail-under=70
 
   security:
     runs-on: ubuntu-24.04
@@ -55,4 +74,9 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --frozen --group dev
-      - run: uv run pip-audit
+      - run: uv run pip-audit -f json -o pip-audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pip-audit-report
+          path: pip-audit.json
