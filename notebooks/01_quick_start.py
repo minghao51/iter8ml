@@ -36,20 +36,24 @@ def _(mo):
 
 
 @app.cell
-def _():
+def _(mo):
     import polars as pl
     from sklearn.datasets import make_classification
 
-    X, y = make_classification(
-        n_samples=2000,
-        n_features=20,
-        n_informative=10,
-        n_redundant=3,
-        random_state=42,
-    )
-    df = pl.DataFrame({f"feat_{i}": X[:, i] for i in range(X.shape[1])})
-    df = df.with_columns(target=pl.Series(y))
+    @mo.persistent_cache
+    def generate_data():
+        X, y = make_classification(
+            n_samples=2000,
+            n_features=20,
+            n_informative=10,
+            n_redundant=3,
+            random_state=42,
+        )
+        df = pl.DataFrame({f"feat_{i}": X[:, i] for i in range(X.shape[1])})
+        df = df.with_columns(target=pl.Series(y))
+        return df
 
+    df = generate_data()
     f"Dataset shape: {df.shape}  |  Target balance: {df['target'].mean():.2%} positive class"
     return (df,)
 
@@ -82,11 +86,15 @@ def _():
 
 
 @app.cell
-def _(config, df):
+def _(config, df, mo):
     from tabular_blueprint.engine.trainer import Trainer
 
-    trainer = Trainer(config)
-    results = trainer.run(df)
+    @mo.persistent_cache
+    def run_experiment():
+        trainer = Trainer(config)
+        return trainer.run(df)
+
+    results = run_experiment()
     results
     return
 

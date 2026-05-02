@@ -479,19 +479,18 @@ def _():
 
 @app.cell
 def _(bench_model_fit, make_numpy, mo):
-    sizes_for_demo = [(500, 10), (5000, 20)]
-    results = []
-
-    with mo.status.progress_bar(
-        total=len(sizes_for_demo) * 3, title="Running fit benchmarks"
-    ) as bar:
+    @mo.persistent_cache
+    def run_fit_benchmarks():
+        sizes_for_demo = [(500, 10), (5000, 20)]
+        results = []
         for n_samples, n_features in sizes_for_demo:
             X, y = make_numpy(n_samples, n_features)
             for model_name in ["catboost", "lightgbm", "xgboost"]:
                 r = bench_model_fit(model_name, X, y, "classification", warmup=1, runs=3)
                 results.append(r)
-                bar.update()
+        return results
 
+    results = run_fit_benchmarks()
     results
     return (results,)
 

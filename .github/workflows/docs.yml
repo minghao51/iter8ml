@@ -18,7 +18,7 @@ jobs:
           cache-dependency-glob: |
             **/pyproject.toml
             **/uv.lock
-      - run: uv sync --group docs
+      - run: uv sync --group dev --extra docs
       - name: Check for notebook changes
         id: notebooks-changed
         run: |

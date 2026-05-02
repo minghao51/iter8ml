@@ -36,20 +36,23 @@ def _(mo):
 
 
 @app.cell
-def _():
+def _(mo):
     import polars as pl
     from sklearn.datasets import make_classification
     from tabular_blueprint.data.adapter import DataAdapter
 
-    X_raw, y_raw = make_classification(
-        n_samples=3000, n_features=20, n_informative=12, random_state=42
-    )
-    df = pl.DataFrame({f"f_{i}": X_raw[:, i] for i in range(X_raw.shape[1])})
-    df = df.with_columns(target=pl.Series(y_raw))
+    @mo.persistent_cache
+    def prepare_hpo_data():
+        X_raw, y_raw = make_classification(
+            n_samples=3000, n_features=20, n_informative=12, random_state=42
+        )
+        df = pl.DataFrame({f"f_{i}": X_raw[:, i] for i in range(X_raw.shape[1])})
+        df = df.with_columns(target=pl.Series(y_raw))
+        adapter = DataAdapter(target_format="numpy")
+        X, y = adapter.transform(df, "target")
+        return X, y
 
-    adapter = DataAdapter(target_format="numpy")
-    X, y = adapter.transform(df, "target")
-
+    X, y = prepare_hpo_data()
     f"X: {X.shape}, y: {y.shape}"
     return X, y
 
@@ -85,33 +88,35 @@ def _(mo):
 
 
 @app.cell
-def _(X, y):
+def _(X, mo, y):
     from tabular_blueprint.engine.hpo import optimize_model as om1
     from tabular_blueprint.engine.evaluator import Evaluator as Ev1
     from tabular_blueprint.config import ExperimentConfig as Ec1
     from tabular_blueprint.models.factory import get_model_class as Gc1
 
-    eval_config = Ec1(
-        name="hpo_nb",
-        task="classification",
-        target_col="target",
-        data_path="",
-        cv_folds=3,
-        metrics=["roc_auc"],
-    )
-    evaluator = Ev1(eval_config)
-    model_cls = Gc1("catboost")
+    @mo.persistent_cache
+    def run_catboost_hpo():
+        eval_config = Ec1(
+            name="hpo_nb",
+            task="classification",
+            target_col="target",
+            data_path="",
+            cv_folds=3,
+            metrics=["roc_auc"],
+        )
+        evaluator = Ev1(eval_config)
+        model_cls = Gc1("catboost")
+        return om1(
+            model_cls,
+            X,
+            y,
+            evaluator,
+            "catboost",
+            n_trials=20,
+            task="classification",
+        )
 
-    hpo_result = om1(
-        model_cls,
-        X,
-        y,
-        evaluator,
-        "catboost",
-        n_trials=20,
-        task="classification",
-    )
-
+    hpo_result = run_catboost_hpo()
     f"Best ROC AUC: {hpo_result['best_value']:.4f}"
     return (hpo_result,)
 
@@ -133,33 +138,35 @@ def _(mo):
 
 
 @app.cell
-def _(X, y):
+def _(X, mo, y):
     from tabular_blueprint.engine.hpo import optimize_model as om2
     from tabular_blueprint.engine.evaluator import Evaluator as Ev2
     from tabular_blueprint.config import ExperimentConfig as Ec2
     from tabular_blueprint.models.factory import get_model_class as Gc2
 
-    eval_cfg2 = Ec2(
-        name="hpo_lgbm",
-        task="classification",
-        target_col="target",
-        data_path="",
-        cv_folds=3,
-        metrics=["roc_auc"],
-    )
-    ev2 = Ev2(eval_cfg2)
-    lgbm_cls = Gc2("lightgbm")
+    @mo.persistent_cache
+    def run_lightgbm_hpo():
+        eval_cfg2 = Ec2(
+            name="hpo_lgbm",
+            task="classification",
+            target_col="target",
+            data_path="",
+            cv_folds=3,
+            metrics=["roc_auc"],
+        )
+        ev2 = Ev2(eval_cfg2)
+        lgbm_cls = Gc2("lightgbm")
+        return om2(
+            lgbm_cls,
+            X,
+            y,
+            ev2,
+            "lightgbm",
+            n_trials=20,
+            task="classification",
+        )
 
-    lgbm_result = om2(
-        lgbm_cls,
-        X,
-        y,
-        ev2,
-        "lightgbm",
-        n_trials=20,
-        task="classification",
-    )
-
+    lgbm_result = run_lightgbm_hpo()
     f"LightGBM Best ROC AUC: {lgbm_result['best_value']:.4f}"
     return (lgbm_result,)
 
@@ -182,7 +189,7 @@ def _(mo):
 
 
 @app.cell
-def _(X, y):
+def _(X, mo, y):
     import tempfile
     from pathlib import Path
 
@@ -191,41 +198,45 @@ def _(X, y):
     from tabular_blueprint.config import ExperimentConfig as Ec3
     from tabular_blueprint.models.factory import get_model_class as Gc3
 
-    log_path = Path(tempfile.mkdtemp()) / "hpo_warmstart.jsonl"
+    @mo.persistent_cache
+    def run_warmstart_hpo():
+        log_path = Path(tempfile.mkdtemp()) / "hpo_warmstart.jsonl"
 
-    eval_cfg3 = Ec3(
-        name="warm",
-        task="classification",
-        target_col="target",
-        data_path="",
-        cv_folds=3,
-        metrics=["roc_auc"],
-    )
-    ev3 = Ev3(eval_cfg3)
-    xgb_cls = Gc3("xgboost")
+        eval_cfg3 = Ec3(
+            name="warm",
+            task="classification",
+            target_col="target",
+            data_path="",
+            cv_folds=3,
+            metrics=["roc_auc"],
+        )
+        ev3 = Ev3(eval_cfg3)
+        xgb_cls = Gc3("xgboost")
 
-    first_pass = om3(
-        xgb_cls,
-        X,
-        y,
-        ev3,
-        "xgboost",
-        n_trials=10,
-        task="classification",
-        log_path=str(log_path),
-    )
+        first_pass = om3(
+            xgb_cls,
+            X,
+            y,
+            ev3,
+            "xgboost",
+            n_trials=10,
+            task="classification",
+            log_path=str(log_path),
+        )
 
-    warmstarted = om3(
-        xgb_cls,
-        X,
-        y,
-        ev3,
-        "xgboost",
-        n_trials=10,
-        task="classification",
-        log_path=str(log_path),
-    )
+        warmstarted = om3(
+            xgb_cls,
+            X,
+            y,
+            ev3,
+            "xgboost",
+            n_trials=10,
+            task="classification",
+            log_path=str(log_path),
+        )
+        return first_pass, warmstarted
 
+    first_pass, warmstarted = run_warmstart_hpo()
     f"First pass: {first_pass['best_value']:.4f}  ->  Warmstarted: {warmstarted['best_value']:.4f}  |  Warmstart trials: {warmstarted.get('warmstart_trials', 0)}"
     return
 

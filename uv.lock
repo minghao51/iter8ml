@@ -1,4 +1,5 @@
 version = 1
+revision = 1
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'linux'",
@@ -2013,11 +2014,8 @@ resolution-markers = [
 sdist = { url = "https://files.pythonhosted.org/packages/99/8d/5baf1cef7f9c084fb35a8afbde88074f0d6a727bc63ef764fe0e7543ba40/llvmlite-0.45.1.tar.gz", hash = "sha256:09430bb9d0bb58fc45a45a57c7eae912850bedc095cd0810a57de109c69e1c32", size = 185600 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/04/ad/9bdc87b2eb34642c1cfe6bcb4f5db64c21f91f26b010f263e7467e7536a3/llvmlite-0.45.1-cp311-cp311-macosx_10_15_x86_64.whl", hash = "sha256:60f92868d5d3af30b4239b50e1717cb4e4e54f6ac1c361a27903b318d0f07f42", size = 43043526 },
-    { url = "https://files.pythonhosted.org/packages/a5/ea/c25c6382f452a943b4082da5e8c1665ce29a62884e2ec80608533e8e82d5/llvmlite-0.45.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:98baab513e19beb210f1ef39066288784839a44cd504e24fff5d17f1b3cf0860", size = 37253118 },
     { url = "https://files.pythonhosted.org/packages/e2/7c/82cbd5c656e8991bcc110c69d05913be2229302a92acb96109e166ae31fb/llvmlite-0.45.1-cp312-cp312-macosx_10_15_x86_64.whl", hash = "sha256:28e763aba92fe9c72296911e040231d486447c01d4f90027c8e893d89d49b20e", size = 43043524 },
-    { url = "https://files.pythonhosted.org/packages/9d/bc/5314005bb2c7ee9f33102c6456c18cc81745d7055155d1218f1624463774/llvmlite-0.45.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:1a53f4b74ee9fd30cb3d27d904dadece67a7575198bd80e687ee76474620735f", size = 37253123 },
     { url = "https://files.pythonhosted.org/packages/1d/e2/c185bb7e88514d5025f93c6c4092f6120c6cea8fe938974ec9860fb03bbb/llvmlite-0.45.1-cp313-cp313-macosx_10_15_x86_64.whl", hash = "sha256:d9ea9e6f17569a4253515cc01dade70aba536476e3d750b2e18d81d7e670eb15", size = 43043524 },
-    { url = "https://files.pythonhosted.org/packages/09/b8/b5437b9ecb2064e89ccf67dccae0d02cd38911705112dd0dcbfa9cd9a9de/llvmlite-0.45.1-cp313-cp313-macosx_12_0_arm64.whl", hash = "sha256:c9f3cadee1630ce4ac18ea38adebf2a4f57a89bd2740ce83746876797f6e0bfb", size = 37253121 },
 ]
 
 [[package]]
@@ -5084,25 +5082,32 @@ name = "tabular-blueprint"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "catboost" },
     { name = "filelock" },
-    { name = "joblib" },
-    { name = "lightgbm" },
     { name = "numpy" },
-    { name = "optuna" },
     { name = "polars" },
     { name = "psutil" },
     { name = "pydantic" },
     { name = "pyyaml" },
     { name = "rich" },
     { name = "scikit-learn" },
-    { name = "sf-hamilton" },
     { name = "typer" },
-    { name = "xgboost" },
 ]
 
 [package.optional-dependencies]
-all = [
+base = [
+    { name = "catboost" },
+    { name = "lightgbm" },
+    { name = "optuna" },
+    { name = "sf-hamilton" },
+    { name = "xgboost" },
+]
+docs = [
+    { name = "mike" },
+    { name = "mkdocs-material" },
+    { name = "mkdocstrings", extra = ["python"] },
+    { name = "pymdown-extensions" },
+]
+opinion = [
     { name = "accelerate" },
     { name = "cleanlab" },
     { name = "datasets" },
@@ -5114,30 +5119,6 @@ all = [
     { name = "tabpfn" },
     { name = "torch" },
     { name = "transformers" },
-    { name = "wandb" },
-]
-cleanlab = [
-    { name = "cleanlab" },
-]
-deep = [
-    { name = "accelerate" },
-    { name = "datasets" },
-    { name = "pytorch-tabular" },
-    { name = "tabpfn" },
-    { name = "torch" },
-    { name = "transformers" },
-]
-llm = [
-    { name = "litellm" },
-    { name = "mcp" },
-]
-mlflow = [
-    { name = "mlflow" },
-]
-shap = [
-    { name = "shap" },
-]
-wandb = [
     { name = "wandb" },
 ]
 
@@ -5151,44 +5132,41 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff" },
 ]
-docs = [
-    { name = "mike" },
-    { name = "mkdocs-material" },
-    { name = "mkdocstrings", extra = ["python"] },
-    { name = "pymdown-extensions" },
-]
 
 [package.metadata]
 requires-dist = [
-    { name = "accelerate", marker = "extra == 'deep'", specifier = ">=0.30" },
-    { name = "catboost", specifier = ">=1.2" },
-    { name = "cleanlab", marker = "extra == 'cleanlab'", specifier = ">=2.6" },
-    { name = "datasets", marker = "extra == 'deep'", specifier = ">=2.14" },
+    { name = "accelerate", marker = "extra == 'opinion'", specifier = ">=0.30" },
+    { name = "catboost", marker = "extra == 'base'", specifier = ">=1.2" },
+    { name = "cleanlab", marker = "extra == 'opinion'", specifier = ">=2.6" },
+    { name = "datasets", marker = "extra == 'opinion'", specifier = ">=2.14" },
     { name = "filelock", specifier = ">=3.12" },
-    { name = "joblib", specifier = ">=1.3" },
-    { name = "lightgbm", specifier = ">=4.0" },
-    { name = "litellm", marker = "extra == 'llm'", specifier = ">=1.40" },
-    { name = "mcp", marker = "extra == 'llm'", specifier = ">=0.9" },
-    { name = "mlflow", marker = "extra == 'mlflow'", specifier = ">=2.13" },
+    { name = "lightgbm", marker = "extra == 'base'", specifier = ">=4.0" },
+    { name = "litellm", marker = "extra == 'opinion'", specifier = ">=1.40" },
+    { name = "mcp", marker = "extra == 'opinion'", specifier = ">=0.9" },
+    { name = "mike", marker = "extra == 'docs'", specifier = ">=2.0" },
+    { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.5" },
+    { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.25" },
+    { name = "mlflow", marker = "extra == 'opinion'", specifier = ">=2.13" },
     { name = "numpy", specifier = ">=1.26" },
-    { name = "optuna", specifier = ">=3.6" },
+    { name = "optuna", marker = "extra == 'base'", specifier = ">=3.6" },
     { name = "polars", specifier = ">=1.0" },
     { name = "psutil", specifier = ">=5.9" },
     { name = "pydantic", specifier = ">=2.0" },
-    { name = "pytorch-tabular", marker = "extra == 'deep'", specifier = ">=1.0" },
+    { name = "pymdown-extensions", marker = "extra == 'docs'", specifier = ">=10.0" },
+    { name = "pytorch-tabular", marker = "extra == 'opinion'", specifier = ">=1.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rich", specifier = ">=13.0" },
     { name = "scikit-learn", specifier = ">=1.4" },
-    { name = "sf-hamilton", specifier = ">=1.70" },
-    { name = "shap", marker = "extra == 'shap'", specifier = ">=0.44" },
-    { name = "tabpfn", marker = "extra == 'deep'", specifier = ">=2.0" },
-    { name = "tabular-blueprint", extras = ["deep", "shap", "cleanlab", "llm", "wandb", "mlflow"], marker = "extra == 'all'" },
-    { name = "torch", marker = "extra == 'deep'", specifier = ">=2.3" },
-    { name = "transformers", marker = "extra == 'deep'", specifier = ">=4.40" },
+    { name = "sf-hamilton", marker = "extra == 'base'", specifier = ">=1.70" },
+    { name = "shap", marker = "extra == 'opinion'", specifier = ">=0.44" },
+    { name = "tabpfn", marker = "extra == 'opinion'", specifier = ">=2.0" },
+    { name = "torch", marker = "extra == 'opinion'", specifier = ">=2.3" },
+    { name = "transformers", marker = "extra == 'opinion'", specifier = ">=4.40" },
     { name = "typer", specifier = ">=0.12" },
-    { name = "wandb", marker = "extra == 'wandb'", specifier = ">=0.17" },
-    { name = "xgboost", specifier = ">=2.0" },
+    { name = "wandb", marker = "extra == 'opinion'", specifier = ">=0.17" },
+    { name = "xgboost", marker = "extra == 'base'", specifier = ">=2.0" },
 ]
+provides-extras = ["base", "opinion", "docs"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -5199,12 +5177,6 @@ dev = [
     { name = "pytest", specifier = ">=9.0.3" },
     { name = "pytest-cov", specifier = ">=5.0" },
     { name = "ruff", specifier = ">=0.4" },
-]
-docs = [
-    { name = "mike", specifier = ">=2.0" },
-    { name = "mkdocs-material", specifier = ">=9.5" },
-    { name = "mkdocstrings", extras = ["python"], specifier = ">=0.25" },
-    { name = "pymdown-extensions", specifier = ">=10.0" },
 ]
 
 [[package]]

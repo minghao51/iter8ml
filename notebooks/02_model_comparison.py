@@ -31,20 +31,23 @@ def _(mo):
 
 
 @app.cell
-def _():
+def _(mo):
     import polars as pl
     from sklearn.datasets import make_classification
     from tabular_blueprint.data.adapter import DataAdapter
 
-    X_raw, y_raw = make_classification(
-        n_samples=3000, n_features=25, n_informative=12, random_state=42
-    )
-    df_cls = pl.DataFrame({f"col_{i}": X_raw[:, i] for i in range(X_raw.shape[1])})
-    df_cls = df_cls.with_columns(label=pl.Series(y_raw))
+    @mo.persistent_cache
+    def prepare_classification_data():
+        X_raw, y_raw = make_classification(
+            n_samples=3000, n_features=25, n_informative=12, random_state=42
+        )
+        df_cls = pl.DataFrame({f"col_{i}": X_raw[:, i] for i in range(X_raw.shape[1])})
+        df_cls = df_cls.with_columns(label=pl.Series(y_raw))
+        adapter = DataAdapter(target_format="numpy")
+        X, y = adapter.transform(df_cls, "label")
+        return X, y
 
-    adapter = DataAdapter(target_format="numpy")
-    X, y = adapter.transform(df_cls, "label")
-
+    X, y = prepare_classification_data()
     f"X shape: {X.shape}, y shape: {y.shape}, positive rate: {y.mean():.2%}"
     return X, y
 
@@ -86,16 +89,19 @@ def _(mo):
 
 
 @app.cell
-def _(X, evaluator, y):
+def _(X, evaluator, mo, y):
     from tabular_blueprint.models.factory import get_model_class
 
-    models_to_compare = ["catboost", "lightgbm", "xgboost", "naive_baseline", "linear_baseline"]
-    scores = {}
+    @mo.persistent_cache
+    def evaluate_all_models():
+        models_to_compare = ["catboost", "lightgbm", "xgboost", "naive_baseline", "linear_baseline"]
+        scores = {}
+        for model_name in models_to_compare:
+            model_cls = get_model_class(model_name)
+            scores[model_name] = evaluator.evaluate(model_cls, X, y)
+        return scores
 
-    for model_name in models_to_compare:
-        model_cls = get_model_class(model_name)
-        scores[model_name] = evaluator.evaluate(model_cls, X, y)
-
+    scores = evaluate_all_models()
     scores
     return (scores,)
 
@@ -136,7 +142,7 @@ def _(mo):
 
 
 @app.cell
-def _():
+def _(mo):
     from sklearn.datasets import make_regression
 
     from tabular_blueprint.data.adapter import DataAdapter as DA2
@@ -144,31 +150,37 @@ def _():
     from tabular_blueprint.config import ExperimentConfig as Cfg2
     from tabular_blueprint.models.factory import get_model_class as GMC2
 
-    X_reg_raw, y_reg_raw = make_regression(n_samples=2000, n_features=15, noise=10, random_state=42)
+    @mo.persistent_cache
+    def run_regression_comparison():
+        X_reg_raw, y_reg_raw = make_regression(
+            n_samples=2000, n_features=15, noise=10, random_state=42
+        )
 
-    import polars as pl2
+        import polars as pl2
 
-    df_reg = pl2.DataFrame({f"x_{i}": X_reg_raw[:, i] for i in range(X_reg_raw.shape[1])})
-    df_reg = df_reg.with_columns(target=pl2.Series(y_reg_raw))
+        df_reg = pl2.DataFrame({f"x_{i}": X_reg_raw[:, i] for i in range(X_reg_raw.shape[1])})
+        df_reg = df_reg.with_columns(target=pl2.Series(y_reg_raw))
 
-    reg_adapter = DA2(target_format="numpy")
-    X_r, y_r = reg_adapter.transform(df_reg, "target")
+        reg_adapter = DA2(target_format="numpy")
+        X_r, y_r = reg_adapter.transform(df_reg, "target")
 
-    reg_config = Cfg2(
-        name="reg_compare",
-        task="regression",
-        target_col="target",
-        data_path="",
-        cv_folds=5,
-        metrics=["rmse", "mae", "r2"],
-    )
-    reg_eval = Eval2(reg_config)
+        reg_config = Cfg2(
+            name="reg_compare",
+            task="regression",
+            target_col="target",
+            data_path="",
+            cv_folds=5,
+            metrics=["rmse", "mae", "r2"],
+        )
+        reg_eval = Eval2(reg_config)
 
-    reg_scores = {}
-    for rnm in ["catboost", "lightgbm", "xgboost", "linear_baseline"]:
-        rcl = GMC2(rnm)
-        reg_scores[rnm] = reg_eval.evaluate(rcl, X_r, y_r)
+        reg_scores = {}
+        for rnm in ["catboost", "lightgbm", "xgboost", "linear_baseline"]:
+            rcl = GMC2(rnm)
+            reg_scores[rnm] = reg_eval.evaluate(rcl, X_r, y_r)
+        return reg_scores
 
+    reg_scores = run_regression_comparison()
     reg_scores
     return
 

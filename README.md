@@ -15,12 +15,9 @@ A high-velocity iteration framework for tabular machine learning. Built for sing
 **Option A: Project install (recommended for development)**
 
 ```bash
-uv sync
-
-# Optional extras
-uv sync --extra deep        # torch, transformers, tabpfn
-uv sync --extra shap        # explainability
-uv sync --extra all         # everything
+uv sync --extra base      # ML models + HPO + Hamilton DAG
+uv sync --extra opinion   # Deep learning, SHAP, experiment tracking, LLM/MCP, data quality
+uv sync --extra docs      # Documentation tooling
 
 # Run an experiment
 uv run tabblueprint run --data path/to/data.csv --target target_column
@@ -158,7 +155,7 @@ Connect Claude Desktop or any MCP client to run experiments conversationally:
 
 ```bash
 # Install LLM/MCP dependencies
-uv sync --extra llm
+uv sync --extra opinion
 
 # Start the MCP server
 uv run tabblueprint mcp
@@ -186,7 +183,7 @@ Or with uvx (no local clone needed):
   "mcpServers": {
     "tabular-blueprint": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/your-org/iter8ml", "--with", "tabular-blueprint[llm]", "tabblueprint", "mcp"]
+      "args": ["--from", "git+https://github.com/your-org/iter8ml", "--with", "tabular-blueprint[opinion]", "tabblueprint", "mcp"]
     }
   }
 }
@@ -255,14 +252,16 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the detailed design document.
 **With `uv sync` (project install):**
 
 ```bash
-uv sync --extra wandb       # Weights & Biases tracking
-uv sync --extra mlflow      # MLflow tracking
-uv sync --extra llm         # LLM/MCP server (Claude Desktop / Agentic loop)
-uv sync --extra shap        # SHAP explainability
-uv sync --extra cleanlab    # Label noise detection
-uv sync --extra deep        # Deep learning models (torch, tabpfn, etc.)
-uv sync --extra all         # Everything above
+uv sync --extra base        # ML models (catboost, lightgbm, xgboost) + HPO + Hamilton DAG
+uv sync --extra opinion     # Everything optional: DL, SHAP, wandb, MLflow, MCP/LLM, cleanlab
+uv sync --extra docs        # Documentation tooling (mkdocs, mkdocstrings, mike)
 ```
+
+| Extra | Packages |
+|-------|----------|
+| `base` | catboost, lightgbm, xgboost, optuna, sf-hamilton |
+| `opinion` | shap, cleanlab, torch, accelerate, transformers, tabpfn, pytorch-tabular, datasets, wandb, mlflow, mcp, litellm |
+| `docs` | mkdocs-material, mkdocstrings, mike, pymdown-extensions |
 
 **With `uvx` (ephemeral):**
 
@@ -281,16 +280,16 @@ docker run -v $(pwd):/workspace tabular-blueprint tabblueprint run --data data.c
 
 ```bash
 # Install development/test extras
-uv sync --extra dev --extra llm
+uv sync --group dev --extra base --extra opinion
 
 # Run tests
-uv run --extra dev --extra llm pytest tests/unit -v
+uv run --group dev --extra base --extra opinion pytest tests/unit -v
 
 # Lint
-uv run --extra dev ruff check .
+uv run --group dev ruff check .
 
 # Format
-uv run --extra dev ruff format .
+uv run --group dev ruff format .
 ```
 
 ## License

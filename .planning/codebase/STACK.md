@@ -15,50 +15,48 @@
 |---|---|---|---|
 | `polars` | >=1.0 | `polars` (as `pl`) | DataFrame engine |
 | `pydantic` | >=2.0 | `pydantic` | Config models (BaseModel) |
-| `catboost` | >=1.2 | `catboost` | Gradient boosting (CPU/GPU) |
-| `lightgbm` | >=4.0 | `lightgbm` | Gradient boosting |
-| `xgboost` | >=2.0 | `xgboost` | Gradient boosting |
-| `optuna` | >=3.6 | `optuna` | Hyperparameter optimization |
 | `scikit-learn` | >=1.4 | `sklearn` | Metrics, preprocessing, CV |
 | `numpy` | >=1.26 | `numpy` (as `np`) | Array ops |
 | `typer` | >=0.12 | `typer` | CLI framework |
-| `psutil` | >=5.9 | `psutil` | Hardware detection |
 | `rich` | >=13.0 | `rich` | CLI tables / formatting |
-| `joblib` | >=1.3 | `joblib` | Parallel execution |
 | `filelock` | >=3.12 | `filelock` | Cross-process file locking |
 | `pyyaml` | >=6.0 | `yaml` | YAML config parsing |
-| `sf-hamilton` | >=1.70 | `hamilton` / `sf_hamilton` | DAG orchestration |
+| `psutil` | >=5.9 | `psutil` | Hardware detection |
 
 ## Optional Dependencies
 
-### `[deep]` — Deep learning
+### `[base]` — ML models + HPO + pipeline orchestration
 | Package | Version | Import path |
 |---|---|---|
-| `torch` | >=2.3 | `torch` |
-| `accelerate` | >=0.30 | `accelerate` |
-| `transformers` | >=4.40 | `transformers` |
-| `tabpfn` | >=2.0 | `tabpfn` |
-| `pytorch-tabular` | >=1.0 | `pytorch_tabular` |
-| `datasets` | >=2.14 | `datasets` |
+| `catboost` | >=1.2 | `catboost` |
+| `lightgbm` | >=4.0 | `lightgbm` |
+| `xgboost` | >=2.0 | `xgboost` |
+| `optuna` | >=3.6 | `optuna` |
+| `sf-hamilton` | >=1.70 | `hamilton` / `sf_hamilton` |
 
-### `[shap]` — Explainability
-| `shap` | >=0.44 | `shap` |
-
-### `[cleanlab]` — Data quality
-| `cleanlab` | >=2.6 | `cleanlab` |
-
-### `[llm]` — LLM integration
+### `[opinion]` — Extended integrations
+| Package | Version | Import path | Role |
+|---|---|---|---|
+| `shap` | >=0.44 | `shap` | Explainability |
+| `cleanlab` | >=2.6 | `cleanlab` | Data quality |
+| `torch` | >=2.3 | `torch` | Deep learning |
+| `accelerate` | >=0.30 | `accelerate` | DL accelerator |
+| `transformers` | >=4.40 | `transformers` | Text features |
+| `tabpfn` | >=2.0 | `tabpfn` | Zero-shot tabular |
+| `pytorch-tabular` | >=1.0 | `pytorch_tabular` | TabNet |
+| `datasets` | >=2.14 | `datasets` | HuggingFace datasets |
+| `wandb` | >=0.17 | `wandb` | Experiment tracking |
+| `mlflow` | >=2.13 | `mlflow` | Experiment tracking |
 | `mcp` | >=0.9 | `mcp` | MCP server |
 | `litellm` | >=1.40 | `litellm` | LLM provider proxy |
 
-### `[wandb]` — Experiment tracking
-| `wandb` | >=0.17 | `wandb` |
-
-### `[mlflow]` — Experiment tracking
-| `mlflow` | >=2.13 | `mlflow` |
-
-### `[all]` — Meta extra
-`tabular-blueprint[deep,shap,cleanlab,llm,wandb,mlflow]`
+### `[docs]` — Documentation
+| Package | Version |
+|---|---|
+| `mkdocs-material` | >=9.5 |
+| `mkdocstrings[python]` | >=0.25 |
+| `mike` | >=2.0 |
+| `pymdown-extensions` | >=10.0 |
 
 ## Dev tooling (`[dependency-groups] dev`)
 
@@ -72,20 +70,11 @@
 | `pip-audit` | >=2.7 | Dependency vulnerability scanning |
 | `marimo` | >=0.23.4 | Reactive notebook environment |
 
-### Docs dependencies (`[dependency-groups] docs`)
-
-| Tool | Version | Purpose |
-|---|---|---|
-| `mkdocs-material` | >=9.5 | Documentation theme |
-| `mkdocstrings[python]` | >=0.25 | Auto-generated API docs |
-| `mike` | >=2.0 | Versioned docs deployment |
-| `pymdown-extensions` | >=10.0 | Markdown extensions |
-
 ## CI/CD (GitHub Actions)
 
 - **File**: `.github/workflows/ci.yml` — push to `main`/`develop` + PR
-  - `pre-commit` job: `uv sync --frozen --group dev --extra llm` → `pre-commit/action@v3.0.1`
-  - `typecheck` job: `uv sync --frozen --group dev --extra llm` → `uv run mypy .`
+  - `pre-commit` job: `uv sync --frozen --group dev --extra base --extra opinion` → `pre-commit/action@v3.0.1`
+  - `typecheck` job: `uv sync --frozen --group dev --extra base --extra opinion` → `uv run mypy .`
   - `test` job: 3.11 / 3.12 / 3.13 matrix → `uv run pytest tests/unit/`, `tests/integration/`, `tests/e2e/`
   - `coverage` job: 70% threshold on `engine/`, `services/`, `config.py`
   - `security` job: `uv run pip-audit -f json -o pip-audit.json`
@@ -124,7 +113,6 @@
 - Excludes: tests/, benchmarks/, notebooks/, workspace/
 - Overrides for third-party stubs (catboost, lightgbm, xgboost, optuna, polars, hamilton, cleanlab, shap, wandb, mlflow, litellm, mcp, torch, transformers, etc.)
 - Error-ignored modules: `hpo`, `hpo_warmstart`, `hpo_importance`, `pipelines.nodes.*`, `trainer`
-
 ## Pytest config
 
 - Test paths: `tests/`
