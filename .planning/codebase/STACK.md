@@ -1,154 +1,150 @@
 # Stack
 
-> Last updated: 2026-04-23
+## Language & Runtime
+- **Python** >=3.11 (CI tests: 3.11, 3.12, 3.13; Docker: 3.11)
+- **Package manager**: `uv` (via `astral-sh/setup-uv` in CI, `FROM astral.sh/uv/install.sh` in Docker)
+- **Build system**: setuptools + wheel
 
-## Languages
+## Project
+- **Name**: `tabular-blueprint` v0.1.0
+- **Entry point**: `tabblueprint` → `tabular_blueprint.cli:app` (typer CLI)
+- **Source layout**: `src/tabular_blueprint/` (configured in `[tool.setuptools.packages.find] where = ["src"]`)
 
-- **Python 3.11+** — sole language (specified in `pyproject.toml` `requires-python = ">=3.11"` and `tool.mypy.python_version = "3.11"`)
-- No frontend code; no JavaScript/TypeScript in the project
-
-## Runtime
-
-- **Python**: 3.11+ (installed as `python3.11` in Docker image)
-- **CUDA**: 12.4.0 (Docker base `nvidia/cuda:12.4.0-runtime-ubuntu22.04`)
-- **Ubuntu**: 22.04 (inside Docker container)
-
-## Frameworks
-
-- **Pydantic v2** — config validation, data models (`pydantic>=2.0`, `pydantic-settings>=2.0`)
-- **Hamilton** (`sf-hamilton>=1.70`) — DAG-based data pipeline orchestration (`src/tabular_blueprint/pipelines/hamilton_executor.py`)
-- **Typer** (`typer>=0.12`) — CLI framework (`src/tabular_blueprint/cli.py`)
-- **Rich** (`rich>=13.0`) — terminal formatting and tables
-- **HuggingFace Accelerate** (`accelerate>=0.30`) — distributed PyTorch training for deep models
-- **HuggingFace Transformers** (`transformers>=4.40`) — transformer-based model support
-- **Optuna** (`optuna>=3.6`) — hyperparameter optimization framework
-
-## ML Libraries
-
-### Gradient Boosted Decision Trees (GBDT)
-- **CatBoost** (`catboost>=1.2`) — `src/tabular_blueprint/models/conventional/catboost_model.py`
-- **LightGBM** (`lightgbm>=4.0`) — `src/tabular_blueprint/models/conventional/lightgbm_model.py`
-- **XGBoost** (`xgboost>=2.0`) — `src/tabular_blueprint/models/conventional/xgboost_model.py`
-
-### Tabular Foundation Models
-- **TabPFN v2** (`tabpfn>=2.0`) — `src/tabular_blueprint/models/tabular_foundation/tabpfn_model.py`
-
-### Deep Learning
-- **PyTorch** (`torch>=2.3`) — core tensor ops, FT-Transformer, TabNet
-- **FT-Transformer** (custom) — `src/tabular_blueprint/models/deep/ft_transformer.py`
-- **TabNet** (via `pytorch-tabular>=1.0`, optional) — `src/tabular_blueprint/models/deep/tabnet_model.py`
-
-### Data & Feature Engineering
-- **Polars** (`polars>=1.0`) — primary DataFrame library (replaces pandas)
-- **scikit-learn** (`scikit-learn>=1.4`) — metrics, cross-validation, baselines
-- **NumPy** (`numpy>=1.26`) — array operations
-- **skrub** (`skrub>=0.3`) — tabular data preparation utilities
-- **Cleanlab** (`cleanlab>=2.6`) — label noise detection (`src/tabular_blueprint/data/quality.py`)
-
-### Explainability
-- **SHAP** (`shap>=0.44`) — feature importance and explainability (`src/tabular_blueprint/monitoring/explainability.py`)
-
-## Dependencies (Production)
-
-From `pyproject.toml` `[project.dependencies]`:
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| polars | >=1.0 | DataFrame library |
-| pydantic | >=2.0 | Config/validation models |
-| pydantic-settings | >=2.0 | Settings management |
-| catboost | >=1.2 | GBDT model |
-| lightgbm | >=4.0 | GBDT model |
-| xgboost | >=2.0 | GBDT model |
-| tabpfn | >=2.0 | Foundation model |
-| skrub | >=0.3 | Data preparation |
-| cleanlab | >=2.6 | Label noise detection |
-| optuna | >=3.6 | Hyperparameter optimization |
-| torch | >=2.3 | Deep learning |
-| accelerate | >=0.30 | Distributed training |
-| transformers | >=4.40 | Transformer models |
-| scikit-learn | >=1.4 | ML utilities |
-| numpy | >=1.26 | Array operations |
-| typer | >=0.12 | CLI framework |
-| psutil | >=5.9 | Hardware detection |
-| rich | >=13.0 | Terminal output |
-| sf-hamilton | >=1.70 | DAG pipeline orchestration |
-| shap | >=0.44 | Model explainability |
+## Core Dependencies (`dependencies` in pyproject.toml)
+| Package | Version | Import path | Role |
+|---|---|---|---|
+| `polars` | >=1.0 | `polars` (as `pl`) | DataFrame engine |
+| `pydantic` | >=2.0 | `pydantic` | Config models (BaseModel) |
+| `catboost` | >=1.2 | `catboost` | Gradient boosting (CPU/GPU) |
+| `lightgbm` | >=4.0 | `lightgbm` | Gradient boosting |
+| `xgboost` | >=2.0 | `xgboost` | Gradient boosting |
+| `optuna` | >=3.6 | `optuna` | Hyperparameter optimization |
+| `scikit-learn` | >=1.4 | `sklearn` | Metrics, preprocessing, CV |
+| `numpy` | >=1.26 | `numpy` (as `np`) | Array ops |
+| `typer` | >=0.12 | `typer` | CLI framework |
+| `psutil` | >=5.9 | `psutil` | Hardware detection |
+| `rich` | >=13.0 | `rich` | CLI tables / formatting |
+| `joblib` | >=1.3 | `joblib` | Parallel execution |
+| `filelock` | >=3.12 | `filelock` | Cross-process file locking |
+| `pyyaml` | >=6.0 | `yaml` | YAML config parsing |
+| `sf-hamilton` | >=1.70 | `hamilton` / `sf_hamilton` | DAG orchestration |
 
 ## Optional Dependencies
 
-From `pyproject.toml` `[project.optional-dependencies]`:
+### `[deep]` — Deep learning
+| Package | Version | Import path |
+|---|---|---|
+| `torch` | >=2.3 | `torch` |
+| `accelerate` | >=0.30 | `accelerate` |
+| `transformers` | >=4.40 | `transformers` |
+| `tabpfn` | >=2.0 | `tabpfn` |
+| `pytorch-tabular` | >=1.0 | `pytorch_tabular` |
+| `datasets` | >=2.14 | `datasets` |
 
-| Extra | Package | Purpose |
-|-------|---------|---------|
-| hamilton | sf-hamilton>=1.70 | DAG pipelines |
-| llm | mcp>=0.9, litellm>=1.40 | LLM agent + MCP server |
-| wandb | wandb>=0.17 | W&B experiment tracking |
-| mlflow | mlflow>=2.13 | MLflow experiment tracking |
-| zenml | zenml>=0.57 | ZenML orchestration |
-| transformers | datasets>=2.14 | HuggingFace datasets |
-| shap | shap>=0.44 | Explainability |
-| dl | pytorch-tabular>=1.0 | Deep tabular models |
+### `[shap]` — Explainability
+| `shap` | >=0.44 | `shap` |
 
-## Dev Dependencies
+### `[cleanlab]` — Data quality
+| `cleanlab` | >=2.6 | `cleanlab` |
 
-From `pyproject.toml` `[dependency-groups] dev`:
+### `[llm]` — LLM integration
+| `mcp` | >=0.9 | `mcp` | MCP server |
+| `litellm` | >=1.40 | `litellm` | LLM provider proxy |
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| pytest | >=8.0 | Testing framework |
-| ruff | >=0.4 | Linting + formatting |
-| pre-commit | >=3.6 | Git hooks |
+### `[wandb]` — Experiment tracking
+| `wandb` | >=0.17 | `wandb` |
 
-Additional dev tools configured in `.pre-commit-config.yaml`:
-- **pre-commit-hooks** v6.0.0 — trailing whitespace, end-of-file fixer, YAML check, debug statements
-- **ruff-pre-commit** v0.11.2 — lint + format on commit
-- **pytest unit tests** — local hook runs `uv run pytest tests/unit -v`
+### `[mlflow]` — Experiment tracking
+| `mlflow` | >=2.13 | `mlflow` |
 
-## Config Files
+### `[all]` — Meta extra
+`tabular-blueprint[deep,shap,cleanlab,llm,wandb,mlflow]`
 
-| File | Purpose |
-|------|---------|
-| `pyproject.toml` | Project metadata, dependencies, tool config (ruff, mypy, pytest, setuptools) |
-| `.pre-commit-config.yaml` | Git hooks: ruff lint/format, pytest unit |
-| `Dockerfile` | CUDA 12.4 + Python 3.11 + uv |
-| `docker-compose.yml` | App + MLflow server containers |
-| `.gitignore` | Python, uv, secrets, ML artifacts, notebooks, workspace |
-| `AGENTS.md` | AI agent workflow guidelines |
-| `CLAUDE.md` | Claude-specific instructions |
-| `src/tabular_blueprint/py.typed` | PEP 561 marker |
+## Dev tooling (`[dependency-groups] dev`)
 
-## Ruff Configuration
+| Tool | Version | Purpose |
+|---|---|---|
+| `pytest` | >=9.0.3 | Test runner |
+| `pytest-cov` | >=5.0 | Coverage reporting |
+| `ruff` | >=0.4 | Linter + formatter |
+| `pre-commit` | >=3.6 | Git hook framework |
+| `mypy` | >=1.10 | Static type checking |
+| `pip-audit` | >=2.7 | Dependency vulnerability scanning |
+| `marimo` | >=0.23.4 | Reactive notebook environment |
 
-From `pyproject.toml`:
-- **Line length**: 100
-- **Target**: Python 3.11
-- **Rules**: E, F, I, UP, B, SIM, C4, PT, RUF
-- **Fixable**: ALL
-- **Per-file ignores**: `cli.py` exempts B008; `notebooks/*` exempts E402, I001
+### Docs dependencies (`[dependency-groups] docs`)
 
-## MyPy Configuration
+| Tool | Version | Purpose |
+|---|---|---|
+| `mkdocs-material` | >=9.5 | Documentation theme |
+| `mkdocstrings[python]` | >=0.25 | Auto-generated API docs |
+| `mike` | >=2.0 | Versioned docs deployment |
+| `pymdown-extensions` | >=10.0 | Markdown extensions |
 
-From `pyproject.toml`:
-- **Python version**: 3.11
-- **Ignore missing imports**: true
-- **Disallow untyped defs**: true
+## CI/CD (GitHub Actions)
 
-## Pytest Configuration
+- **File**: `.github/workflows/ci.yml` — push to `main`/`develop` + PR
+  - `pre-commit` job: `uv sync --frozen --group dev --extra llm` → `pre-commit/action@v3.0.1`
+  - `typecheck` job: `uv sync --frozen --group dev --extra llm` → `uv run mypy .`
+  - `test` job: 3.11 / 3.12 / 3.13 matrix → `uv run pytest tests/unit/`, `tests/integration/`, `tests/e2e/`
+  - `coverage` job: 70% threshold on `engine/`, `services/`, `config.py`
+  - `security` job: `uv run pip-audit -f json -o pip-audit.json`
 
-From `pyproject.toml`:
-- **Test paths**: `tests/`
-- **Python path**: `src/`
-- **Strict markers**: enabled
-- **Markers**: slow, integration, unit, e2e, serial, network, smoke
-- **Import mode**: importlib
+- **File**: `.github/workflows/docs.yml` — push to `main` + tags `v*`
+  - Exports notebook static HTML via `scripts/export-notebooks.sh`
+  - Deploys via `uv run mike deploy --push --update-aliases`
 
-## Build/Tooling
+## Pre-commit Hooks (`.pre-commit-config.yaml`)
 
-- **Package manager**: `uv` (installed via `astral.sh/uv` in Docker)
-- **Build system**: setuptools >= 69 with wheel backend
-- **Package layout**: src layout (`src/tabular_blueprint/`)
-- **Entry point**: `tabblueprint` CLI command → `tabular_blueprint.cli:app`
-- **Lock file**: `uv.lock` present
-- **Execution**: Always `uv run <command>` per AGENTS.md
-- **Sync**: `uv sync`
+| Hook | Source | Actions |
+|---|---|---|
+| `trailing-whitespace` | `pre-commit-hooks` v5.0.0 | Trim trailing whitespace |
+| `end-of-file-fixer` | same | Ensure newline at EOF |
+| `check-yaml` | same | Validate YAML |
+| `check-added-large-files` | same | Warn on large files |
+| `check-merge-conflict` | same | Detect merge conflict markers |
+| `debug-statements` | same | Catch `pdb`/`ipdb` left in code |
+| `uv-lock` | `uv-pre-commit` 0.6.14 | Keep `uv.lock` in sync |
+| `ruff` | `ruff-pre-commit` v0.15.9 | Lint + auto-fix |
+| `ruff-format` | same | Formatter |
+| `mypy` | local (`uv run mypy .`) | Type checking |
+
+## Ruff config
+
+- Line length: 100
+- Target: `py311`
+- Selected rules: E, F, I, UP, B, SIM, C4, PT, RUF
+- Fixable: ALL
+- Per-file ignores: `cli.py` → B008; notebooks → E402/I001/B018/E501/RUF001/F841
+
+## Mypy config
+
+- `python_version = "3.11"`
+- `disallow_untyped_defs = true`
+- Excludes: tests/, benchmarks/, notebooks/, workspace/
+- Overrides for third-party stubs (catboost, lightgbm, xgboost, optuna, polars, hamilton, cleanlab, shap, wandb, mlflow, litellm, mcp, torch, transformers, etc.)
+- Error-ignored modules: `hpo`, `hpo_warmstart`, `hpo_importance`, `pipelines.nodes.*`, `trainer`
+
+## Pytest config
+
+- Test paths: `tests/`
+- Source path: `src`
+- Strict markers: slow, integration, unit, e2e, serial, network, smoke
+- Default flags: `--strict-markers -ra --durations=10 --import-mode=importlib`
+
+## Docker
+
+- **Base**: `nvidia/cuda:12.4.0-runtime-ubuntu22.04`
+- **Python**: 3.11 via apt
+- **uv**: installed via `curl -Ls https://astral.sh/uv/install.sh | sh`
+- **Build**: `uv sync --frozen --no-dev` (no dev/optional extras in image)
+- **docker-compose**: app service (build: .) + mlflow sidecar (`ghcr.io/mlflow/mlflow:v2.13.0`)
+
+## Documentation (MkDocs)
+
+- **Theme**: `mkdocs-material` with nav tabs, sections, top button, code copy
+- **API docs**: `mkdocstrings[python]` with Google-style docstrings
+- **Versioning**: `mike`
+- **Extensions**: `pymdownx.blocks.caption`, `md_in_html`
+- **Notebooks**: exported to `docs/notebooks/exports/` as HTML via `scripts/export-notebooks.sh`
+- **Deployed at**: `https://minghao51.github.io/iter8ml/`

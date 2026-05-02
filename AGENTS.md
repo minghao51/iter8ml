@@ -7,16 +7,8 @@
 - High-level summaries only.
 - No speculation about code you haven't read.
 
-## 3. Technical Stack
-- **Python:**
-  - Package manager: `uv`.
-  - Execution: Always `uv run <command>`. Never `python`.
-  - Sync: `uv sync`.
-- **Frontend:**
-  - Verify: Run `npm run check` and `npm test` after changes.
-- **Docs:**
-  - Update `ARCHITECTURE.md` if structure changes.
-  - Build: `bash scripts/export-notebooks.sh && uv run mkdocs build`.
-  - Preview: `uv run mkdocs serve` (re-export notebooks first if they changed).
-  - Deploy: `bash scripts/export-notebooks.sh && uv run mike deploy --push --update-aliases <version> latest`. See `.github/workflows/docs.yml` for CI.
-- **Files:** Markdown files must follow `YYYYMMDD-filename.md` format.
+## 3. Project Context
+- Architecture & modules → @.planning/codebase/ARCHITECTURE.md
+- Stack & dependencies → @.planning/codebase/STACK.md
+- Coding conventions → @.planning/codebase/CONVENTIONS.md
+- External integrations → @.planning/codebase/INTEGRATIONS.md

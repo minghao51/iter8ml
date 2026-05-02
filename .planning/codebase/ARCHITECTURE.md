@@ -1,151 +1,139 @@
 # Architecture
 
-> Last updated: 2026-04-23
+## Overall Pattern: Thin Orchestration with Hamilton DAG
 
-## Pattern
-
-**Layered pipeline architecture** with a CLI-first interface. The system is structured as a sequential ML experimentation framework — not a web app — organized into clearly separated layers: CLI entry point, engine orchestration, data processing, model management, services, and monitoring.
-
-The core pattern is a **train-evaluate-track loop**: data flows in from files, passes through a Hamilton DAG for preprocessing, gets split into NumPy arrays, trains multiple models with cross-validation, evaluates them, logs results as JSONL events, and persists champions to a file-backed model registry.
+`tabular-blueprint` follows a **thin orchestration** model where `Trainer` in `engine/` coordinates the run lifecycle. The critical-path pipeline is driven by **sf-hamilton** as a function-based DAG — function signatures define the dependency graph and `PipelineExecutor` builds mode-specific drivers from node modules. An imperative fallback exists when Hamilton is unavailable.
 
 ## Layers
 
-### 1. Presentation Layer (CLI + MCP)
-- **CLI** (`src/tabular_blueprint/cli.py`): Typer-based CLI with commands: `init`, `run`, `leaderboard`, `registry`, `hardware`, `drift`, `state`, `hpo`, `diff`, `export`
-- **MCP Server** (`src/tabular_blueprint/mcp/tools.py`): FastMCP-based server exposing atomic tools for LLM agents (get_experiment_state, run_baseline, run_hpo, detect_drift, etc.)
-- **LLM Agent** (`src/tabular_blueprint/llm/__init__.py`): LiteLLM-backed agent for natural language explanations of SHAP results and model performance
+### 1. CLI Layer (`src/tabular_blueprint/cli.py`)
+- Typer app (`tabblueprint`) registered in `pyproject.toml:59` as `[project.scripts]`
+- Commands: `init`, `run`, `leaderboard`, `registry`, `hardware`, `drift`, `state`, `hpo`, `diff`, `export`
+- `run` builds `ExperimentConfig` from file or CLI flags, calls `Trainer.run(df)`
 
-### 2. Engine / Orchestration Layer
-- **Trainer** (`src/tabular_blueprint/engine/trainer.py`): Central orchestrator. Coordinates the full experiment lifecycle: preprocessing → data adaptation → leakage audit → baselines → optional AFE → model training (sequential or concurrent) → drift detection → state update
-- **Evaluator** (`src/tabular_blueprint/engine/evaluator.py`): Cross-validation engine. Creates fresh model instances per fold, computes configurable metrics (roc_auc, f1_macro, rmse, r2, etc.)
-- **Tracker** (`src/tabular_blueprint/engine/tracker.py`): Pluggable experiment tracking via `Tracker` Protocol. Three implementations: `JSONLTracker` (default, with log rotation), `WandbTracker`, `MLflowTracker`
-- **HPO** (`src/tabular_blueprint/engine/hpo.py`): Optuna-based hyperparameter optimization with warmstart from historical JSONL events
-- **StateObserver** (`src/tabular_blueprint/engine/state_observer.py`): Generates `current_state.md` and `leaderboard.md` after every run — LLM-readable experiment state summaries
+### 2. MCP Layer (`src/tabular_blueprint/mcp/tools.py`)
+- FastMCP server (`tabular-blueprint`) exposing atomic tools for LLM agents
+- Tools: `get_experiment_state`, `get_column_stats`, `run_baseline`, `run_hpo`, `get_event_log`, `registry_show`, `registry_promote`, `detect_drift`, `export_champion`
+- Each tool is self-contained: loads data, builds config, calls Trainer/pipeline
 
-### 3. Data Layer
-- **Loaders** (`src/tabular_blueprint/data/loaders.py`): Polars-based ingestion from CSV, Parquet, and SQLite
-- **DataAdapter** (`src/tabular_blueprint/data/adapter.py`): Converts Polars DataFrames to model-specific formats (NumPy, PyTorch tensors, HuggingFace Dataset)
-- **Feature Engine** (`src/tabular_blueprint/data/feature_engine.py`): Target transformation (log1p, yeo-johnson, box-cox), interaction discovery (multiply, ratio), and feature pruning via permutation importance
-- **Quality** (`src/tabular_blueprint/data/quality.py`): Cleanlab-based noise detection and cleaning
-- **Leakage** (`src/tabular_blueprint/data/leakage.py`): Feature leakage detection
-- **Preprocessing Pipeline** (`src/tabular_blueprint/pipelines/preprocessing.py`): Hamilton DAG — null filling → date decomposition → categorical encoding
+### 3. Config Layer (`config.py`, `constants.py`, `exceptions.py`)
+- **ExperimentConfig** (Pydantic BaseModel at `config.py:19`): central experiment configuration with file loading (YAML/TOML/JSON/PY), enum serialization, task-defaults validator
+- **HardwareProfile** (`config.py:136`): auto-detected GPU/CPU/RAM profile
+- **Enums** (`constants.py`): `TaskType`, `CVStrategy`, `ModelName`, `EmbeddingMethod`, `TrackerType` — all `str` enums for JSON compatibility
+- **Exceptions** (`exceptions.py`): `TabularBlueprintError` base, `DataLoadError`, `ModelFitError`, `RegistryError`; `track_errors()` decorator catches/logs/re-raises typed errors
 
-### 4. Model Layer
-- **AbstractModel** (`src/tabular_blueprint/models/base.py`): Protocol defining the model contract (`fit`, `predict`, `predict_proba`, `save`, `load`, `model_name`)
-- **Factory** (`src/tabular_blueprint/models/factory.py`): Lazy-loading model registry mapping string names to `(module_path, class_name)` tuples
-- **Selector** (`src/tabular_blueprint/models/selector.py`): Hardware/data-size-aware model routing (e.g., TabPFN only with GPU, FT-Transformer only with >12GB VRAM and >50k rows)
-- **Model hierarchy**:
-  - `BaseGBDTModel` → `CatBoostModel`, `LightGBMModel`, `XGBoostModel` (conventional/)
-  - `TabPFNModel` (tabular_foundation/)
-  - `FTTransformerModel`, `TabNetModel` (deep/)
-  - `NaiveBaseline`, `LinearBaseline` (baselines.py)
-- **Model Configs** (`src/tabular_blueprint/models/model_configs.py`): Pydantic models with default hyperparameters and HPO search spaces per model
+### 4. Data Layer (`src/tabular_blueprint/data/`)
+- **loaders.py**: `load_data()`, `load_csv()`, `load_parquet()`, `load_sqlite()`, `get_data_hash()`
+- **adapter.py**: `DataAdapter` converts Polars DataFrame -> numpy arrays
+- **feature_engine.py**: AFE (automatic feature engineering), interaction discovery, target transformation
+- **leakage.py**: `LeakageReport` / `detect_leakage()` — flags suspiciously predictive features
+- **quality.py**: `audit_data_quality()`, `clean_noise()` — data quality auditing and noise cleaning
+- **cache.py**: `PreprocessingCache` — hash-based preprocessing cache on disk
+- **embedding_engine.py**: high-cardinality categorical embedding utilities
 
-### 5. Services Layer
-- **RegistryService** (`src/tabular_blueprint/services/registry_service.py`): Thread-safe model registry with file locking (`fcntl`). Stores champions in `workspace/registry.json`, auto-promotes better-scoring models
-- **ReportService** (`src/tabular_blueprint/services/report_service.py`): Builds structured experiment reports from JSONL logs + registry. Powers leaderboard generation (console and markdown)
-- **ExportService** (`src/tabular_blueprint/services/export_service.py`): Packages champion models as portable prediction directories (model artifact + preprocessing pipeline + predictor script + metadata)
+### 5. Engine Layer (`src/tabular_blueprint/engine/`)
+- **trainer.py** (`Trainer` at line 41): slim orchestrator. `run()` tries Hamilton DAG first (`_try_hamilton_training()`), falls back to `_run_imperative()`. Manages run_id, tracker lifecycle, event logging
+- **data_preparation.py** (`DataPreparationService`): orchestrates preprocessing + noise cleaning + adapter transform + leakage detection + target transform via Hamilton or imperative
+- **model_trainer.py** (`ModelTrainer`): baseline evaluation + model training (sequential or concurrent via `ThreadPoolExecutor`), calibration, champion update
+- **evaluator.py** (`Evaluator`): cross-validation evaluation (CV loop)
+- **tracker.py**: `Tracker` protocol + `JSONLTracker` (default, with log rotation), `WandbTracker`, `MLflowTracker`
+- **hpo.py**: Optuna hyperparameter optimization
+- **hpo_warmstart.py**: injects historical trials from JSONL log
+- **hpo_importance.py**: parameter importance (PedAnova)
+- **calibration.py**: `CalibratedModel` wrapper (Platt/Isotonic)
+- **drift_checker.py**: standalone drift detection checker
+- **embedding_trainer.py**: trains entity embeddings or autoencoders
+- **explainability_service.py**: SHAP-based feature importance
+- **feature_engineer.py**: AFE orchestration (imperative path)
+- **state_observer.py**: generates `current_state.md` from logs + registry, optional LLM commentary
 
-### 6. Monitoring Layer
-- **Drift Detection** (`src/tabular_blueprint/monitoring/drift.py`): KS-test (numeric) and Chi-squared (categorical) drift detection
-- **PSI Drift** (`src/tabular_blueprint/monitoring/psi_drift.py`): Population Stability Index drift detection
-- **Domain Classifier** (`src/tabular_blueprint/monitoring/domain_classifier.py`): Classifier-based drift detection
-- **Explainability** (`src/tabular_blueprint/monitoring/explainability.py`): SHAP-based feature importance with plot generation
+### 6. Pipeline Layer (`src/tabular_blueprint/pipelines/`)
+- **executor.py** (`PipelineExecutor` at line 77): builds Hamilton drivers per mode. Modes via `PipelineMode` enum:
+  - `TRAINING`: 7 node modules -> `training_state`
+  - `DRIFT`: preprocessing + drift_detection -> `drift_report`
+  - `EXPORT`/`HPO`/`INFERENCE`: preprocessing -> `processed_dataframe`
+- **hamilton_executor.py**: deprecated wrapper around PipelineExecutor
+- **hooks/tracking_hook.py** (`TrackingHook`): `NodeExecutionHook` adapts `Tracker` protocol -> Hamilton adapter. Logs `node_completed` / `node_error`
+
+### 7. Pipeline Nodes (`src/tabular_blueprint/pipelines/nodes/`)
+Each node module is a plain-Python module where function names define the DAG:
+- **preprocessing.py**: 9 nodes — null imputation (numeric median, categorical mode), date decomposition (year/month/day/weekday), categorical encoding
+- **data_preparation.py**: 7 nodes — target validation, quality cleaning, adapter transform, leakage detection, target transform -> `DataPrepResult`
+- **model_selection.py**: 1 node — auto or explicit model list
+- **baselines.py**: 2 nodes — naive + linear baseline evaluation
+- **feature_engineering.py**: conditional nodes via `@config.when(afe_enabled=True)` / `@config.when(embedding_enabled=True)` — passthrough, AFE, or embedding
+- **model_training.py**: 1 node -> `list[ModelResult]`, sequential training loop
+- **state_generation.py**: terminal node -> `TrainingState` (results dict, leaderboard, best model, registry update)
+- **drift_detection.py**: conditional nodes via `@config.when(drift_method=...)` — PSI, domain classifier, or both -> `DriftReport`
+
+### 8. Models Layer (`src/tabular_blueprint/models/`)
+- **base.py**: `AbstractModel` Protocol — `fit`, `predict`, `predict_proba`, `save`, `load`, `model_name`
+- **factory.py**: string-keyed registry with lazy imports (`_MODEL_REGISTRY`), cached lookups
+- **selector.py** (`ModelSelector`): hardware/data-size-aware model routing (TabPFN < 50k + GPU, CatBoost/LightGBM/XGBoost, FT-Transformer > 50k + 12GB VRAM, TabNet > 8GB VRAM)
+- **baselines.py**: `NaiveBaseline`, `LinearBaseline`
+- **gbdt_base.py**: shared GBDT base class
+- **model_configs.py**: model hyperparameter configs
+- **conventional/**: `CatBoostModel`, `LightGBMModel`, `XGBoostModel`
+- **deep/**: `FTTransformerModel` (PyTorch), `TabNetModel` (pytorch-tabular), `SparseEmbedder`, `TextEncoder`
+- **tabular_foundation/**: `TabPFNModel` (TabPFN v2)
+
+### 9. Monitoring Layer (`src/tabular_blueprint/monitoring/`)
+- **drift.py**: `DriftDetector` (KS test for numeric, chi2 for categorical)
+- **psi_drift.py**: `PSIDriftDetector` (Population Stability Index)
+- **domain_classifier.py**: `DomainClassifierDriftDetector` (train a classifier to distinguish reference vs live)
+- **explainability.py**: SHAP-based explainer
+
+### 10. Services Layer (`src/tabular_blueprint/services/`)
+- **registry_service.py** (`RegistryService`): file-locked JSON registry for champion models. Thread/process-safe via `filelock`. Atomic saves via temp + rename. `update_if_better()`, `promote_run()`
+- **report_service.py** (`ReportService`): builds `ExperimentReport` / `LeaderboardEntry` from JSONL events. Metric direction logic: `metric_higher_is_better()`, `metric_value_is_better()`, `resolve_primary_score()`
+- **export_service.py** (`ExportService`): packages champion model + preprocessing nodes + predictor script into portable directory
+
+### 11. LLM Layer (`src/tabular_blueprint/llm/__init__.py`)
+- **TabularAgent**: natural language explanations for SHAP, performance, feature importance via `litellm`
+
+### 12. Utils (`src/tabular_blueprint/utils/`)
+- **jsonl.py**: `load_events()`, `iter_events()` — JSONL log reading
+- **safe_pickle.py**: `RestrictedUnpickler` — allowlist-based safe deserialization (sklearn, numpy, scipy, catboost, lightgbm, xgboost, tabpfn, collections, builtins)
 
 ## Data Flow
 
-```
-CLI / MCP Tool
-    │
-    ▼
-Trainer.run(df: Polars DataFrame)
-    │
-    ├── HamiltonExecutor.run(df) ── Hamilton DAG ──► preprocessed Polars DataFrame
-    │
-    ├── DataAdapter.transform(df) ──► (X: np.ndarray, y: np.ndarray)
-    │
-    ├── [Optional] Quality audit + noise cleaning
-    ├── [Optional] Leakage detection
-    ├── [Optional] Target transformation
-    │
-    ├── Baseline models (NaiveBaseline, LinearBaseline)
-    │
-    ├── [Optional] AFE: fit GBDT → permutation importance → interaction discovery → pruning
-    │
-    ├── ModelSelector.select() ──► ordered model list
-    │
-    ├── For each model:
-    │   ├── Evaluator.evaluate(model_cls, X, y) ──► CV scores
-    │   ├── model.fit(X, y)
-    │   ├── [Optional] Calibration
-    │   ├── model.save(artifact_path)
-    │   ├── [Optional] SHAP explainability
-    │   └── Tracker.log_event(...)
-    │
-    ├── [Optional] Drift detection (PSI / Domain Classifier)
-    │
-    ├── RegistryService.update_if_better() ──► champion promotion
-    │
-    └── StateObserver.generate() ──► workspace/current_state.md + leaderboard.md
-```
+1. CLI/MCP builds `ExperimentConfig` and loads data as `pl.DataFrame`
+2. `Trainer.run(df)` creates run_id, tries Hamilton DAG
+3. DAG executes: preprocessing -> data_preparation -> model_selection -> baselines -> feature_engineering -> model_training -> state_generation
+4. `TrackingHook` logs `node_completed` / `node_error` events to Tracker
+5. Terminal node `training_state` generates leaderboard, updates registry
+6. StateObserver writes `current_state.md` and `leaderboard.md` to workspace
+7. On Hamilton failure, `Trainer._run_imperative()` runs equivalent logic imperatively
+
+## Guardrails
+
+- **Safe deserialization** (`utils/safe_pickle.py`): `RestrictedUnpickler` blocks unpickling of non-allowlisted classes
+- **HPO warmstart** (`engine/hpo_warmstart.py`): validates historical trials before injection
+- **Metric direction** (`services/report_service.py`): `metric_value_is_better()` centralized for leaderboard ranking and registry promotion
+- **Config safety** (`config.py`): `.py` config files disabled by default (`allow_unsafe_python=False`)
+- **Model calibration** (`engine/calibration.py`): only applies to classification tasks
+- **TabPFN guard**: warning emitted when n_rows > 50k
 
 ## Entry Points
 
-| Entry Point | File | Description |
+| Entry Point | Mechanism | Location |
 |---|---|---|
-| CLI `tabblueprint` | `src/tabular_blueprint/cli.py` | Main CLI entry point (registered as `tabblueprint` script in pyproject.toml) |
-| MCP Server | `src/tabular_blueprint/mcp/tools.py` | FastMCP server for LLM agent integration |
-| Programmatic API | `src/tabular_blueprint/engine/trainer.py:Trainer` | `Trainer(config).run(df)` for library usage |
-| Example configs | `examples/credit_risk.py`, `examples/zenml_pipeline.py` | Runnable experiment configurations |
-| Docker | `Dockerfile`, `docker-compose.yml` | GPU-enabled container with MLflow sidecar |
+| CLI | `tabblueprint` console script | `pyproject.toml:59` -> `cli.py:18` |
+| MCP Server | FastMCP | `mcp/tools.py:17` |
+| Direct Python | `from tabular_blueprint import ...` | `__init__.py` |
 
-## Abstractions
+## Key Files
 
-| Abstraction | Type | File | Purpose |
-|---|---|---|---|
-| `AbstractModel` | Protocol | `models/base.py` | Structural subtyping contract for all models |
-| `Tracker` | Protocol | `engine/tracker.py` | Pluggable experiment tracking (JSONL, W&B, MLflow) |
-| `BaseGBDTModel` | Abstract base class | `models/gbdt_base.py` | Shared GBDT behavior (fit/save/load/predict) |
-| `ExperimentConfig` | Pydantic BaseModel | `config.py` | Single source of truth for all experiment settings |
-| `HardwareProfile` | Pydantic BaseModel | `config.py` | Auto-detected hardware capabilities |
-| `DataAdapter` | Class | `data/adapter.py` | Format-agnostic data conversion layer |
-| `HamiltonExecutor` | Class | `pipelines/hamilton_executor.py` | DAG-based preprocessing orchestration |
-
-## State Management
-
-This is a **CLI tool / library**, not a web application. State is managed via:
-
-1. **Experiment log** (`workspace/experiments.jsonl`): Append-only JSONL event log. Each run writes structured events (experiment_started, model_completed, baseline_completed, drift_check, etc.) with timestamps and run IDs. Thread-safe via `JSONLTracker._lock`. Supports log rotation (100MB default, 5 backups).
-
-2. **Model registry** (`workspace/registry.json`): JSON file tracking champion models per key (e.g., `experiment_name:classification`). Thread-safe via `fcntl` file locking.
-
-3. **State files** (generated after each run):
-   - `workspace/current_state.md`: LLM-readable experiment state summary
-   - `workspace/leaderboard.md`: Ranked model performance table
-
-4. **Model artifacts** (`workspace/artifacts/`): Serialized trained models saved per model per run.
-
-5. **Configuration**: Passed as `ExperimentConfig` (Pydantic model) — either constructed from CLI flags or loaded from a Python config module via `importlib`.
-
-## Routing
-
-Not applicable in the traditional web sense. The system routes via:
-
-- **CLI commands**: Typer routes commands to handler functions in `cli.py` (`run`, `hpo`, `drift`, `leaderboard`, etc.)
-- **MCP tools**: FastMCP routes tool invocations to handler functions in `mcp/tools.py`
-- **Model routing**: `ModelSelector.select()` routes models based on dataset size and hardware profile
-- **Model factory**: `get_model_class(name)` lazily resolves model names to implementation classes
-
-## Configuration
-
-Configuration is managed through `ExperimentConfig` (`src/tabular_blueprint/config.py`), a Pydantic BaseModel with validation:
-
-- **Defaults**: Sensible defaults for all fields (5-fold stratified CV, auto model selection, JSONL tracking)
-- **Task-aware defaults**: Metrics and CV strategy auto-adjust based on task type (classification vs regression) via `model_validator`
-- **Loading**: Config can be provided via:
-  1. CLI flags (`--data`, `--target`, `--task`, `--models`, `--config`)
-  2. Python config module (`--config path/to/config.py`) loaded via `importlib`
-  3. Programmatic construction (`ExperimentConfig(...)`)
-- **Hardware profile**: `HardwareProfile.detect()` auto-detects GPU, VRAM, RAM, CPU cores at runtime
-- **Enums**: Type-safe enums in `constants.py` for task types, CV strategies, model names, tracker types
-- **Serialization**: Custom field serializers for enums and Path objects for JSON output
+| File | Purpose |
+|---|---|
+| `src/tabular_blueprint/cli.py` | Typer CLI entry point with 10 commands |
+| `src/tabular_blueprint/config.py` | ExperimentConfig + HardwareProfile |
+| `src/tabular_blueprint/constants.py` | Enums and conversion utilities |
+| `src/tabular_blueprint/exceptions.py` | Exception hierarchy + track_errors decorator |
+| `src/tabular_blueprint/engine/trainer.py` | Main orchestrator |
+| `src/tabular_blueprint/pipelines/executor.py` | Hamilton driver builder per mode |
+| `src/tabular_blueprint/engine/tracker.py` | Tracker protocol + implementations |
+| `src/tabular_blueprint/models/base.py` | AbstractModel Protocol |
+| `src/tabular_blueprint/models/factory.py` | Model class registry |
+| `src/tabular_blueprint/services/registry_service.py` | File-locked champion registry |
+| `src/tabular_blueprint/utils/safe_pickle.py` | Restricted unpickler |
