@@ -54,6 +54,8 @@ dev = [
     "mypy>=1.10",
     "pip-audit>=2.7",
     "marimo>=0.23.4",
+    "jupyter>=1.1.1",
+    "nbformat>=5.10.4",
 ]
 
 [project.scripts]

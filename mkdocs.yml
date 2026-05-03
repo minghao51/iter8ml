@@ -24,6 +24,8 @@ extra:
 markdown_extensions:
   - pymdownx.blocks.caption
   - md_in_html
+  - pymdownx.superfences
+  - admonition
 nav:
   - Home: index.md
   - Architecture: pipeline-architecture.md
@@ -37,9 +39,9 @@ nav:
     - Drift Detection: drift-detection.md
     - Explainability: explainability.md
   - Notebooks:
-    - Overview: notebooks.md
-    - Quick Start: notebooks/exports/01_quick_start.html
-    - Model Comparison: notebooks/exports/02_model_comparison.html
-    - Drift Monitoring: notebooks/exports/03_drift_monitoring.html
-    - HPO Optimization: notebooks/exports/04_hpo_optimization.html
-    - Methodology Benchmarks: notebooks/exports/05_methodology_benchmarks.html
+    - Overview: notebooks/index.md
+    - Quick Start: notebooks/quick-start.md
+    - Model Comparison: notebooks/model-comparison.md
+    - Drift Monitoring: notebooks/drift-monitoring.md
+    - HPO Optimization: notebooks/hpo-optimization.md
+    - Methodology Benchmarks: notebooks/methodology-benchmarks.md

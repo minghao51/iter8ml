@@ -1,0 +1,112 @@
+---
+title: "Drift Detection & Monitoring"
+description: "Compare three drift detection methods — KS/Chi-squared, PSI, and Domain Classifier — on synthetic data with engineered distribution shift."
+date: today
+format:
+  html:
+    self-contained: true
+    embed-resources: true
+    code-fold: true
+    code-tools: true
+---
+
+Compare three drift detection methods on a synthetic dataset with
+engineered distribution shift:
+
+- **KS / Chi-squared** — univariate per-column tests
+- **PSI** — Population Stability Index with severity classification
+- **Domain Classifier** — multivariate drift via AUC of a classifier
+
+## 1. Create Reference & Shifted Datasets
+
+```{python}
+#| label: create-datasets
+#| cache: true
+import numpy as np
+import polars as pl
+from sklearn.datasets import make_classification
+
+np.random.seed(42)
+X_ref, y_ref = make_classification(
+    n_samples=2000, n_features=10, n_informative=6, random_state=42
+)
+df_ref = pl.DataFrame({f"feat_{i}": X_ref[:, i] for i in range(X_ref.shape[1])})
+df_ref = df_ref.with_columns(target=pl.Series(y_ref))
+
+X_live = X_ref[:800].copy()
+X_live[:, 0] += 1.5
+X_live[:, 3] *= 1.8
+X_live[:, 7] += np.random.normal(0, 3, size=800)
+df_live = pl.DataFrame({f"feat_{i}": X_live[:, i] for i in range(X_live.shape[1])})
+df_live = df_live.with_columns(target=pl.Series(y_ref[:800]))
+print(f"Reference: {df_ref.shape}  |  Live: {df_live.shape}  |  Shifted columns: feat_0, feat_3, feat_7")
+```
+
+## 2. KS / Chi-squared Drift Detection
+
+```{python}
+#| label: ks-drift
+#| cache: true
+from tabular_blueprint.monitoring.drift import DriftDetector
+
+ks_detector = DriftDetector(df_ref, alpha=0.05)
+ks_report = ks_detector.detect(df_live)
+print(f"Drift detected: {ks_report.drift_detected}  |  Columns drifted: {ks_report.n_drifted}/{ks_report.n_columns_tested}")
+```
+
+```{python}
+#| label: ks-drift-details
+ks_lines = []
+for c in ks_report.column_results:
+    status = "DRIFT" if c.drift_detected else "  OK"
+    ks_lines.append(f"{status}  |  {c.column:10s}  |  p={c.p_value:.6f}  |  test={c.test_used}")
+print("\n".join(ks_lines))
+```
+
+## 3. PSI (Population Stability Index)
+
+```{python}
+#| label: psi-drift
+#| cache: true
+from tabular_blueprint.monitoring.psi_drift import PSIDriftDetector
+
+psi_detector = PSIDriftDetector(df_ref, n_bins=10)
+psi_report = psi_detector.detect(df_live)
+print(f"PSI drift detected: {psi_report.drift_detected}  |  Moderate: {psi_report.n_moderate}  |  Severe: {psi_report.n_severe}")
+```
+
+```{python}
+#| label: psi-drift-details
+psi_rows = []
+for f in psi_report.feature_psi:
+    psi_rows.append(f"| {f.feature:10s} | {f.psi_value:.4f} | {f.drift_level:10s} |")
+table = "| Feature | PSI | Level |\n|----------|------|--------|\n" + "\n".join(psi_rows)
+print(table)
+```
+
+## 4. Domain Classifier (Multivariate Drift)
+
+```{python}
+#| label: domain-classifier
+#| cache: true
+from tabular_blueprint.monitoring.domain_classifier import DomainClassifierDriftDetector
+
+dc_detector = DomainClassifierDriftDetector(df_ref, threshold=0.7, random_seed=42)
+dc_report = dc_detector.detect(df_live)
+print(f"AUC: {dc_report.auc_score:.4f}  |  Threshold: {dc_report.threshold}  |  Drift: {dc_report.drift_detected}  |  Ref n={dc_report.n_reference}, Live n={dc_report.n_live}")
+```
+
+## 5. Hamilton DAG Drift Mode
+
+```{python}
+#| label: dag-drift
+#| error: true
+from tabular_blueprint.pipelines.executor import PipelineExecutor
+
+executor = PipelineExecutor()
+if executor.available:
+    drift_report = executor.run_drift(df_ref, df_live, drift_method="both")
+    print(drift_report)
+else:
+    print("Hamilton not installed — install with `uv sync --extra hamilton` to use DAG drift mode.")
+```

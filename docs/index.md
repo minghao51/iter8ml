@@ -5,7 +5,7 @@ A high-velocity iteration framework for tabular ML.
 ## Quick Links
 
 - [Architecture Overview](pipeline-architecture.md)
-- [Notebooks](notebooks.md)
+- [Notebooks](notebooks/index.md)
 
 ## Guides
 

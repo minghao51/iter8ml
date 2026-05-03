@@ -1,0 +1,95 @@
+---
+title: "Quick Start: End-to-End Classification Experiment"
+description: "Walk through the core tabular-blueprint workflow — generate data, configure experiment, train models, inspect leaderboard, export champion."
+date: today
+format:
+  html:
+    self-contained: true
+    embed-resources: true
+    code-fold: true
+    code-tools: true
+---
+
+This notebook walks through the core **tabular-blueprint** workflow:
+
+1. Generate (or load) a dataset
+2. Configure an experiment
+3. Run multi-model training with cross-validation
+4. Inspect the leaderboard and registry
+5. Export the champion model
+
+## 1. Generate Synthetic Data
+
+```{python}
+#| label: generate-data
+#| cache: true
+import polars as pl
+from sklearn.datasets import make_classification
+
+X, y = make_classification(
+    n_samples=2000,
+    n_features=20,
+    n_informative=10,
+    n_redundant=3,
+    random_state=42,
+)
+df = pl.DataFrame({f"feat_{i}": X[:, i] for i in range(X.shape[1])})
+df = df.with_columns(target=pl.Series(y))
+print(f"Dataset shape: {df.shape}  |  Target balance: {df['target'].mean():.2%} positive class")
+```
+
+## 2. Configure & Run Experiment
+
+```{python}
+#| label: configure-experiment
+from tabular_blueprint.config import ExperimentConfig
+
+config = ExperimentConfig(
+    name="quickstart_demo",
+    task="classification",
+    target_col="target",
+    data_path="",
+    models=["catboost", "lightgbm", "xgboost"],
+    cv_folds=5,
+    metrics=["roc_auc", "f1_macro", "accuracy"],
+    shap_enabled=True,
+    max_workers=2,
+)
+config
+```
+
+```{python}
+#| label: run-experiment
+#| cache: true
+from tabular_blueprint.engine.trainer import Trainer
+
+trainer = Trainer(config)
+results = trainer.run(df)
+results
+```
+
+## 3. Inspect the Leaderboard
+
+```{python}
+#| label: inspect-leaderboard
+from tabular_blueprint.services.report_service import ReportService
+
+report_svc = ReportService()
+console_output = report_svc.format_leaderboard_console(limit=10)
+print(console_output)
+```
+
+## 4. Export the Champion Model
+
+```{python}
+#| label: export-champion
+#| error: true
+from tabular_blueprint.services.export_service import ExportService
+
+exporter = ExportService()
+export_path = exporter.export(
+    key="quickstart_demo:classification",
+    target_col="target",
+)
+print(f"Model exported to: {export_path}")
+```

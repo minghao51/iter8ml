@@ -1,0 +1,182 @@
+---
+title: "Hyperparameter Optimization with Optuna"
+description: "Use the HPO module to find optimal hyperparameters — warmstarting, per-model search spaces, Optuna pruners, and param importance tracking."
+date: today
+format:
+  html:
+    self-contained: true
+    embed-resources: true
+    code-fold: true
+    code-tools: true
+---
+
+Use the **HPO** module to find optimal hyperparameters for any model.
+Features demonstrated:
+
+- Warmstarting from previous experiment logs
+- Per-model search spaces
+- Optuna study creation with pruners
+- Param importance tracking
+
+## 1. Prepare Data
+
+```{python}
+#| label: prepare-hpo-data
+#| cache: true
+import polars as pl
+from sklearn.datasets import make_classification
+from tabular_blueprint.data.adapter import DataAdapter
+
+X_raw, y_raw = make_classification(
+    n_samples=3000, n_features=20, n_informative=12, random_state=42
+)
+df = pl.DataFrame({f"f_{i}": X_raw[:, i] for i in range(X_raw.shape[1])})
+df = df.with_columns(target=pl.Series(y_raw))
+adapter = DataAdapter(target_format="numpy")
+X, y = adapter.transform(df, "target")
+print(f"X: {X.shape}, y: {y.shape}")
+```
+
+## 2. Create Optuna Study
+
+```{python}
+#| label: create-study
+from tabular_blueprint.engine.hpo import create_study
+
+study = create_study(
+    model_name="catboost",
+    direction="maximize",
+    n_trials=30,
+    pruner="hyperband",
+)
+print(f"Study: {study.study_name}  |  Direction: {study.direction}")
+```
+
+## 3. Run HPO for CatBoost
+
+```{python}
+#| label: catboost-hpo
+#| cache: true
+from tabular_blueprint.engine.hpo import optimize_model
+from tabular_blueprint.engine.evaluator import Evaluator
+from tabular_blueprint.config import ExperimentConfig
+from tabular_blueprint.models.factory import get_model_class
+
+eval_config = ExperimentConfig(
+    name="hpo_nb",
+    task="classification",
+    target_col="target",
+    data_path="",
+    cv_folds=3,
+    metrics=["roc_auc"],
+)
+evaluator = Evaluator(eval_config)
+model_cls = get_model_class("catboost")
+hpo_result = optimize_model(
+    model_cls,
+    X,
+    y,
+    evaluator,
+    "catboost",
+    n_trials=20,
+    task="classification",
+)
+print(f"Best ROC AUC: {hpo_result['best_value']:.4f}")
+```
+
+```{python}
+#| label: catboost-params
+params = hpo_result["best_params"]
+for k, v in params.items():
+    print(f"  {k}: {v}")
+```
+
+## 4. Run HPO for LightGBM
+
+```{python}
+#| label: lightgbm-hpo
+#| cache: true
+from tabular_blueprint.engine.hpo import optimize_model as om2
+from tabular_blueprint.engine.evaluator import Evaluator as Ev2
+from tabular_blueprint.config import ExperimentConfig as Ec2
+from tabular_blueprint.models.factory import get_model_class as Gc2
+
+eval_cfg2 = Ec2(
+    name="hpo_lgbm",
+    task="classification",
+    target_col="target",
+    data_path="",
+    cv_folds=3,
+    metrics=["roc_auc"],
+)
+ev2 = Ev2(eval_cfg2)
+lgbm_cls = Gc2("lightgbm")
+lgbm_result = om2(
+    lgbm_cls,
+    X,
+    y,
+    ev2,
+    "lightgbm",
+    n_trials=20,
+    task="classification",
+)
+print(f"LightGBM Best ROC AUC: {lgbm_result['best_value']:.4f}")
+```
+
+```{python}
+#| label: hpo-comparison
+cb = hpo_result["best_value"]
+lb = lgbm_result["best_value"]
+winner = "CatBoost" if cb >= lb else "LightGBM"
+print(f"| CatBoost: {cb:.4f} | LightGBM: {lb:.4f} | Winner: {winner} |")
+```
+
+## 5. Warmstart from Previous Runs
+
+```{python}
+#| label: warmstart-hpo
+#| cache: true
+import tempfile
+from pathlib import Path
+
+from tabular_blueprint.engine.hpo import optimize_model as om3
+from tabular_blueprint.engine.evaluator import Evaluator as Ev3
+from tabular_blueprint.config import ExperimentConfig as Ec3
+from tabular_blueprint.models.factory import get_model_class as Gc3
+
+log_path = Path(tempfile.mkdtemp()) / "hpo_warmstart.jsonl"
+
+eval_cfg3 = Ec3(
+    name="warm",
+    task="classification",
+    target_col="target",
+    data_path="",
+    cv_folds=3,
+    metrics=["roc_auc"],
+)
+ev3 = Ev3(eval_cfg3)
+xgb_cls = Gc3("xgboost")
+
+first_pass = om3(
+    xgb_cls,
+    X,
+    y,
+    ev3,
+    "xgboost",
+    n_trials=10,
+    task="classification",
+    log_path=str(log_path),
+)
+
+warmstarted = om3(
+    xgb_cls,
+    X,
+    y,
+    ev3,
+    "xgboost",
+    n_trials=10,
+    task="classification",
+    log_path=str(log_path),
+)
+print(f"First pass: {first_pass['best_value']:.4f}  ->  Warmstarted: {warmstarted['best_value']:.4f}  |  Warmstart trials: {warmstarted.get('warmstart_trials', 0)}")
+```
