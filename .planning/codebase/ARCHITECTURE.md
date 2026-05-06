@@ -2,7 +2,7 @@
 
 ## Overall Pattern: Thin Orchestration with Hamilton DAG
 
-`tabular-blueprint` follows a **thin orchestration** model where `Trainer` in `engine/` coordinates the run lifecycle. The critical-path pipeline is driven by **sf-hamilton** as a function-based DAG — function signatures define the dependency graph and `PipelineExecutor` builds mode-specific drivers from node modules. An imperative fallback exists when Hamilton is unavailable.
+`tabular-blueprint` follows a **thin orchestration** model where `Trainer` in `engine/` coordinates the run lifecycle. The critical-path pipeline is driven by **sf-hamilton** as a function-based DAG — function signatures define the dependency graph and `PipelineExecutor` builds mode-specific drivers from node modules. Training execution is DAG-only.
 
 ## Layers
 
@@ -32,19 +32,13 @@
 - **embedding_engine.py**: high-cardinality categorical embedding utilities
 
 ### 5. Engine Layer (`src/tabular_blueprint/engine/`)
-- **trainer.py** (`Trainer` at line 41): slim orchestrator. `run()` tries Hamilton DAG first (`_try_hamilton_training()`), falls back to `_run_imperative()`. Manages run_id, tracker lifecycle, event logging
-- **data_preparation.py** (`DataPreparationService`): orchestrates preprocessing + noise cleaning + adapter transform + leakage detection + target transform via Hamilton or imperative
-- **model_trainer.py** (`ModelTrainer`): baseline evaluation + model training (sequential or concurrent via `ThreadPoolExecutor`), calibration, champion update
+- **trainer.py** (`Trainer`): slim orchestrator. `run()` executes the Hamilton training DAG via `PipelineExecutor.run_training()`. Manages run_id, tracker lifecycle, event logging
 - **evaluator.py** (`Evaluator`): cross-validation evaluation (CV loop)
 - **tracker.py**: `Tracker` protocol + `JSONLTracker` (default, with log rotation), `WandbTracker`, `MLflowTracker`
 - **hpo.py**: Optuna hyperparameter optimization
 - **hpo_warmstart.py**: injects historical trials from JSONL log
 - **hpo_importance.py**: parameter importance (PedAnova)
 - **calibration.py**: `CalibratedModel` wrapper (Platt/Isotonic)
-- **drift_checker.py**: standalone drift detection checker
-- **embedding_trainer.py**: trains entity embeddings or autoencoders
-- **explainability_service.py**: SHAP-based feature importance
-- **feature_engineer.py**: AFE orchestration (imperative path)
 - **state_observer.py**: generates `current_state.md` from logs + registry, optional LLM commentary
 
 ### 6. Pipeline Layer (`src/tabular_blueprint/pipelines/`)
@@ -52,7 +46,6 @@
   - `TRAINING`: 7 node modules -> `training_state`
   - `DRIFT`: preprocessing + drift_detection -> `drift_report`
   - `EXPORT`/`HPO`/`INFERENCE`: preprocessing -> `processed_dataframe`
-- **hamilton_executor.py**: deprecated wrapper around PipelineExecutor
 - **hooks/tracking_hook.py** (`TrackingHook`): `NodeExecutionHook` adapts `Tracker` protocol -> Hamilton adapter. Logs `node_completed` / `node_error`
 
 ### 7. Pipeline Nodes (`src/tabular_blueprint/pipelines/nodes/`)
@@ -103,7 +96,7 @@ Each node module is a plain-Python module where function names define the DAG:
 4. `TrackingHook` logs `node_completed` / `node_error` events to Tracker
 5. Terminal node `training_state` generates leaderboard, updates registry
 6. StateObserver writes `current_state.md` and `leaderboard.md` to workspace
-7. On Hamilton failure, `Trainer._run_imperative()` runs equivalent logic imperatively
+7. `Trainer` finalizes tracker and writes state artifacts after DAG execution
 
 ## Guardrails
 

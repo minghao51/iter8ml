@@ -1,0 +1,24 @@
+name: Benchmarks
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  openml-benchmark:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.11"
+      - run: uv sync --frozen --group dev --extra base --extra opinion
+      - run: uv run python benchmarks/run_openml_benchmark.py --quick --fail-on-errors --check-regression benchmarks/results/baseline_summary.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: benchmarks/results/

@@ -50,7 +50,7 @@ class FTTransformerModel:
         )
 
     def fit(self, X: np.ndarray, y: np.ndarray, **kwargs: Any) -> None:
-        from accelerate import Accelerator
+        from accelerate import Accelerator  # type: ignore[import-not-found]
 
         torch.manual_seed(self.random_seed)
         self.accelerator = Accelerator()

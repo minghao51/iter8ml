@@ -1,0 +1,7 @@
+variants:
+  - name: default
+    config: {}
+  - name: gpu
+    config:
+      catboost:
+        task_type: GPU

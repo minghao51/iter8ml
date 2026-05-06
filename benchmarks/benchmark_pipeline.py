@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import sys
-import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -17,7 +16,6 @@ from benchmarks.benchmark_utils import (
     make_class_df,
     make_numpy,
 )
-from tabular_blueprint.config import ExperimentConfig
 from tabular_blueprint.data.adapter import DataAdapter
 from tabular_blueprint.data.feature_engine import (
     discover_interactions,
@@ -25,8 +23,6 @@ from tabular_blueprint.data.feature_engine import (
     prune_features,
     transform_target,
 )
-from tabular_blueprint.engine.data_preparation import DataPreparationService
-from tabular_blueprint.engine.tracker import JSONLTracker
 
 
 def bench_data_adapter_numpy(sizes: list[tuple[int, int]] | None = None) -> list[BenchResult]:
@@ -45,34 +41,6 @@ def bench_data_adapter_numpy(sizes: list[tuple[int, int]] | None = None) -> list
             bench_fn(
                 convert,
                 name="adapter/numpy",
-                category="data_adapter",
-                params={"n_samples": n_samples, "n_features": n_features},
-            )
-        )
-    return results
-
-
-def bench_data_adapter_tensor(sizes: list[tuple[int, int]] | None = None) -> list[BenchResult]:
-    try:
-        import torch  # noqa: F401
-    except ImportError:
-        return []
-
-    if sizes is None:
-        sizes = [(5_000, 20)]
-    results: list[BenchResult] = []
-    adapter = DataAdapter(target_format="tensor")
-
-    for n_samples, n_features in sizes:
-        df = make_class_df(n_samples, n_features)
-
-        def convert(d: pl.DataFrame = df, a: DataAdapter = adapter) -> None:
-            a.transform(d, "target")
-
-        results.append(
-            bench_fn(
-                convert,
-                name="adapter/tensor",
                 category="data_adapter",
                 params={"n_samples": n_samples, "n_features": n_features},
             )
@@ -206,36 +174,24 @@ def bench_data_preparation(sizes: list[tuple[int, int]] | None = None) -> list[B
     if sizes is None:
         sizes = [(1_000, 10)]
     results: list[BenchResult] = []
+    adapter = DataAdapter()
 
     for n_samples, n_features in sizes:
         df = make_class_df(n_samples, n_features)
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            ws = Path(tmpdir)
-            config = ExperimentConfig(
-                name="bench",
-                task="classification",
-                target_col="target",
-                data_path="",
-                workspace_dir=ws,
-                cv_folds=3,
-            )
-            tracker = JSONLTracker(str(ws / "experiments.jsonl"))
-            service = DataPreparationService(config, tracker)
+        def prepare(d: pl.DataFrame = df, a: DataAdapter = adapter) -> None:
+            a.transform(d, "target")
 
-            def prepare(d: pl.DataFrame = df, s: DataPreparationService = service) -> None:
-                s.prepare(d, "bench_run", run_leakage_audit=False)
-
-            results.append(
-                bench_fn(
-                    prepare,
-                    name="data_preparation/basic",
-                    category="pipeline",
-                    params={"n_samples": n_samples, "n_features": n_features},
-                    warmup=1,
-                    runs=3,
-                )
+        results.append(
+            bench_fn(
+                prepare,
+                name="data_preparation/basic",
+                category="pipeline",
+                params={"n_samples": n_samples, "n_features": n_features},
+                warmup=1,
+                runs=3,
             )
+        )
 
     return results
 
@@ -245,7 +201,6 @@ def run_all_pipeline_benchmarks(
 ) -> list[BenchResult]:
     results: list[BenchResult] = []
     results.extend(bench_data_adapter_numpy(sizes))
-    results.extend(bench_data_adapter_tensor(sizes))
     results.extend(bench_data_hash(sizes))
     results.extend(bench_target_transform())
     results.extend(bench_extract_top_k())

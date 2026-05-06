@@ -30,7 +30,7 @@ def test_trainer_runs_end_to_end(tmp_workspace):
         max_workers=1,
     )
 
-    trainer = Trainer(config=config, run_baselines=False, run_leakage_audit=False)
+    trainer = Trainer(config=config, run_leakage_audit=False)
     results = trainer.run(df)
 
     assert isinstance(results, dict)

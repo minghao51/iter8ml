@@ -12,7 +12,7 @@ The pipeline layer uses [Hamilton](https://github.com/DAGWorks-Inc/hamilton) to 
 - **Declarative wiring:** Function signatures define the DAG — no manual orchestration
 - **Config variants:** `@config.when(...)` activates different node implementations based on config
 - **Observability:** Every node execution can be tracked via lifecycle hooks
-- **Two paths:** The system tries Hamilton first; falls back to an imperative path if unavailable
+- **Single path:** Training execution is DAG-only through Hamilton
 
 ---
 
@@ -24,21 +24,20 @@ The pipeline layer uses [Hamilton](https://github.com/DAGWorks-Inc/hamilton) to 
                         └──────┬───────┘
                                │
                     ┌──────────┴──────────┐
-                    │ try Hamilton DAG?   │
-                    └──┬──────────────┬───┘
-                 yes   │              │  no
-                ┌──────┴──────┐  ┌────┴─────┐
-                │ Pipeline    │  │ Imperative│
-                │ Executor    │  │ Path      │
-                └─────────────┘  └──────────┘
+                    │  Hamilton DAG run   │
+                    └──────────┬──────────┘
+                               │
+                          ┌────┴────┐
+                          │ Pipeline │
+                          │ Executor │
+                          └──────────┘
 ```
 
 ### Entry Point: `Trainer.run()`
 
 **Source:** `src/tabular_blueprint/engine/trainer.py:55`
 
-1. Calls `_try_hamilton_training()` — builds and executes the full DAG
-2. If Hamilton is unavailable or fails, calls `_run_imperative()` — runs stages sequentially
+1. Calls `PipelineExecutor.run_training()` — builds and executes the full DAG
 
 ---
 

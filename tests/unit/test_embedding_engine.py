@@ -1,123 +1,143 @@
-"""Unit tests for embedding_engine helper functions."""
+"""Unit tests for EmbeddingEngine orchestrator (moved from engine/embedding_trainer)."""
 
 import numpy as np
 import polars as pl
 import pytest
 
-from tabular_blueprint.data.embedding_engine import (
-    augment_with_embeddings,
-    detect_high_cardinality_columns,
-    extract_cat_codes,
-)
+torch = pytest.importorskip("torch")
+
+from tabular_blueprint.data.embedding_engine import EmbeddingEngine  # noqa: E402
 
 
 @pytest.fixture
-def sample_df():
+def high_card_df():
+    n = 100
+    rng = np.random.RandomState(42)
     return pl.DataFrame(
         {
-            "user_id": [f"user_{i % 200}" for i in range(100)],
-            "product_id": [f"prod_{i % 300}" for i in range(100)],
-            "region": [f"region_{i % 5}" for i in range(100)],
-            "age": np.random.randint(18, 80, 100),
-            "target": np.random.randint(0, 2, 100),
+            "user_id": [f"u_{i % 80}" for i in range(n)],
+            "product_id": [f"p_{i % 120}" for i in range(n)],
+            "numeric_feat": rng.randn(n),
+            "target": rng.randint(0, 2, n),
         }
     )
 
 
-class TestDetectHighCardinalityColumns:
-    def test_detects_high_cardinality(self, sample_df):
-        result = detect_high_cardinality_columns(sample_df, max_categories=50)
-        assert "user_id" in result
-        assert "product_id" in result
-
-    def test_excludes_low_cardinality(self, sample_df):
-        result = detect_high_cardinality_columns(sample_df, max_categories=50)
-        assert "region" not in result
-
-    def test_excludes_target(self, sample_df):
-        result = detect_high_cardinality_columns(sample_df, max_categories=50, target_col="target")
-        assert "target" not in result
-
-    def test_empty_when_none_high(self):
-        df = pl.DataFrame({"a": [1, 2, 3], "b": ["x", "y", "z"]})
-        result = detect_high_cardinality_columns(df, max_categories=50)
-        assert result == []
-
-    def test_detects_integer_high_cardinality(self):
-        ids = list(range(200))
-        df = pl.DataFrame({"id_col": ids, "val": [0] * 200})
-        result = detect_high_cardinality_columns(df, max_categories=50)
-        assert "id_col" in result
+def _make_engine(tmp_path, **overrides):
+    params = {
+        "task": "classification",
+        "workspace_dir": str(tmp_path / "workspace"),
+        "embedding_method": "entity",
+        "embedding_dim": 4,
+        "embedding_epochs": 2,
+        "embedding_max_categories": 10,
+    }
+    params.update(overrides)
+    return EmbeddingEngine(**params)
 
 
-class TestExtractCatCodes:
-    def test_returns_contiguous_codes(self):
-        df = pl.DataFrame({"cat": ["b", "a", "c", "a", "b"]})
-        codes, vocab_sizes, mappings = extract_cat_codes(df, ["cat"])
-        assert set(codes["cat"]) == {0, 1, 2}
-        assert vocab_sizes["cat"] == 3
-        assert len(mappings["cat"]) == 3
+class TestEmbeddingEngineEntity:
+    def test_augments_features(self, high_card_df, tmp_path):
+        engine = _make_engine(tmp_path, embedding_method="entity", embedding_dim=4)
+        X = high_card_df.drop("target").to_numpy()
+        y = high_card_df["target"].to_numpy()
+        feature_names = [c for c in high_card_df.columns if c != "target"]
 
-    def test_multiple_columns(self, sample_df):
-        codes, _vocab_sizes, _mappings = extract_cat_codes(sample_df, ["user_id", "product_id"])
-        assert "user_id" in codes
-        assert "product_id" in codes
-        assert codes["user_id"].shape == (100,)
-        assert codes["product_id"].shape == (100,)
-
-    def test_empty_columns(self):
-        df = pl.DataFrame({"a": [1, 2, 3]})
-        codes, _vocab_sizes, _mappings = extract_cat_codes(df, [])
-        assert codes == {}
-        assert _vocab_sizes == {}
-
-
-class TestAugmentWithEmbeddings:
-    def test_removes_cat_columns_and_adds_embeddings(self):
-        X = np.random.randn(10, 4)
-        embeddings = np.random.randn(10, 8)
-        feature_names = ["num_1", "cat_a", "num_2", "cat_b"]
-        cat_columns = ["cat_a", "cat_b"]
-
-        X_aug, names = augment_with_embeddings(
-            X,
-            embeddings,
-            feature_names,
-            cat_columns,
-            per_col_dim=4,
+        X_aug, aug_names = engine.fit_transform(
+            df=high_card_df,
+            X=X,
+            y=y,
+            feature_names=feature_names,
+            target_col="target",
+            run_id="test_run",
         )
 
-        assert X_aug.shape == (10, 10)
-        assert "num_1" in names
-        assert "num_2" in names
-        assert "cat_a" not in names
-        assert "cat_b" not in names
-        assert any("_emb_" in n for n in names)
+        n_emb_cols = 2
+        expected_new_cols = X.shape[1] - n_emb_cols + n_emb_cols * 4
+        assert X_aug.shape[0] == 100
+        assert X_aug.shape[1] == expected_new_cols
+        assert any("_emb_" in n for n in aug_names)
 
-    def test_no_remaining_features(self):
-        X = np.random.randn(5, 2)
-        embeddings = np.random.randn(5, 6)
-        feature_names = ["cat_a", "cat_b"]
-        cat_columns = ["cat_a", "cat_b"]
+    def test_saves_artifacts(self, high_card_df, tmp_path):
+        engine = _make_engine(tmp_path, embedding_method="entity", embedding_dim=4)
+        X = high_card_df.drop("target").to_numpy()
+        y = high_card_df["target"].to_numpy()
+        feature_names = [c for c in high_card_df.columns if c != "target"]
 
-        X_aug, names = augment_with_embeddings(
-            X,
-            embeddings,
-            feature_names,
-            cat_columns,
-            per_col_dim=3,
+        engine.fit_transform(
+            df=high_card_df,
+            X=X,
+            y=y,
+            feature_names=feature_names,
+            target_col="target",
+            run_id="save_test",
         )
-        assert X_aug.shape == (5, 6)
-        assert len(names) == 6
 
-    def test_no_cat_columns_to_remove(self):
-        X = np.random.randn(5, 3)
-        embeddings = np.random.randn(5, 4)
-        feature_names = ["a", "b", "c"]
-        cat_columns = ["cat_x"]
+        emb_dir = tmp_path / "workspace" / "embeddings"
+        assert (emb_dir / "save_test.pt").exists()
+        assert (emb_dir / "save_test_mappings.json").exists()
 
-        X_aug, names = augment_with_embeddings(X, embeddings, feature_names, cat_columns)
-        assert X_aug.shape == (5, 7)
-        assert "a" in names
-        assert "b" in names
-        assert "c" in names
+    def test_noop_when_no_high_card(self, tmp_path):
+        engine = _make_engine(tmp_path, embedding_max_categories=500)
+        df = pl.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "target": [0, 1, 0]})
+        X = df.drop("target").to_numpy()
+        y = df["target"].to_numpy()
+        feature_names = ["a", "b"]
+
+        X_aug, aug_names = engine.fit_transform(
+            df=df,
+            X=X,
+            y=y,
+            feature_names=feature_names,
+            target_col="target",
+            run_id="noop_test",
+        )
+        assert X_aug.shape == X.shape
+        assert aug_names == feature_names
+
+
+class TestEmbeddingEngineAutoencoder:
+    def test_augments_features(self, high_card_df, tmp_path):
+        engine = _make_engine(
+            tmp_path,
+            embedding_method="autoencoder",
+            embedding_dim=4,
+            embedding_ae_latent_dim=8,
+        )
+        X = high_card_df.drop("target").to_numpy()
+        y = high_card_df["target"].to_numpy()
+        feature_names = [c for c in high_card_df.columns if c != "target"]
+
+        X_aug, _aug_names = engine.fit_transform(
+            df=high_card_df,
+            X=X,
+            y=y,
+            feature_names=feature_names,
+            target_col="target",
+            run_id="ae_test",
+        )
+
+        n_cat = 2
+        expected_dim = (X.shape[1] - n_cat) + 8
+        assert X_aug.shape == (100, expected_dim)
+
+
+class TestEmbeddingEngineRegression:
+    def test_entity_regression(self, high_card_df, tmp_path):
+        engine = _make_engine(
+            tmp_path, task="regression", embedding_method="entity", embedding_dim=4
+        )
+        X = high_card_df.drop("target").to_numpy()
+        y = np.random.randn(100).astype(np.float64)
+        feature_names = [c for c in high_card_df.columns if c != "target"]
+
+        X_aug, _aug_names = engine.fit_transform(
+            df=high_card_df,
+            X=X,
+            y=y,
+            feature_names=feature_names,
+            target_col="target",
+            run_id="reg_test",
+        )
+        assert X_aug.shape[0] == 100
+        assert X_aug.shape[1] > 0

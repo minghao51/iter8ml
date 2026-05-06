@@ -1,0 +1,38 @@
+[
+  {
+    "dataset": "iris",
+    "variant": "default",
+    "model": "catboost",
+    "task": "classification",
+    "n_rows": 150,
+    "n_features": 4,
+    "error": "multi_class must be in ('ovo', 'ovr')"
+  },
+  {
+    "dataset": "iris",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "classification",
+    "n_rows": 150,
+    "n_features": 4,
+    "error": "could not convert string to float: 'Iris-setosa'"
+  },
+  {
+    "dataset": "iris",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "classification",
+    "n_rows": 150,
+    "n_features": 4,
+    "error": "could not convert string to float: 'Iris-setosa'"
+  },
+  {
+    "dataset": "iris",
+    "variant": "default",
+    "model": "tabpfn",
+    "task": "classification",
+    "n_rows": 150,
+    "n_features": 4,
+    "error": "No module named 'tabpfn'"
+  }
+]

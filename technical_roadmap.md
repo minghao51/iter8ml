@@ -1,29 +1,46 @@
-# Technical Roadmap: Modular Tabular ML Blueprint
+# Tabular Blueprint — Roadmap
 
-> **Status:** Living document — v0.1 draft
+> **Status:** Living document — v2.0 (merged from technical + strategic roadmaps)
 > **Audience:** Personal toolkit (near-term) → Open-source template (long-term)
-> **Philosophy:** Composable Lego bricks, not a monolith. Every module should be independently usable in a production microservice.
+> **Philosophy:** Composable Lego bricks, not a monolith. Every module should be independently usable.
+> **Last audited:** 2026-05-05 | 68 files, 7,161 lines in `src/`
 
 ---
 
 ## Table of Contents
 
+### Part I — Foundation
 1. [Vision & Problem Statement](#1-vision--problem-statement)
 2. [Design Principles](#2-design-principles)
-3. [Tech Stack Rationale](#3-tech-stack-rationale)
-4. [Repository Structure](#4-repository-structure)
-5. [Core Abstractions](#5-core-abstractions)
-6. [Experiment Lifecycle](#6-experiment-lifecycle)
-7. [Phase 1 — Core ML Engine](#7-phase-1--core-ml-engine)
-8. [Phase 1.5 — Observability & DX Polish](#8-phase-15--observability--dx-polish)
-9. [Phase 2 — LLM & Agentic Layer](#9-phase-2--llm--agentic-layer)
-10. [Phase 3 — MLOps & Production Readiness](#10-phase-3--mlops--production-readiness)
-11. [Hardware-Aware Routing](#11-hardware-aware-routing)
-12. [Configuration Strategy](#12-configuration-strategy)
-13. [Testing & Validation Strategy](#13-testing--validation-strategy)
-14. [Open-Source Readiness Checklist](#14-open-source-readiness-checklist)
-15. [Dependency Manifest](#15-dependency-manifest)
-16. [Architectural Decision Log](#16-architectural-decision-log)
+3. [Core Abstractions](#3-core-abstractions)
+4. [Experiment Lifecycle](#4-experiment-lifecycle)
+5. [Architecture Decision Log](#5-architecture-decision-log)
+
+### Part II — Current State
+6. [Implemented Features](#6-implemented-features)
+7. [Audit Findings](#7-audit-findings)
+8. [Codebase Metrics](#8-codebase-metrics)
+
+### Part III — Forward Plan
+9. [Phase A — Consolidate to DAG-Only Execution](#phase-a--consolidate-to-dag-only-execution)
+10. [Phase B — Dead Code & Orphan Removal](#phase-b--dead-code--orphan-removal)
+11. [Phase C — Benchmark-Validated Defaults](#phase-c--benchmark-validated-defaults)
+12. [Phase D — Config Hygiene](#phase-d--config-hygiene)
+13. [Phase E — Dependency Audit](#phase-e--dependency-audit)
+14. [Phase F — Test Coverage Gaps](#phase-f--test-coverage-gaps)
+
+### Part IV — Appendices
+15. [Repository Structure](#15-repository-structure)
+16. [Tech Stack & Dependency Manifest](#16-tech-stack--dependency-manifest)
+17. [Testing & Validation Strategy](#17-testing--validation-strategy)
+18. [Open-Source Readiness Checklist](#18-open-source-readiness-checklist)
+
+---
+
+# Part I — Foundation
+
+> Timeless context: vision, principles, abstractions, and architectural decisions.
+> These sections change infrequently. Update only when fundamental direction shifts.
 
 ---
 
@@ -47,14 +64,16 @@ A **high-velocity iteration framework** that:
 - Supports **progressive depth**: quick baseline → tuned GBDT → Transformer fine-tune
 - Handles **mixed dataset sizes** automatically via hardware-aware model routing
 - Is **Polars-native** throughout — no Pandas bottlenecks
+- Executes via **Hamilton DAG** — every pipeline is a dataflow graph with explicit dependencies
+- Is **LLM-ready**: exposes atomic tools via MCP for agentic automation
 - Is structured so every module can be **extracted into a production API** without refactoring
-- Is **LLM-ready** (Phase 2): exposes atomic tools via MCP for agentic automation
 
 ### Non-Goals (v1)
 
-- Not a deployment platform (no FastAPI/Triton serving layer in Phase 1)
+- Not a deployment platform (no FastAPI/Triton serving layer)
 - Not a distributed training framework (single-node GPU focus)
 - Not a general NLP or vision toolkit (tabular + text-as-feature only)
+- Not a "one-click AutoML" — user controls the iteration loop
 
 ---
 
@@ -67,154 +86,31 @@ Prefer pure functions with typed signatures over deep inheritance trees. Classes
 No hidden state. No silent fallbacks. If a model falls back from GPU to CPU, it logs it and says why. If TabPFN is skipped due to row count, it surfaces that decision in the experiment record.
 
 ### P3 — Polars as the Single Source of Truth
-Data lives in `pl.DataFrame` or `pl.LazyFrame` until it reaches a model boundary. Conversion to NumPy/Tensor happens at the last possible moment inside `DataAdapter`. No Pandas in `core/`.
+Data lives in `pl.DataFrame` or `pl.LazyFrame` until it reaches a model boundary. Conversion to NumPy happens at the last possible moment inside `DataAdapter`. No Pandas in `src/`.
 
 ### P4 — Config is Code
 All experiment parameters are `Pydantic` models, not YAML files or argparse dicts. This gives IDE completion, runtime validation, and diff-friendly versioning.
 
-### P5 — Observability First
-Every experiment run emits a structured JSONL event. The leaderboard is a derived view over these events, not a separate tracking database. This makes the Phase 2 LLM loop trivial — the agent reads the JSONL, not a GUI.
+### P5 — DAG-Native Execution
+Every pipeline is a Hamilton DAG. Nodes are plain functions whose signatures define the dependency graph. No imperative fallback — the DAG IS the execution path. This ensures reproducibility, observability, and extensibility by default.
 
 ### P6 — Hardware-Aware by Default
 The `ModelSelector` checks dataset size and available VRAM before routing. The user never needs to manually decide "is this too big for TabPFN?"
 
----
-
-## 3. Tech Stack Rationale
-
-### 3.1 Environment & Packaging
-
-| Tool | Role | Rationale |
-|---|---|---|
-| **`uv`** | Env + package management | 10–100× faster than pip/conda. Lockfile-first. |
-| **`ruff`** | Linting + formatting | Replaces black + flake8 + isort in a single binary. |
-| **`pyproject.toml`** | Project manifest | Single source of truth for deps, tool config, scripts. |
-
-### 3.2 Data Layer
-
-| Tool | Role | Rationale |
-|---|---|---|
-| **Polars** | Core DataFrame engine | Lazy API, Rust-backed, zero-copy Arrow. No Pandas. |
-| **Skrub** | Heterogeneous preprocessing | Handles mixed types (text, dates, categoricals) without hand-crafting pipelines. Bridges Polars → sklearn. |
-| **Cleanlab** | Data quality audit | Cross-validation-based label noise detection. Runs before any model selection. |
-
-### 3.3 Model Layer
-
-| Tool | Role | Dataset Size |
-|---|---|---|
-| **TabPFN v2** | Zero-shot baseline (no training) | < 10k rows |
-| **CatBoost** | Native categorical GBDT | 10k – 1M rows |
-| **LightGBM** | Speed-optimised GBDT | 10k – 5M rows |
-| **XGBoost** | Established baseline / GPU-ready | 10k – 1M rows |
-| **FT-Transformer** | Tabular Transformer (PyTorch) | > 50k rows, GPU required |
-| **DeBERTa-v3** | Text-as-feature encoder | Any size, text columns present |
-
-> **Decision rule:** TabPFN is always run as the first baseline for any dataset < 10k rows. For larger datasets, CatBoost and LightGBM are co-run. FT-Transformer is opt-in, gated by VRAM check.
-
-### 3.4 Training Infrastructure
-
-| Tool | Role | Rationale |
-|---|---|---|
-| **PyTorch** | Deep model backend | Universal. Supports quantization, custom loss, CUDA. |
-| **HuggingFace `accelerate`** | Device management | Handles CPU/GPU/multi-GPU dispatch without boilerplate. |
-| **Optuna** | Hyperparameter optimisation | Backend-agnostic (works with CatBoost, LightGBM, PyTorch). Pruning support. |
-| **Hamilton** | Pipeline DAG (optional) | Dataflow DAGs for reproducible feature engineering. Swappable — not a hard dependency. |
-
-> **Orchestration note:** Hamilton is the default for structured pipelines but is kept behind an optional `[hamilton]` extras group. Plain functional scripts work fine for quick experiments.
-
-### 3.5 Evaluation & Tracking
-
-| Tool | Role |
-|---|---|
-| **`engine/evaluator.py`** | Cross-validation, stratified splits, custom metrics |
-| **JSONL event log** | Structured experiment history (replaces MLflow for Phase 1) |
-| **`workspace/leaderboard.md`** | Human-readable derived view over the event log |
+### P7 — Benchmark-Validated Defaults
+Default hyperparameters are not guessed — they are validated against a curated OpenML benchmark suite. Every default change must include benchmark evidence.
 
 ---
 
-## 4. Repository Structure
+## 3. Core Abstractions
 
-```
-.
-├── .venv/                        # Managed by uv (gitignored)
-├── .devcontainer/
-│   └── devcontainer.json         # Dev container (CUDA-ready)
-├── Dockerfile                    # CUDA base image + uv
-├── configs/
-│   ├── __init__.py
-│   ├── experiment.py             # ExperimentConfig (Pydantic)
-│   ├── model_configs.py          # Per-model Pydantic configs
-│   └── hardware.py               # HardwareProfile (auto-detected)
-│
-├── core/
-│   ├── data/
-│   │   ├── loaders.py            # Polars-based ingestion (CSV, Parquet, DB)
-│   │   ├── processors.py         # Feature engineering (Polars expressions)
-│   │   ├── adapter.py            # DataAdapter: Polars → NumPy / Tensor
-│   │   └── quality.py            # Cleanlab wrapper (label noise audit)
-│   │
-│   ├── models/
-│   │   ├── base.py               # AbstractModel protocol (fit/predict/save)
-│   │   ├── selector.py           # ModelSelector (hardware + size aware routing)
-│   │   ├── conventional/
-│   │   │   ├── catboost_model.py
-│   │   │   ├── lightgbm_model.py
-│   │   │   └── xgboost_model.py
-│   │   ├── tabular_foundation/
-│   │   │   └── tabpfn_model.py   # TabPFN v2 wrapper with row-count guardrail
-│   │   └── deep/
-│   │       ├── ft_transformer.py # FT-Transformer (PyTorch)
-│   │       └── text_encoder.py   # DeBERTa-v3 / LLM embedding extractor
-│   │
-│   ├── engine/
-│   │   ├── trainer.py            # Ties config + data + model into a run
-│   │   ├── evaluator.py          # CV strategies, metrics registry
-│   │   ├── hpo.py                # Optuna study factory
-│   │   └── tracker.py            # Pluggable Tracker protocol (JSONL / W&B / MLflow)
-│   │
-│   └── monitoring/               # Phase 3
-│       └── drift.py              # DriftDetector (KS test + Chi²)
-│
-├── pipelines/                    # Hamilton DAGs (optional, behind extras)
-│   ├── feature_engineering.py
-│   └── full_experiment.py
-│
-├── workspace/                    # Runtime state (gitignored except .gitkeep)
-│   ├── experiments.jsonl         # Structured event log
-│   ├── leaderboard.md            # Derived leaderboard (auto-generated)
-│   ├── registry.json             # Model registry — best model per (dataset, task)
-│   └── current_state.md          # LLM-readable run summary (Phase 2)
-│
-├── mcp_server/                   # Phase 2 only — LLM agent interface
-│   ├── server.py
-│   ├── tools.py
-│   └── prompts.py
-│
-├── examples/
-│   └── zenml_pipeline.py         # Phase 3 — ZenML step wrappers (advanced users)
-│
-├── notebooks/                    # Exploratory notebooks (not part of core)
-├── tests/
-│   ├── unit/
-│   └── integration/
-│
-├── pyproject.toml
-├── README.md
-└── main.py                       # CLI entry point (typer subcommands)
-```
-
----
-
-## 5. Core Abstractions
-
-### 5.1 `AbstractModel` Protocol
+### 3.1 `AbstractModel` Protocol
 
 Every model wrapper — GBDT, TabPFN, Transformer — conforms to this protocol. No inheritance required; structural subtyping via `Protocol`.
 
 ```python
-# core/models/base.py
+# models/base.py
 from typing import Protocol
-import polars as pl
 import numpy as np
 
 class AbstractModel(Protocol):
@@ -227,85 +123,94 @@ class AbstractModel(Protocol):
     def model_name(self) -> str: ...
 ```
 
-### 5.2 `DataAdapter`
+### 3.2 `DataAdapter`
 
-The most critical class in the repo. Handles all cross-format conversions and is the only place where Polars frames are converted to other formats.
+Single point of truth for format conversion. Handles Polars → NumPy at the model boundary.
 
 ```python
-# core/data/adapter.py
-
+# data/adapter.py
 class DataAdapter:
-    """
-    Single point of truth for format conversion.
-    Detects target format from the model type and converts accordingly.
-
-    Supported outputs:
-      - "numpy"   → (np.ndarray, np.ndarray) for GBDTs
-      - "tensor"  → (torch.Tensor, torch.Tensor) for PyTorch models
-      - "dataset" → HuggingFace Dataset for Transformers
-    """
-    def __init__(self, target_format: Literal["numpy", "tensor", "dataset"]): ...
-    def transform(self, df: pl.DataFrame, target_col: str) -> tuple: ...
+    def transform(self, df: pl.DataFrame, target_col: str) -> tuple[np.ndarray, np.ndarray]: ...
 ```
 
-**Rule:** `DataAdapter` is the only file allowed to `import torch` or `import datasets` outside of `core/models/deep/`.
+### 3.3 `ModelSelector`
 
-### 5.3 `ModelSelector`
-
-Enforces hardware-aware and data-size-aware routing. Never lets a user accidentally run TabPFN on 500k rows.
+Enforces hardware-aware and data-size-aware routing.
 
 ```python
-# core/models/selector.py
-
+# models/selector.py
 class ModelSelector:
-    """
-    Given a dataset profile and hardware profile, returns an ordered list
-    of models to run, from fastest/cheapest to most expensive.
-    """
-    TABPFN_ROW_LIMIT = 10_000
+    TABPFN_ROW_LIMIT = 50_000
+    FT_TRANSFORMER_ROW_MIN = 50_000
 
     def select(
         self,
         n_rows: int,
         task: Literal["classification", "regression"],
-        has_text_cols: bool,
-        vram_gb: float,
-    ) -> list[str]:
-        ...
+        vram_gb: float = 0.0,
+        include_baselines: bool = True,
+    ) -> list[str]: ...
 ```
 
-**Routing logic:**
+**Current routing logic:**
 
 ```
-n_rows < 10k       → [TabPFN, CatBoost, LightGBM]
-10k ≤ n_rows < 500k → [CatBoost, LightGBM, XGBoost]
-n_rows ≥ 500k      → [LightGBM, XGBoost]
-vram_gb > 12       → append FT-Transformer (any size > 50k)
-has_text_cols      → append TextEncoder (DeBERTa embeddings as features)
+GPU present       → include TabPFN
+n_rows < 500k     → [CatBoost, LightGBM, XGBoost]
+n_rows >= 500k    → [LightGBM, XGBoost]
+vram_gb > 12      → append FT-Transformer (n_rows > 50k)
+vram_gb > 8       → append TabNet
 ```
 
-### 5.4 `ExperimentConfig` (Pydantic)
+### 3.4 `ExperimentConfig` (Pydantic)
+
+Flat config with ~40 fields, grouped by concern:
 
 ```python
-# configs/experiment.py
-from pydantic import BaseModel, Field
-from typing import Literal
-
+# config.py
 class ExperimentConfig(BaseModel):
+    # --- Core ---
     name: str
-    task: Literal["classification", "regression"]
+    task: TaskType
     target_col: str
     data_path: str
     cv_folds: int = 5
-    cv_strategy: Literal["kfold", "stratified", "timeseries"] = "stratified"
+    cv_strategy: CVStrategy = ...
+    models: list[str] | Literal["auto"] = "auto"
+    metrics: list[str] = ...
+    random_seed: int = 42
+    # --- HPO ---
     run_hpo: bool = False
     hpo_n_trials: int = 50
-    models: list[str] | Literal["auto"] = "auto"
-    random_seed: int = 42
-    metrics: list[str] = Field(default_factory=lambda: ["roc_auc", "f1_macro"])
+    # --- Data Quality ---
+    run_quality_audit: bool = True
+    auto_clean_noise: bool = False
+    noise_quality_threshold: float = 0.5
+    # --- Feature Engineering ---
+    afe_enabled: bool = False
+    afe_top_k: int = 10
+    afe_lift_threshold: float = 0.01
+    afe_pruning: bool = False
+    afe_prune_min_importance: float = 0.001
+    # --- Embedding ---
+    embedding_enabled: bool = False
+    embedding_method: EmbeddingMethod = ...
+    embedding_dim: int = 16
+    # ... (9 embedding fields)
+    # --- Tracking & Output ---
+    tracker: TrackerType = TrackerType.JSONL
+    workspace_dir: Path = Path("workspace")
+    # --- Advanced ---
+    max_workers: int = 1
+    data_sample: float = 1.0
+    calibration: Literal["none", "platt", "isotonic"] = "none"
+    target_transform: Literal[...] = "none"
+    # --- LLM ---
+    llm_enabled: bool = False
+    llm_model: str = "claude-sonnet-4-20250514"
 ```
 
-### 5.5 JSONL Event Schema
+### 3.5 JSONL Event Schema
 
 Every experiment event is appended to `workspace/experiments.jsonl`:
 
@@ -328,79 +233,53 @@ Every experiment event is appended to `workspace/experiments.jsonl`:
 }
 ```
 
-### 5.6 Pluggable `Tracker` Protocol
+### 3.6 Pluggable `Tracker` Protocol
 
-The `Tracker` is a protocol wrapping all telemetry emission. The default is always `JSONLTracker` (zero external service). W&B or MLflow are opt-in via config without touching any trainer logic.
+The `Tracker` protocol wraps all telemetry emission. JSONL is always active. W&B/MLflow are opt-in additive mirrors.
 
 ```python
-# core/engine/tracker.py
-from typing import Protocol
-
+# engine/tracker.py
 class Tracker(Protocol):
     def log_metrics(self, metrics: dict, step: int | None = None) -> None: ...
     def log_params(self, params: dict) -> None: ...
     def log_artifact(self, path: str) -> None: ...
-    def log_event(self, event: dict) -> None: ...   # writes to JSONL
+    def log_event(self, event: dict) -> None: ...
     def finish(self) -> None: ...
-
-class JSONLTracker:
-    """Default. Writes structured events to workspace/experiments.jsonl."""
-    ...
-
-class WandbTracker:
-    """Optional [wandb] extra. Mirrors all events to W&B run."""
-    ...
-
-class MLflowTracker:
-    """Optional [mlflow] extra. Logs to a local or remote MLflow server."""
-    ...
 ```
 
-**Routing rule:** `ExperimentConfig.tracker` accepts `"jsonl"` (default), `"wandb"`, or `"mlflow"`. Multiple can be active simultaneously — the `TrainerRunner` fans out to all enabled trackers in parallel.
+> **Key constraint:** `JSONLTracker` always runs, even when W&B is enabled. The JSONL file is the source of truth for the leaderboard and agent context. W&B is an additive mirror, never the primary store.
 
-> **Key constraint:** `JSONLTracker` always runs, even when W&B is enabled. The JSONL file is the source of truth for the leaderboard and Phase 2 agent context. W&B is an additive mirror, never the primary store.
+### 3.7 Data Hash Helper
 
-### 5.7 Data Hash Helper
-
-Data lineage without DVC. Every loader call computes a deterministic SHA-256 hash of the DataFrame and stores it in the JSONL event under `data_hash`. This lets you detect silent dataset mutations between runs.
+Data lineage without DVC. Every loader call computes a deterministic SHA-256 hash of the DataFrame and stores it in the JSONL event under `data_hash`.
 
 ```python
-# core/data/loaders.py
-import hashlib
-import polars as pl
-
+# data/loaders.py
 def get_data_hash(df: pl.DataFrame) -> str:
-    """
-    Computes a deterministic SHA-256 hash of a Polars DataFrame.
-    Uses hash_rows() to avoid materialising the full data as bytes.
-    """
     row_hashes = df.hash_rows()
     combined = str(sorted(row_hashes.to_list())).encode()
     return "sha256:" + hashlib.sha256(combined).hexdigest()[:16]
 ```
 
-### 5.8 Simple Model Registry
+### 3.8 Model Registry
 
-Tracks the best model artifact per `(dataset_name, task)` pair. Updated automatically by `trainer.py` after every evaluation if the new model beats the current champion on the primary metric.
+Tracks the best model artifact per `(dataset_name, task)` pair. Updated automatically after every evaluation if the new model beats the current champion. File-locked for thread/process safety via `RegistryService`.
 
-```json
-// workspace/registry.json
-{
-  "credit_risk:classification": {
-    "model": "CatBoost",
-    "run_id": "exp_20260403_001",
-    "roc_auc": 0.891,
-    "artifact_path": "./workspace/artifacts/catboost_exp001.cbm",
-    "registered_at": "2026-04-03T16:44:00Z"
-  }
-}
-```
+### 3.9 Hamilton DAG Execution
 
-The registry is the target for Phase 2 MCP tools like `registry promote` and the eventual Phase 3 serving layer.
+All pipelines execute through `PipelineExecutor`, which builds Hamilton drivers from node modules. Pipeline modes:
+
+| Mode | Node Modules | Final Variable |
+|---|---|---|
+| `TRAINING` | preprocessing → data_preparation → model_selection → baselines → feature_engineering → model_training → state_generation | `training_state` |
+| `DRIFT` | preprocessing → drift_detection | `drift_report` |
+| `EXPORT` | preprocessing | `processed_dataframe` |
+| `HPO` | preprocessing | `processed_dataframe` |
+| `INFERENCE` | preprocessing | `processed_dataframe` |
 
 ---
 
-## 6. Experiment Lifecycle
+## 4. Experiment Lifecycle
 
 ```
 Raw Data (CSV / Parquet / DB)
@@ -413,8 +292,8 @@ Raw Data (CSV / Parquet / DB)
            │
            ▼
   ┌─────────────────────┐
-  │  2. Preprocessing    │  ← Polars expressions + Skrub
-  │     & Feature Eng.   │     Output: pl.DataFrame (versioned parquet)
+  │  2. Preprocessing    │  ← Polars expressions (Hamilton DAG)
+  │     & Feature Eng.   │     Output: pl.DataFrame
   └────────┬────────────┘
            │
            ▼
@@ -425,484 +304,665 @@ Raw Data (CSV / Parquet / DB)
            │
            ▼
   ┌─────────────────────┐
-  │  4. DataAdapter      │  ← Converts Polars → target format per model
+  │  4. DataAdapter      │  ← Converts Polars → NumPy per model
   └────────┬────────────┘
            │
            ▼
   ┌─────────────────────┐
-  │  5. Trainer Loop     │  ← Runs CV for each model in selection list
-  │                      │     Emits JSONL event per model completion
+  │  5. Baselines        │  ← Naive + Linear baseline with lift metrics
   └────────┬────────────┘
            │
            ▼
   ┌─────────────────────┐
-  │  6. Evaluator        │  ← Aggregates CV results, computes final metrics
-  │                      │     Updates leaderboard.md
+  │  6. AFE / Embedding  │  ← Optional: interaction discovery, entity embeddings
+  │     (optional)       │
   └────────┬────────────┘
            │
            ▼
   ┌─────────────────────┐
-  │  7. Registry Update  │  ← If new model beats champion → update registry.json
+  │  7. Model Training   │  ← CV loop for each model, JSONL event per completion
+  │     & Evaluation     │     Calibration applied post-training
   └────────┬────────────┘
            │
            ▼
   ┌─────────────────────┐
-  │  8. HPO (optional)   │  ← Optuna study on top-K models from leaderboard
-  │                      │     Emits hpo_completed event to JSONL
+  │  8. State Generation │  ← Leaderboard, registry update, current_state.md
+  └────────┬────────────┘
+           │
+           ▼
+  ┌─────────────────────┐
+  │  9. HPO (optional)   │  ← Optuna study on selected models
+  │                      │     Warm-started from historical JSONL data
   └─────────────────────┘
 ```
 
 ---
 
-## 7. Phase 1 — Core ML Engine
+## 5. Architecture Decision Log
 
-### Milestone 1.0 — Skeleton & Tooling (Week 1)
-- [ ] `pyproject.toml` with `uv` + all Phase 1 dependencies
-- [ ] `ruff` + pre-commit config
-- [ ] `ExperimentConfig` Pydantic model
-- [ ] `HardwareProfile` auto-detection (VRAM, CPU cores, RAM)
-- [ ] Empty module stubs with docstrings for all `core/` files
-- [ ] `workspace/` directory with `.gitkeep` and gitignore rules
+### Active Decisions
 
-### Milestone 1.1 — Data Layer (Week 1–2)
-- [ ] `loaders.py`: CSV, Parquet, and SQLite ingestion via Polars
-- [ ] `get_data_hash()` helper in `loaders.py` — SHA-256 of DataFrame, stored in every JSONL event
-- [ ] `quality.py`: Cleanlab integration — returns noise index + quality report
-- [ ] `processors.py`: Polars-native null handling, type casting, date decomposition
-- [ ] `adapter.py`: `DataAdapter` class with `numpy` and `tensor` output modes
-- [ ] Unit tests for each loader + adapter round-trip
-
-### Milestone 1.2 — Conventional Model Wrappers (Week 2–3)
-- [ ] `AbstractModel` Protocol definition
-- [ ] `CatBoostModel` wrapper (native categoricals, GPU flag)
-- [ ] `LightGBMModel` wrapper (DART mode option)
-- [ ] `XGBoostModel` wrapper (hist method, GPU flag)
-- [ ] `ModelSelector` with routing logic + guardrails
-- [ ] Integration test: CSV → adapter → CatBoost → metrics → JSONL event
-
-### Milestone 1.3 — Foundation Model Baseline (Week 3)
-- [ ] `TabPFNModel` wrapper with hard row-count guardrail (raises `DataSizeError` > 10k)
-- [ ] Automatic fallback log when TabPFN is skipped
-- [ ] Integration test: TabPFN baseline on synthetic classification dataset
-
-### Milestone 1.4 — Trainer & Evaluator (Week 3–4)
-- [ ] `evaluator.py`: CV strategies (KFold, StratifiedKFold, TimeSeriesSplit)
-- [ ] Metrics registry: classification (ROC-AUC, F1, log-loss) + regression (RMSE, MAE, R²)
-- [ ] `tracker.py`: `Tracker` protocol + `JSONLTracker` implementation
-- [ ] `trainer.py`: full loop — config → selector → adapter → model → evaluator → tracker → JSONL
-- [ ] `workspace/registry.json`: auto-updated after each run if new champion detected
-- [ ] `leaderboard.md` auto-generation from JSONL
-- [ ] `main.py` CLI skeleton with `typer`: `run`, `leaderboard`, `registry` subcommands
-
-### Milestone 1.5 — Deep Model Layer (Week 4–5)
-- [ ] `FT-Transformer` wrapper (PyTorch + HuggingFace `accelerate`)
-- [ ] VRAM-gated entry in `ModelSelector`
-- [ ] `text_encoder.py`: DeBERTa-v3 embedding extractor — returns embeddings as Polars columns
-- [ ] `DataAdapter` extended with `dataset` output mode (HuggingFace `Dataset`)
-
-### Milestone 1.6 — HPO Layer (Week 5–6)
-- [ ] `hpo.py`: Optuna study factory — wraps any `AbstractModel` with a search space
-- [ ] Per-model default search spaces defined in `configs/model_configs.py`
-- [ ] HPO results emitted as `hpo_completed` JSONL events
-- [ ] Pruning enabled by default (MedianPruner)
-
-### Milestone 1.7 — Hamilton Pipelines (Week 6, optional extras)
-- [ ] `pipelines/feature_engineering.py`: Hamilton DAG for reproducible feature transforms
-- [ ] `pipelines/full_experiment.py`: end-to-end DAG from raw file to leaderboard
-- [ ] Gated behind `[hamilton]` optional extras group in `pyproject.toml`
-- [ ] Hamilton remains optional — all core functionality works without it
-
----
-
-## 8. Phase 1.5 — Observability & DX Polish
-
-> **Goal:** Make the repo feel polished for both personal use and eventual open-source handoff. No new ML capability — purely ergonomics, collaboration-readiness, and richer telemetry.
-
-### Milestone 1.5.1 — CLI Subcommands (typer)
-
-Replace the single-entrypoint `main.py` with a proper `typer` CLI. Every command maps 1:1 to an existing `core/` function — no new logic here.
-
-```bash
-# Environment
-uv run tabblueprint init --data path/to/data.csv
-
-# Experiment execution
-uv run tabblueprint run --config configs/credit_risk.py
-uv run tabblueprint run --config configs/credit_risk.py --models catboost lightgbm
-
-# Results inspection
-uv run tabblueprint leaderboard                        # prints leaderboard.md to terminal
-uv run tabblueprint leaderboard --top 5 --metric roc_auc
-
-# Registry management
-uv run tabblueprint registry show
-uv run tabblueprint registry promote --run-id exp_001 --to champion
-
-# HPO
-uv run tabblueprint hpo --config configs/credit_risk.py --model catboost --trials 100
-```
-
-- [ ] `typer` app with all subcommands above
-- [ ] `--help` output is the primary "getting started" documentation
-- [ ] Shell completion via `typer` (`--install-completion`)
-
-### Milestone 1.5.2 — Pluggable Tracker (W&B / MLflow)
-
-- [ ] `WandbTracker` implementation behind `[wandb]` extras
-- [ ] `MLflowTracker` implementation behind `[mlflow]` extras
-- [ ] `ExperimentConfig.tracker` field: `Literal["jsonl", "wandb", "mlflow"] = "jsonl"`
-- [ ] Multi-tracker fan-out: JSONL always active; others additive
-- [ ] W&B: log confusion matrix + feature importance plots as rich media artifacts
-- [ ] MLflow: log to local tracking server (default `./mlruns`) or remote URI via env var
-- [ ] Integration test: assert `WandbTracker` and `JSONLTracker` emit identical metric dicts
-
-### Milestone 1.5.3 — Docker & Dev Container
-
-```dockerfile
-# Dockerfile (minimal, CUDA-ready)
-FROM nvidia/cuda:12.4.0-runtime-ubuntu22.04
-RUN apt-get update && apt-get install -y python3.11 curl
-RUN curl -Ls https://astral.sh/uv/install.sh | sh
-WORKDIR /workspace
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen
-```
-
-```json
-// .devcontainer/devcontainer.json
-{
-  "name": "tabular-blueprint",
-  "image": "tabular-blueprint:latest",
-  "features": { "ghcr.io/devcontainers/features/cuda:1": {} },
-  "postCreateCommand": "uv sync"
-}
-```
-
-- [ ] `Dockerfile` with CUDA 12.4 base + `uv` installed
-- [ ] `.devcontainer/devcontainer.json` for VS Code / GitHub Codespaces
-- [ ] `docker-compose.yml` with optional MLflow tracking server service
-- [ ] README section: "Running in Docker"
-
----
-
-## 9. Phase 2 — LLM & Agentic Layer
-
-> **Prerequisite:** Phase 1 complete and stable. The JSONL event log is the primary interface the LLM reads.
-
-### 9.1 State Observer
-
-Generates an LLM-readable `workspace/current_state.md` after every trainer run:
-
-```markdown
-## Current Experiment State
-
-**Task:** Binary Classification | **Dataset:** v2_cleaned (45,231 rows, 32 features)
-
-### Leaderboard (sorted by ROC-AUC)
-| Model | ROC-AUC | F1 | Duration |
+| ID | Decision | Rationale | Alternatives Rejected |
 |---|---|---|---|
-| CatBoost (tuned) | 0.891 | 0.762 | 47s |
-| LightGBM | 0.874 | 0.743 | 12s |
-| TabPFN | 0.831 | 0.701 | 2s |
+| ADR-001 | Polars as sole DataFrame engine | Speed, lazy API, Arrow-native. No Pandas. | Pandas (slow), DuckDB (less ergonomic for feature eng.) |
+| ADR-002 | `AbstractModel` as Protocol, not ABC | Structural subtyping — no inheritance tax. Third-party models can conform without wrapping. | `abc.ABC` (requires inheritance), duck typing (no IDE support) |
+| ADR-003 | JSONL as primary event store | Zero infra dependency. LLM-readable. Queryable via Polars directly. W&B/MLflow are additive mirrors. | MLflow as primary (heavy), W&B as primary (requires account) |
+| ADR-004 | Optuna for HPO | Backend-agnostic, supports pruning, integrates with every model in stack. | Ray Tune (overkill for single-node), Hyperopt (less maintained) |
+| ADR-005 | Hamilton as sole execution path | DAG-native execution for all pipelines. Eliminates dual-path duplication. | Imperative fallback (duplication), optional Hamilton (two codepaths to maintain) |
+| ADR-006 | Pydantic configs, not YAML | IDE completion, runtime validation, `ruff`-friendly, diffable. | Hydra (complex), YAML (no validation), argparse (no structure) |
+| ADR-007 | LLM layer via MCP | Atomic tools for agentic automation. JSONL is the primary interface the LLM reads. | LLM baked into trainer (tight coupling) |
+| ADR-008 | TabPFN row-count warning (soft guardrail) | Warning at 50k rows. User can override. Silent degradation is worse than a clear signal. | Hard error at 10k (too restrictive), no guardrail (silent degradation) |
+| ADR-009 | Pluggable `Tracker` protocol | JSONL always works with zero config. Teams can opt into W&B without any trainer refactor. | Baking W&B directly into trainer (breaks offline use) |
+| ADR-010 | Data hash in JSONL, not DVC | SHA-256 of `hash_rows()` gives lineage for free with no infra. | DVC (overkill for single-user), no lineage (silent mutations) |
+| ADR-011 | File-locked `registry.json` | Zero-dependency champion tracking with thread/process safety via `filelock`. | MLflow Model Registry (needs server), no registry (can't promote models) |
+| ADR-012 | `typer` CLI over argparse / click | typer generates `--help` docs from type hints automatically. Shell completion built-in. | argparse (verbose, no types), click (more boilerplate) |
+| ADR-013 | ZenML kept out of `core/`, example only | Plain functions are already ZenML-compatible as steps. No core dep needed. | ZenML as core dep (too heavy) |
+| ADR-014 | LightEx deferred — migration trigger documented | Worth evaluating only if JSONL query logic exceeds 2 days to extend. | Adopting in Phase 1 (unnecessary dep) |
+| ADR-015 | `Cleanlab` audit skippable via config flag | On large datasets (>500k rows), Cleanlab's CV step can add minutes. Default-on, bypassable. | Always mandatory (breaks large-dataset iteration speed) |
 
-### Resource Status
-VRAM: 4.2 / 16 GB used | Suggested next: FT-Transformer (VRAM available)
+### New Decisions (v2.0 Roadmap)
 
-### Data Lineage
-v2_cleaned ← handle_nulls(v1_raw) ← original.csv
-Label noise: 2.3% flagged by Cleanlab (see quality_report.json)
-```
+| ID | Decision | Rationale | Alternatives Rejected |
+|---|---|---|---|
+| ADR-016 | Hamilton as sole execution path — no imperative fallback | Dual-path (imperative + Hamilton) caused ~800 lines of duplicated logic. Every operation exists in both `engine/` and `pipelines/nodes/`. Eliminating the imperative path removes duplication, reduces call depth from 10 to 6, and makes the DAG the single source of truth. | Keeping imperative fallback (duplication), making Hamilton optional (two paths to test) |
+| ADR-017 | Benchmark-validated defaults via OpenML suite | Default hyperparameters are currently generic one-size-fits-all (e.g., `afe_lift_threshold=0.01` keeps noise features, `CatBoostConfig.task_type="CPU"` ignores GPU). A curated OpenML benchmark suite provides empirical evidence for every default. | Guessed defaults (current state), user-surveyed defaults (biased) |
+| ADR-018 | Dependency tier model: core / [base] / [deep] / [tracking] / [agent] / [audit] | The monolithic `[opinion]` group bundles 12 packages. Users who want wandb don't need torch. Splitting into focused tiers gives users minimal-install paths and clarifies what each tier enables. | Single `[opinion]` group (all-or-nothing), everything in core (bloated) |
+| ADR-019 | Flat config with section grouping | 40+ fields in `ExperimentConfig` but only ~15 used on a typical run. Keeping flat structure for simplicity while adding docstring grouping and `model_overrides` escape hatch avoids the complexity of nested sub-configs while maintaining discoverability. | Nested sub-configs (more types, more indirection), reducing fields (limits extensibility) |
 
-### 9.2 MCP Server
+---
 
-Exposes atomic tools for LLM agents (Claude Desktop, custom agents):
+# Part II — Current State
 
-| Tool | Description |
+> Factual snapshot of what's implemented, what's broken, and what's bloated.
+> Updated after each audit cycle.
+
+---
+
+## 6. Implemented Features
+
+### Data Layer
+- [x] Polars-native loaders (CSV, Parquet, SQLite) with `get_data_hash()`
+- [x] `DataAdapter`: Polars → NumPy conversion at model boundary
+- [x] Cleanlab quality audit with configurable `noise_quality_threshold`
+- [x] `auto_clean_noise` flag for automatic noise handling
+- [x] Leakage detection audit (permutation importance on naive baseline)
+- [x] Preprocessing cache (hash-based disk cache)
+- [x] High-cardinality categorical embedding engine
+- [ ] **Visual Lineage Surface**: Surface the Mermaid graph in `state` command and experiment reports
+    - *Implementation*: Add section to `StateObserver` to render `pipeline_lineage` from `experiments.jsonl`
+
+### Models
+- [x] `AbstractModel` Protocol (structural subtyping)
+- [x] GBDT wrappers: CatBoost, LightGBM, XGBoost with shared base class
+- [x] TabPFN v2 with hardware-aware routing and row-count warnings
+- [x] Deep models: FT-Transformer (PyTorch), TabNet (pytorch-tabular)
+- [x] `ModelSelector` with hardware + data-size-aware routing
+- [x] String-keyed model factory with lazy imports
+- [x] Naive + Linear baselines with "Lift over Baseline" metrics
+
+### Engine & Training
+- [x] Hamilton DAG execution via `PipelineExecutor` (5 pipeline modes)
+- [x] Cross-validation evaluator (KFold, StratifiedKFold, TimeSeriesSplit)
+- [x] Metrics registry: classification (ROC-AUC, F1, log-loss) + regression (RMSE, MAE, R²)
+- [x] `Tracker` protocol with `JSONLTracker` (log rotation), `WandbTracker`, `MLflowTracker`
+- [x] `TrackingHook` adapter: Hamilton `NodeExecutionHook` → `Tracker` protocol
+- [x] Calibration: Platt scaling + Isotonic regression via `CalibratedModel`
+- [x] Automated Feature Engineering (AFE): targeted interaction discovery, target transformation
+- [x] Entity embedding training (MLP + autoencoder modes)
+
+### HPO
+- [x] Optuna study factory with per-model default search spaces
+- [x] Pre-warmed HPO: inject historical trials from JSONL log
+- [x] PedAnova parameter importance to refine search spaces
+- [ ] **Optuna Dashboard Integration**: `--view` flag to launch local `optuna-dashboard`
+
+### Observability
+- [x] `StateObserver`: generates `current_state.md` from logs + registry
+- [x] LLM commentary via `litellm` (gated behind `llm_enabled=False`)
+- [x] Drift detection: PSI (univariate) + Domain Classifier (multivariate) + KS/Chi²
+- [x] SHAP explainability (gated behind `shap_enabled=False`)
+- [x] Leaderboard auto-generation from JSONL
+- [x] Configuration diffing: `tabblueprint diff <id1> <id2>`
+
+### MCP & LLM
+- [x] FastMCP server with 8 atomic tools for LLM agents
+- [x] `TabularAgent` module for natural-language explanations
+
+### Services & CLI
+- [x] File-locked `RegistryService` with atomic saves
+- [x] `ReportService` with metric direction logic
+- [x] `ExportService`: packages champion model + preprocessing nodes + predictor script
+- [x] CLI with 10 commands: `init`, `run`, `leaderboard`, `registry`, `hardware`, `drift`, `state`, `hpo`, `diff`, `export`
+
+### Type Safety & Error Handling
+- [x] Custom exception hierarchy: `DataLoadError`, `ModelFitError`, `RegistryError`
+- [x] `track_errors()` decorator for typed error logging
+- [x] `RestrictedUnpickler` for safe deserialization
+- [ ] **Strict Typing**: Finalize remaining mypy errors, transition to `strict = true`
+
+### Not Yet Implemented
+- [ ] AFE pruning (RFE or null-importance checks)
+- [ ] ONNX/TorchScript export
+- [ ] Remote data loaders (S3, GCS, Snowflake)
+- [ ] Uncertainty quantification (prediction intervals)
+- [ ] ZenML example pipeline
+
+---
+
+## 7. Audit Findings (2026-05-05)
+
+> Phase A, B, and C completed. Dual-path duplication eliminated, dead code removed, benchmark infrastructure validated.
+> Remaining items are tracked in Phase D–F below.
+
+### Resolved (Phase A)
+
+| Issue | Resolution |
 |---|---|
-| `get_experiment_state` | Returns `current_state.md` content |
-| `get_column_stats` | Returns Polars `.describe()` for a dataset |
-| `run_baseline` | Triggers a TabPFN/CatBoost quick run |
-| `suggest_features` | LLM-in-the-loop feature suggestion (see below) |
-| `run_hpo` | Triggers Optuna study for a named model |
-| `get_event_log` | Returns last N JSONL events |
-| `registry_show` | Returns current `registry.json` content |
-| `registry_promote` | Promotes a run_id to champion in the registry |
+| Dual-path duplication (~800 lines) | Imperative path deleted; DAG-only execution |
+| `PipelineExecutor` 36-param signature | Accepts `ExperimentConfig` directly; `_config_to_inputs()` helper |
+| Dead service instantiation in `Trainer` | Removed; `Trainer` is 117-line thin wrapper |
+| `engine/model_trainer.py` dead code | Deleted (318 lines) |
 
-### 9.3 LLM-in-the-Loop Feature Engineering
+### Resolved (Phase B)
 
-The agentic feature engineering feedback loop:
-
-```
-1. LLM reads current_state.md + column stats
-2. LLM suggests: "Create income_to_debt_ratio = income / debt"
-3. MCP tool generates Polars .with_columns() snippet
-4. Sandbox executor runs snippet on a 1k-row sample
-5. Validator checks: null rate > 20%? Zero variance? Division by zero?
-6. If OK → applies to full dataset, emits feature_added JSONL event
-7. If fails → sends traceback back to LLM context → loop continues
-```
-
-### 9.4 Phase 2 Milestones
-
-- [ ] `StateObserver` class: generates `current_state.md` post-run
-- [ ] `mcp_server/server.py`: MCP server with basic tools (`get_state`, `get_stats`)
-- [ ] `mcp_server/tools.py`: all 8 tools implemented (including registry tools)
-- [ ] `mcp_server/prompts.py`: system prompt for the data science agent persona
-- [ ] Sandbox executor with validation step
-- [ ] Integration test: full agentic loop (suggest → generate → validate → apply)
-
----
-
-## 10. Phase 3 — MLOps & Production Readiness
-
-> **Goal:** Add the monitoring, orchestration compatibility, and production-serving concerns that become relevant once models are being used beyond a single experiment session.
-
-### 10.1 Drift Detection (`core/monitoring/drift.py`)
-
-Once a champion model is registered, you need to know if incoming data differs from the training distribution. This module is standalone — it doesn't touch the trainer or evaluator.
-
-```python
-# core/monitoring/drift.py
-class DriftDetector:
-    """
-    Compares a reference DataFrame (training) against a new DataFrame (production).
-
-    Numeric columns : Kolmogorov-Smirnov test
-    Categorical cols : Chi-squared test
-
-    Returns a DriftReport with per-column p-values and a global drift flag.
-    """
-    def __init__(self, reference_df: pl.DataFrame, alpha: float = 0.05): ...
-    def detect(self, new_df: pl.DataFrame) -> DriftReport: ...
-```
-
-**Integration points:**
-- Callable as a standalone CLI: `tabblueprint drift --reference train.parquet --new batch.parquet`
-- Exposed as an MCP tool in Phase 2 server (`detect_drift`)
-- `DriftReport` emitted as a `drift_checked` JSONL event for history tracking
-
-**Milestone:**
-- [ ] `DriftDetector` class with KS + Chi² tests
-- [ ] `DriftReport` Pydantic model (per-column results + global flag)
-- [ ] `drift` CLI subcommand
-- [ ] Unit tests with synthetic distribution shift
-
-### 10.2 ZenML Compatibility (`examples/zenml_pipeline.py`)
-
-The repo's `core/` functions are already plain Python — they can be wrapped as ZenML steps with zero refactoring of the underlying logic. This example is purely for advanced users who need scheduled retraining or remote execution.
-
-```python
-# examples/zenml_pipeline.py
-from zenml import step, pipeline
-from core.data.loaders import load_parquet
-from core.engine.trainer import run_experiment
-
-@step
-def load_data(path: str) -> pl.DataFrame:
-    return load_parquet(path)
-
-@step
-def train_models(df: pl.DataFrame, config: ExperimentConfig) -> dict:
-    return run_experiment(df, config)
-
-@pipeline
-def retraining_pipeline(data_path: str):
-    df = load_data(data_path)
-    train_models(df, config=ExperimentConfig(...))
-```
-
-**Milestone:**
-- [ ] `examples/zenml_pipeline.py` with `load → train → evaluate` steps
-- [ ] README note: "ZenML is not a dependency. This example shows how `core/` functions drop into ZenML with no changes."
-- [ ] ADR-013 documenting the decision to keep ZenML out of core
-
-### 10.3 LightEx Migration Path (ADR only)
-
-LightEx (Amazon's lightweight experiment framework) provides battle-tested dataset snapshotting and run comparison queries that overlap significantly with the custom JSONL + leaderboard logic built in Phase 1. It is **not** included in Phase 1 or Phase 3, but is documented here as a potential migration path if the custom JSONL query logic becomes burdensome.
-
-**Trigger condition for migration:** If maintaining `leaderboard.md` generation and run comparison requires >2 days of work to extend, evaluate LightEx as a drop-in replacement for `workspace/` logic.
-
-### 10.4 Phase 3 Milestones
-
-- [ ] `core/monitoring/drift.py` — `DriftDetector` + `DriftReport`
-- [ ] `drift` CLI subcommand
-- [ ] `examples/zenml_pipeline.py`
-- [ ] ADR-013: ZenML kept out of core
-- [ ] ADR-014: LightEx migration trigger condition documented
-
----
-
-## 11. Hardware-Aware Routing
-
-The `HardwareProfile` is auto-detected at runtime and informs all routing decisions:
-
-```python
-# configs/hardware.py
-import torch
-import psutil
-
-class HardwareProfile(BaseModel):
-    vram_gb: float          # 0.0 if no GPU
-    system_ram_gb: float
-    cpu_cores: int
-    has_gpu: bool
-    gpu_name: str | None
-
-    @classmethod
-    def detect(cls) -> "HardwareProfile":
-        vram = torch.cuda.get_device_properties(0).total_memory / 1e9 if torch.cuda.is_available() else 0.0
-        return cls(
-            vram_gb=round(vram, 1),
-            system_ram_gb=round(psutil.virtual_memory().total / 1e9, 1),
-            cpu_cores=psutil.cpu_count(logical=False),
-            has_gpu=torch.cuda.is_available(),
-            gpu_name=torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
-        )
-```
-
-**Routing matrix:**
-
-| Condition | Action |
+| Issue | Resolution |
 |---|---|
-| `n_rows > 10k` | Skip TabPFN, log reason |
-| `vram_gb < 8` | Skip FT-Transformer, log reason |
-| `vram_gb >= 12` | Enable FT-Transformer + larger batch sizes |
-| `has_text_cols and vram_gb >= 8` | Enable DeBERTa embedding extraction |
-| `system_ram_gb < 16 and n_rows > 1M` | Force LightGBM (memory-safe) over XGBoost |
+| `engine/drift_checker.py` | Deleted |
+| `engine/explainability_service.py` | Deleted |
+| `models/deep/text_encoder.py` | Deleted |
+| `_to_tensor()` + `_to_dataset()` | Deleted from `data/adapter.py` |
+| `_MODE_MODULES` empty dict | Deleted from `pipelines/executor.py` |
+| `pipelines/hamilton_executor.py` | Deleted |
+| Dead constants functions | Deleted from `constants.py` |
+| `accelerate` / `datasets` deps | Removed from `[opinion]` |
+
+### Resolved (Phase C)
+
+| Issue | Resolution |
+|---|---|
+| `CatBoostConfig.task_type` hardcoded `"CPU"` | Changed to `"auto"` with `model_validator` that resolves to `"GPU"`/`"CPU"` at instantiation |
+| `CatBoostModel` GPU detection | Added `_detect_gpu()` using `catboost.utils.get_gpu_count` |
+| No benchmark suite | `benchmarks/openml_benchmark.py` with 9 datasets, sweep support, regression checking |
+| No baseline storage | `benchmarks/results/baseline_summary.json` generated via `--save-baseline` |
+| No benchmark CI | `.github/workflows/benchmarks.yml` runs on `v*` tags with artifact upload |
+| No benchmark docs | `benchmarks/README.md` with quickstart, sweep, and regression instructions |
+| Missing `ricci` dataset | Added to `configs/default_benchmark.yaml` |
+
+### Remaining Concerns
+
+| Setting | Current Default | Issue |
+|---|---|---|
+| `afe_lift_threshold` | 0.01 | Keeps noise features (1% lift is too permissive). Sweep infra ready; needs full-DAG benchmark run. |
+| `noise_quality_threshold` | 0.5 | Drops 50% of flagged rows — aggressive. Sweep infra ready; needs full-DAG benchmark run. |
+| `llm_model` | `"claude-sonnet-4-20250514"` | Hardcoded model name in config |
+| `TabPFNConfig.n_estimators` | 4 | Sweep infra ready; needs benchmark run with TabPFN installed. |
+| `afe_pruning` | `False` | AFE runs without pruning — keeps all interactions |
 
 ---
 
-## 12. Configuration Strategy
+## 8. Codebase Metrics
 
-### pyproject.toml (all phases)
+### File Size Distribution (Top 20)
 
-```toml
-[project]
-name = "tabular-blueprint"
-version = "0.1.0"
-requires-python = ">=3.11"
+| Lines | File |
+|-------|------|
+| 477 | `cli.py` |
+| 359 | `data/embedding_engine.py` |
+| 318 | `data/feature_engine.py` |
+| 280 | `pipelines/executor.py` |
+| 262 | `engine/hpo.py` |
+| 250 | `engine/state_observer.py` |
+| 229 | `services/registry_service.py` |
+| 222 | `services/export_service.py` |
+| 215 | `pipelines/nodes/feature_engineering.py` |
+| 207 | `engine/hpo_warmstart.py` |
+| 186 | `config.py` |
+| 184 | `services/report_service.py` |
+| 182 | `models/deep/sparse_embedder.py` |
+| 173 | `pipelines/nodes/model_training.py` |
+| 171 | `models/deep/ft_transformer.py` |
+| 153 | `engine/tracker.py` |
+| 149 | `engine/hpo_importance.py` |
+| 149 | `engine/evaluator.py` |
+| 145 | `pipelines/nodes/data_preparation.py` |
+| 135 | `monitoring/explainability.py` |
 
-dependencies = [
-    "polars>=1.0",
-    "pydantic>=2.0",
-    "pydantic-settings>=2.0",
-    "catboost>=1.2",
-    "lightgbm>=4.0",
-    "xgboost>=2.0",
-    "tabpfn>=2.0",
-    "skrub>=0.3",
-    "cleanlab>=2.6",
-    "optuna>=3.6",
-    "torch>=2.3",
-    "accelerate>=0.30",
-    "transformers>=4.40",
-    "scikit-learn>=1.4",
-    "numpy>=1.26",
-    "typer>=0.12",       # CLI subcommands
-    "ruff>=0.4",
-    "psutil>=5.9",       # HardwareProfile detection
-]
+### Summary
 
-[project.optional-dependencies]
-hamilton = ["sf-hamilton>=1.70", "pyo3-polars>=0.14"]
-llm     = ["mcp>=0.9", "anthropic>=0.25"]
-wandb   = ["wandb>=0.17"]
-mlflow  = ["mlflow>=2.13"]
-zenml   = ["zenml>=0.57"]   # examples/ only, never imported in core/
+| Metric | Value |
+|---|---|
+| Total `.py` files in `src/` | 68 |
+| Total lines in `src/` | 7,161 |
+| Test files | 47 |
+| Test lines | 5,618 |
+| Test:source ratio | 0.79:1 |
+| CLI → model.fit() call depth (Hamilton path) | 6 layers |
+| `ExperimentConfig` fields | 40+ |
+| Dead/orphaned files | 0 |
+| Dead service instances in Trainer | 0 |
 
-[project.scripts]
-tabblueprint = "main:app"   # exposes `uv run tabblueprint` CLI
+---
 
-[tool.ruff]
-line-length = 100
-target-version = "py311"
+# Part III — Forward Plan
 
-[tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
+> Priority-ordered phases for reducing bloat and improving defaults.
+> Each phase is independently executable. Phases A-C are highest priority.
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-addopts   = "-v --tb=short"
-```
+---
 
-### Experiment Config Example
+## Phase A — Consolidate to DAG-Only Execution
 
+> **Priority:** Critical | **Estimated impact:** ~800 lines removed, call depth 10 → 6
+
+### A.1: Refactor `PipelineExecutor` to accept `ExperimentConfig` directly
+
+Replace `run_training()`'s 36 individual parameters with `(config: ExperimentConfig, df: pl.DataFrame)`. Build the Hamilton `inputs` dict from config in one place inside the executor.
+
+**Before:**
 ```python
-# configs/my_experiment.py
-from configs.experiment import ExperimentConfig
-
-config = ExperimentConfig(
-    name="credit_risk_v3",
-    task="classification",
-    target_col="default",
-    data_path="data/credit_v3.parquet",
-    cv_folds=5,
-    cv_strategy="stratified",
-    run_hpo=True,
-    hpo_n_trials=100,
-    models="auto",              # ModelSelector decides
-    tracker="jsonl",            # "jsonl" | "wandb" | "mlflow"
-    metrics=["roc_auc", "f1_macro", "log_loss"],
-    run_quality_audit=True,     # set False to skip Cleanlab on large datasets
+executor.run_training(
+    df=df, target_col=..., task=..., config_models=...,
+    experiment_name=..., run_id=..., workspace_dir=...,
+    vram_gb=..., cv_folds=..., cv_strategy=..., metrics=...,
+    # ... 24 more params
 )
 ```
 
+**After:**
+```python
+executor.run_training(config=config, df=df, run_id=run_id)
+```
+
+- [x] Refactor `PipelineExecutor.run_training()` signature
+- [x] Build Hamilton `inputs` dict from `ExperimentConfig` in executor
+- [x] Update `Trainer._try_hamilton_training()` to pass config directly
+
+### A.2: Delete imperative service layer
+
+All logic lives in Hamilton nodes only. The following files are deleted entirely:
+
+- [x] Delete `engine/data_preparation.py` (153 lines)
+- [x] Delete `engine/feature_engineer.py` (113 lines)
+- [x] Delete `engine/embedding_trainer.py` (267 lines)
+- [x] Move any unique logic from these files into the corresponding Hamilton nodes
+
+### A.3: Remove imperative fallback from `Trainer`
+
+- [x] Delete `Trainer._run_imperative()`
+- [x] `Trainer.run()` calls `PipelineExecutor.run_training()` as sole path
+- [x] Remove dead service instantiation (`DriftChecker`, `ExplainabilityService`)
+- [x] `Trainer` becomes a thin wrapper: load data → call executor → update state
+
+### A.4: Merge sequential/concurrent training in `ModelTrainer`
+
+- [x] Merge `_train_sequential` + `_train_concurrent` into single `_train_models(max_workers)`
+- [x] Use `ThreadPoolExecutor` conditionally (max_workers=1 → sequential)
+
+### A.5: Flatten call depth
+
+**Target: 6 layers**
+```
+CLI → Trainer.run() → PipelineExecutor.run(config, df) → Hamilton DAG → node → model.fit()
+```
+
+- [x] Nodes call models/evaluator/services directly, no intermediate wrapping
+- [x] Remove re-construction of `ExperimentConfig` inside nodes (pass as input)
+
+### Files Modified
+
+| File | Action |
+|---|---|
+| `engine/trainer.py` | Remove imperative path, remove dead services |
+| `pipelines/executor.py` | Accept `ExperimentConfig`, `_config_to_inputs()` helper |
+| `engine/model_trainer.py` | **DELETE** |
+| `engine/data_preparation.py` | **DELETE** |
+| `engine/feature_engineer.py` | **DELETE** |
+| `engine/embedding_trainer.py` | **DELETE** (moved to `data/embedding_engine.py`) |
+| `pipelines/nodes/*.py` | Accept `ExperimentConfig` as input, remove re-construction |
+
 ---
 
-## 13. Testing & Validation Strategy
+## Phase B — Dead Code & Orphan Removal
 
-### Unit Tests (`tests/unit/`)
-- `DataAdapter` round-trip: Polars → NumPy → back, assert no precision loss
+> **Priority:** High | **Estimated impact:** ~300 lines removed, 3 files deleted
+
+- [x] Delete `engine/drift_checker.py` (59 lines) — instantiated but never called
+- [x] Delete `engine/explainability_service.py` (53 lines) — instantiated but never called
+- [x] Delete `models/deep/text_encoder.py` (78 lines) — orphaned, never imported
+- [x] Delete `_to_tensor()` + `_to_dataset()` from `data/adapter.py`
+- [x] Delete `_MODE_MODULES` empty dict from `pipelines/executor.py`
+- [x] Delete `pipelines/hamilton_executor.py` (deprecated wrapper)
+- [x] Remove export of deprecated module from `pipelines/__init__.py`
+- [x] Delete `from_cv_strategy`, `from_model_name`, `from_tracker_type` from `constants.py`
+- [x] Remove `accelerate` from `[opinion]` extras (never imported)
+- [x] Remove `datasets` from `[opinion]` extras (only used by dead adapter code)
+- [x] Remove tests for deleted modules
+
+---
+
+## Phase C — Benchmark-Validated Defaults
+
+> **Priority:** High | **Estimated effort:** 1-2 weeks
+
+### C.1: OpenML Benchmark Suite
+
+Curate 8-10 datasets covering task × size combinations:
+
+| Dataset | Task | Size | OpenML ID |
+|---|---|---|---|
+| credit-g | Binary classification | 1k rows | 31 |
+| adult | Binary classification | 48k rows | 1590 |
+| ricci | Binary classification | 6k rows | — |
+| covertype | Multiclass classification | 581k rows | 1596 |
+| shuttle | Multiclass classification | 58k rows | 40685 |
+| iris | Multiclass classification | 150 rows | 61 |
+| house_16H | Regression | 22k rows | 572 |
+| quake | Regression | 2k rows | 772 |
+| diabetes | Regression | 442 rows | sklearn |
+| breast_cancer | Binary classification | 569 rows | sklearn |
+
+- [x] Add `benchmarks/openml_benchmark.py` script
+- [x] Each dataset: run all default models, record metrics + timing
+- [x] Store results in `benchmarks/results/` as JSON
+- [x] Add `benchmarks/README.md` with reproduction instructions
+
+### C.2: Validate & Fix Defaults
+
+- [x] `CatBoostConfig.task_type`: auto-detect from `HardwareProfile.has_gpu` (not hardcoded `"CPU"`)
+- [ ] `afe_lift_threshold`: test 0.01 vs 0.03 vs 0.05 vs 0.10 on benchmark suite — *sweep infra ready; needs full-DAG benchmark*
+- [ ] `noise_quality_threshold`: test 0.3 vs 0.5 vs 0.7 on datasets with known noise — *sweep infra ready; needs full-DAG benchmark*
+- [ ] GBDT `iterations`/`learning_rate`: grid search (500/0.1, 1000/0.05, 2000/0.01) — *sweep infra ready*
+- [ ] `TabPFNConfig.n_estimators`: test 2 vs 4 vs 8 on small datasets — *sweep infra ready; needs TabPFN installed*
+- [ ] `LightGBMConfig.num_leaves`: test 15 vs 31 vs 63 vs 127 — *sweep infra ready*
+- [x] Document validated defaults in `benchmarks/DEFAULTS.md`
+
+### C.3: CI Integration
+
+- [x] GitHub Action: run benchmark suite on every release tag
+- [x] Assert: no default model score regression > 2% on any dataset
+- [x] Store results as CI artifacts for comparison
+
+---
+
+## Phase D — Config Hygiene
+
+> **Priority:** Medium
+
+- [ ] Add section docstrings to `ExperimentConfig` for field grouping (Core / HPO / Data Quality / Feature Engineering / Embedding / Tracking / Advanced / LLM)
+- [ ] Change `llm_model` default from hardcoded `"claude-sonnet-4-20250514"` to env var `TABBLUEPRINT_LLM_MODEL` or `None`
+- [ ] Add `model_overrides: dict[str, dict] | None = None` for per-model param overrides without touching `ModelConfigs`
+- [ ] Add deprecation warnings for fields that should become env vars
+- [ ] Ensure `model_validator` correctly handles all task × strategy combos
+
+---
+
+## Phase E — Dependency Audit
+
+> **Priority:** Medium
+
+### E.1: Split `[opinion]` into focused tiers
+
+```toml
+[project.optional-dependencies]
+base = ["catboost>=1.2", "lightgbm>=4.0", "xgboost>=2.0", "optuna>=3.6", "sf-hamilton>=1.70"]
+deep = ["torch>=2.3", "transformers>=4.40", "tabpfn>=2.0", "pytorch-tabular>=1.0"]
+tracking = ["wandb>=0.17", "mlflow>=2.13"]
+agent = ["mcp>=0.9", "litellm>=1.40"]
+audit = ["shap>=0.44", "cleanlab>=2.6"]
+docs = ["mkdocs-material>=9.5", "mkdocstrings[python]>=0.25", "mike>=2.0", "pymdown-extensions>=10.0"]
+full = ["tabular-blueprint[base,deep,tracking,agent,audit]"]
+```
+
+### E.2: Lazy import enforcement
+
+- [ ] `mcp/tools.py`: defer FastMCP import to server startup, not module level
+- [ ] All `[deep]` imports: behind try/except with clear error message
+- [ ] Add test: verify `import tabular_blueprint` completes in <1s with only core deps
+
+### E.3: Remove unused
+
+- [ ] Remove `accelerate` from extras (already done in Phase B)
+- [ ] Remove `datasets` from extras (already done in Phase B)
+
+---
+
+## Phase F — Test Coverage Gaps
+
+> **Priority:** Medium
+
+### New Tests
+
+- [ ] `tests/test_model_configs.py`: validate all config defaults, HPO search spaces, invalid param rejection
+- [ ] `tests/test_data_cache.py`: preprocessing cache hit/miss/expiry
+- [ ] `tests/test_tracking_hook.py`: Hamilton node → Tracker event emission
+- [ ] Integration test: **full Hamilton DAG path** end-to-end (not just imperative — which will be removed in Phase A)
+- [ ] Benchmark regression test: assert default scores don't degrade between releases
+
+### Updated Tests
+
+- [ ] Remove tests for modules deleted in Phases A and B
+- [ ] Update integration tests to use `ExperimentConfig`-based executor API (from Phase A.1)
+
+---
+
+## Success Metrics
+
+| Metric | Current | Target |
+|---|---|---|
+| Total lines in `src/` | 7,172 | ~7,200 (Phase A+B+C complete) |
+| CLI → model.fit() call depth | 6 layers | 6 layers |
+| Import time (core deps only) | Untested | <1s |
+| Default benchmark coverage | 10 datasets | 8-10 OpenML datasets |
+| Config fields | 40+ (flat, ungrouped) | 40+ (flat, grouped with docstrings) |
+| Test:source ratio | 0.79:1 | 0.85:1 |
+| Dead code lines | 0 | 0 |
+| Files with duplicated logic | 0 | 0 |
+| Dependency tiers | 2 (core + opinion) | 6 (core + base + deep + tracking + agent + audit) |
+
+---
+
+# Part IV — Appendices
+
+> Reference material updated to reflect actual codebase state.
+
+---
+
+## 15. Repository Structure
+
+```
+src/tabular_blueprint/
+├── __init__.py
+├── cli.py                          # Typer CLI (477 lines, 10 commands)
+├── config.py                       # ExperimentConfig + HardwareProfile (186 lines)
+├── constants.py                    # Enums: TaskType, CVStrategy, ModelName, etc. (75 lines)
+├── exceptions.py                   # Exception hierarchy + track_errors decorator (74 lines)
+├── py.typed
+│
+├── data/
+│   ├── __init__.py
+│   ├── loaders.py                  # CSV, Parquet, SQLite via Polars (106 lines)
+│   ├── adapter.py                  # DataAdapter: Polars → NumPy (88 lines)
+│   ├── feature_engine.py           # AFE interaction discovery (318 lines)
+│   ├── leakage.py                  # LeakageReport / detect_leakage() (88 lines)
+│   ├── quality.py                  # Cleanlab quality audit + noise cleaning (109 lines)
+│   ├── cache.py                    # Hash-based preprocessing cache (74 lines)
+│   └── embedding_engine.py         # High-cardinality categorical embeddings (359 lines)
+│
+├── models/
+│   ├── __init__.py
+│   ├── base.py                     # AbstractModel Protocol (16 lines)
+│   ├── factory.py                  # String-keyed model registry with lazy imports (42 lines)
+│   ├── selector.py                 # ModelSelector: hardware + size routing (66 lines)
+│   ├── baselines.py                # NaiveBaseline + LinearBaseline (103 lines)
+│   ├── gbdt_base.py                # Shared GBDT base class (72 lines)
+│   ├── model_configs.py            # Per-model Pydantic configs + HPO search spaces (116 lines)
+│   ├── conventional/
+│   │   ├── catboost_model.py       # CatBoost wrapper (68 lines)
+│   │   ├── lightgbm_model.py       # LightGBM wrapper (53 lines)
+│   │   └── xgboost_model.py        # XGBoost wrapper (49 lines)
+│   ├── tabular_foundation/
+│   │   └── tabpfn_model.py         # TabPFN v2 wrapper (97 lines)
+│   └── deep/
+│       ├── ft_transformer.py       # FT-Transformer (PyTorch) (171 lines)
+│       ├── tabnet_model.py         # TabNet (pytorch-tabular) (113 lines)
+│       └── sparse_embedder.py      # Sparse autoencoder (182 lines)
+│
+├── engine/
+│   ├── __init__.py
+│   ├── trainer.py                  # Main orchestrator (117 lines)
+│   ├── evaluator.py                # CV strategies, metrics registry (149 lines)
+│   ├── tracker.py                  # Tracker protocol + JSONL/W&B/MLflow impls (153 lines)
+│   ├── hpo.py                      # Optuna study factory (262 lines)
+│   ├── hpo_warmstart.py            # Historical trial injection (207 lines)
+│   ├── hpo_importance.py           # PedAnova parameter importance (149 lines)
+│   ├── calibration.py              # Platt/Isotonic calibration (99 lines)
+│   └── state_observer.py           # Generates current_state.md (250 lines)
+│
+├── pipelines/
+│   ├── __init__.py
+│   ├── executor.py                 # PipelineExecutor: builds Hamilton drivers (197 lines)
+│   ├── preprocessing.py            # Standalone preprocessing DAG (25 lines)
+│   ├── hooks/
+│   │   └── tracking_hook.py        # Hamilton NodeExecutionHook → Tracker (61 lines)
+│   └── nodes/
+│       ├── preprocessing.py        # 9 nodes: null fill, date decomp, encoding (94 lines)
+│       ├── data_preparation.py     # 7 nodes: quality, adapter, leakage, target transform (145 lines)
+│       ├── model_selection.py      # 1 node: auto or explicit model list (26 lines)
+│       ├── baselines.py            # 2 nodes: naive + linear baseline (48 lines)
+│       ├── feature_engineering.py  # 6 nodes: AFE, embedding (with @config variants) (215 lines)
+│       ├── model_training.py       # 4 nodes: train + evaluate each model (173 lines)
+│       ├── state_generation.py     # 1 node: aggregate results + update registry (90 lines)
+│       └── drift_detection.py      # 9 nodes: PSI, domain classifier (with @config variants) (125 lines)
+│
+├── monitoring/
+│   ├── drift.py                    # KS + Chi² drift detection (97 lines)
+│   ├── psi_drift.py                # PSI drift detection (94 lines)
+│   ├── domain_classifier.py        # Domain classifier drift (77 lines)
+│   └── explainability.py           # SHAP-based explainer (135 lines)
+│
+├── services/
+│   ├── __init__.py
+│   ├── registry_service.py         # File-locked JSON champion registry (229 lines)
+│   ├── report_service.py           # Leaderboard + metric direction logic (184 lines)
+│   └── export_service.py           # Champion export to portable directory (222 lines)
+│
+├── mcp/
+│   └── tools.py                    # FastMCP server with 8 atomic tools (152 lines)
+│
+├── llm/
+│   └── __init__.py                 # TabularAgent via litellm (147 lines)
+│
+└── utils/
+    ├── jsonl.py                    # JSONL log reading (53 lines)
+    └── safe_pickle.py              # RestrictedUnpickler allowlist (71 lines)
+```
+
+---
+
+## 16. Tech Stack & Dependency Manifest
+
+### Environment & Packaging
+
+| Tool | Role |
+|---|---|
+| `uv` | Env + package management |
+| `ruff` | Linting + formatting |
+| `pyproject.toml` | Single source of truth |
+| `mypy` | Type checking (targeting `strict = true`) |
+
+### Core Dependencies (always installed)
+
+| Package | Version Floor | Role |
+|---|---|---|
+| `polars` | ≥ 1.0 | Core DataFrame engine |
+| `pydantic` | ≥ 2.0 | Config validation |
+| `scikit-learn` | ≥ 1.4 | Metrics, CV splitters, baselines |
+| `numpy` | ≥ 1.26 | Array format at model boundary |
+| `typer` | ≥ 0.12 | CLI with `--help` from type hints |
+| `rich` | ≥ 13.0 | Terminal formatting |
+| `psutil` | ≥ 5.9 | HardwareProfile detection |
+| `pyyaml` | ≥ 6.0 | Config file loading |
+| `filelock` | ≥ 3.12 | Registry file locking |
+
+### Optional Dependency Tiers (after Phase E)
+
+| Tier | Extras Group | Packages | Enables |
+|---|---|---|---|
+| **Base ML** | `[base]` | catboost, lightgbm, xgboost, optuna, sf-hamilton | GBDT models, HPO, DAG execution |
+| **Deep Learning** | `[deep]` | torch, transformers, tabpfn, pytorch-tabular | TabPFN, FT-Transformer, TabNet |
+| **Experiment Tracking** | `[tracking]` | wandb, mlflow | W&B/MLflow tracker backends |
+| **LLM Agent** | `[agent]` | mcp, litellm | MCP server, LLM commentary |
+| **Data Audit** | `[audit]` | shap, cleanlab | SHAP explainability, noise detection |
+| **Documentation** | `[docs]` | mkdocs-material, mkdocstrings, mike, pymdown-extensions | Docs site |
+| **Everything** | `[full]` | meta-package installing all above | Complete install |
+
+### Removed Dependencies
+
+| Package | Reason |
+|---|---|
+| `accelerate` | Never imported anywhere (Phase B) |
+| `datasets` (HuggingFace) | Only used by dead `_to_dataset()` code (Phase B) |
+| `pydantic-settings` | Not currently used |
+| `skrub` | Not currently imported |
+
+---
+
+## 17. Testing & Validation Strategy
+
+### Unit Tests (`tests/`)
+
+- `DataAdapter` round-trip: Polars → NumPy → assert no precision loss
 - `ModelSelector` routing: assert correct model list for each size/hardware combo
 - `Cleanlab` wrapper: synthetic noisy labels, assert flagged rows match expected
 - `ExperimentConfig` validation: assert Pydantic catches invalid field combos
-- `get_data_hash()`: assert identical DataFrames produce identical hashes; assert mutated frame produces different hash
-- `DriftDetector`: synthetic distribution shift, assert `drift_detected=True` on shifted columns
-- `Tracker` fan-out: assert both `JSONLTracker` and `WandbTracker` receive identical metric dicts in multi-tracker mode
+- `get_data_hash()`: identical DataFrames → identical hashes; mutated frame → different hash
+- `Tracker` fan-out: `JSONLTracker` + `WandbTracker` receive identical metric dicts
+- `ModelConfigs`: all configs validate, HPO search spaces produce valid params
+- `PreprocessingCache`: hit/miss/expiry behavior
+- `TrackingHook`: Hamilton node completion → correct Tracker events
 
-### Integration Tests (`tests/integration/`)
-- Full pipeline on `sklearn.datasets.make_classification` (1k rows, 20 features)
-- Assert JSONL event is written with correct schema (including `data_hash`) after each model run
+### Integration Tests
+
+- Full Hamilton DAG pipeline on `sklearn.datasets.make_classification` (1k rows, 20 features)
+- Assert JSONL event written with correct schema (including `data_hash`) after each model run
 - Assert `leaderboard.md` updates after run
-- Assert `registry.json` updates when a new champion is detected
-- TabPFN guardrail: assert `DataSizeError` raised on 15k-row input
+- Assert `registry.json` updates when new champion detected
+- TabPFN guardrail: warning emitted when n_rows > 50k
 - CLI: `tabblueprint leaderboard` exits 0 and prints expected table headers
+- CLI: `tabblueprint run --config ...` executes full Hamilton DAG path
 
-### Synthetic Benchmark
-Use `sklearn.datasets` to create a standard benchmark suite run on every release tag:
-- Binary classification (10k rows, mixed types)
-- Multiclass classification (50k rows)
-- Regression (100k rows)
+### Benchmark Regression Tests (after Phase C)
 
-This ensures every release can be validated against known baselines and catches regressions in model wrapper behaviour.
+- Run default models on OpenML benchmark suite
+- Assert: no score regression > 2% on any dataset vs. baseline
+- Run on every release tag via GitHub Actions
 
 ---
 
-## 14. Open-Source Readiness Checklist
+## 18. Open-Source Readiness Checklist
 
 To be completed before public release:
 
 **Documentation**
-- [ ] `README.md` with 60-second quickstart (`uv sync && uv run tabblueprint run --config ...`)
+- [ ] `README.md` with 60-second quickstart
 - [ ] `CONTRIBUTING.md` with PR guidelines and code style rules
-- [ ] `LICENSE` (MIT recommended)
-- [ ] `CHANGELOG.md` initialized
+- [ ] `LICENSE` (MIT)
+- [ ] `CHANGELOG.md` initialized and maintained
 - [ ] All Pydantic models have docstrings and field descriptions
 - [ ] All public functions have type hints and docstrings
-- [ ] Example configs for 3 real-world dataset types (classification, regression, text)
-- [ ] README section: "Running in Docker"
-- [ ] README section: "Optional integrations (W&B, MLflow, Hamilton, ZenML)"
+- [ ] Example configs for 3 dataset types (classification, regression, text)
 
 **Code Quality**
 - [ ] Remove all hardcoded local paths (use `pathlib.Path` + config)
 - [ ] `workspace/` fully gitignored (only `.gitkeep` committed)
 - [ ] `ruff` passes with zero warnings on full repo
-- [ ] No `import pandas` anywhere in `core/` (enforced via `ruff` custom rule)
-- [ ] No `import torch` outside `core/models/deep/` and `core/data/adapter.py`
+- [ ] No `import pandas` anywhere in `src/`
+- [ ] `mypy --strict` passes with zero errors
+- [ ] `import tabular_blueprint` completes in <1s with only core deps
 
 **CI/CD**
-- [ ] GitHub Actions: `ruff check` + `uv run pytest tests/unit/` on every PR
-- [ ] GitHub Actions: synthetic benchmark suite on every release tag
+- [ ] GitHub Actions: `ruff check` + `mypy` + `pytest tests/unit/` on every PR
+- [ ] GitHub Actions: benchmark suite on every release tag
 - [ ] Dependabot config for weekly dep updates
 - [ ] Pre-commit hooks: `ruff format`, `ruff check`, `pytest tests/unit/`
 
@@ -913,57 +973,4 @@ To be completed before public release:
 
 ---
 
-## 15. Dependency Manifest
-
-| Package | Version Floor | Phase | Optional | Extras Group |
-|---|---|---|---|---|
-| `polars` | ≥ 1.0 | 1 | No | — |
-| `pydantic` | ≥ 2.0 | 1 | No | — |
-| `pydantic-settings` | ≥ 2.0 | 1 | No | — |
-| `catboost` | ≥ 1.2 | 1 | No | — |
-| `lightgbm` | ≥ 4.0 | 1 | No | — |
-| `xgboost` | ≥ 2.0 | 1 | No | — |
-| `tabpfn` | ≥ 2.0 | 1 | No | — |
-| `skrub` | ≥ 0.3 | 1 | No | — |
-| `cleanlab` | ≥ 2.6 | 1 | No | — |
-| `optuna` | ≥ 3.6 | 1 | No | — |
-| `torch` | ≥ 2.3 | 1 | No | — |
-| `accelerate` | ≥ 0.30 | 1 | No | — |
-| `transformers` | ≥ 4.40 | 1 | No | — |
-| `scikit-learn` | ≥ 1.4 | 1 | No | — |
-| `numpy` | ≥ 1.26 | 1 | No | — |
-| `typer` | ≥ 0.12 | 1.5 | No | — |
-| `psutil` | ≥ 5.9 | 1 | No | — |
-| `sf-hamilton` | ≥ 1.70 | 1 | Yes | `[hamilton]` |
-| `pyo3-polars` | ≥ 0.14 | 1 | Yes | `[hamilton]` |
-| `wandb` | ≥ 0.17 | 1.5 | Yes | `[wandb]` |
-| `mlflow` | ≥ 2.13 | 1.5 | Yes | `[mlflow]` |
-| `mcp` | ≥ 0.9 | 2 | Yes | `[llm]` |
-| `anthropic` | ≥ 0.25 | 2 | Yes | `[llm]` |
-| `zenml` | ≥ 0.57 | 3 | Yes | `[zenml]` |
-
----
-
-## 16. Architectural Decision Log
-
-| ID | Decision | Rationale | Alternatives Rejected |
-|---|---|---|---|
-| ADR-001 | Polars as sole DataFrame engine | Speed, lazy API, Arrow-native. No Pandas in `core/`. | Pandas (slow), DuckDB (less ergonomic for feature eng.) |
-| ADR-002 | `AbstractModel` as Protocol, not ABC | Structural subtyping — no inheritance tax. Third-party models can conform without wrapping. | `abc.ABC` (requires inheritance), duck typing (no IDE support) |
-| ADR-003 | JSONL as primary event store | Zero infra dependency. LLM-readable in Phase 2. Queryable via Polars directly. W&B/MLflow are additive mirrors. | MLflow as primary (heavy), W&B as primary (requires account) |
-| ADR-004 | Optuna for HPO | Backend-agnostic, supports pruning, integrates with every model in stack. | Ray Tune (overkill for single-node), Hyperopt (less maintained) |
-| ADR-005 | Hamilton optional, not required | Core ML loop must work without DAG overhead. Hamilton adds value for reproducibility, not iteration speed. | Making Hamilton mandatory (too much friction for quick runs) |
-| ADR-006 | Pydantic configs, not YAML | IDE completion, runtime validation, `ruff`-friendly, diffable. | Hydra (complex), YAML (no validation), argparse (no structure) |
-| ADR-007 | LLM layer in Phase 2 | ML engine must be rock-solid before adding agentic complexity. | Building both simultaneously (too many moving parts) |
-| ADR-008 | TabPFN row-count hard guardrail | Silent degradation on large datasets is worse than a clear error. | Soft warning (user ignores it) |
-| ADR-009 | Pluggable `Tracker` protocol over baking in W&B | JSONL always works with zero config. Teams can opt into W&B without any trainer refactor. | Baking W&B directly into trainer (breaks offline use), no tracking at all |
-| ADR-010 | Data hash in JSONL, not DVC | A SHA-256 of `hash_rows()` gives lineage for free with no infra. DVC is warranted only when datasets need to be stored outside git at scale. | DVC (overkill for single-user), no lineage (silent mutations) |
-| ADR-011 | Simple `registry.json` over MLflow Model Registry | Zero-dependency champion tracking is sufficient for Phase 1–2. MLflow registry adds a server requirement for a problem that doesn't need one yet. | MLflow Model Registry (needs server), no registry (can't promote models) |
-| ADR-012 | `typer` CLI over argparse / click | typer generates `--help` docs from type hints automatically, making it self-documenting. Shell completion built-in. | argparse (verbose, no types), click (more boilerplate), bare `sys.argv` |
-| ADR-013 | ZenML kept out of `core/`, example only | Plain functions in `core/` are already ZenML-compatible as steps. Adding ZenML as a core dep would violate P1 (Functional over Class-heavy) and add significant import overhead for users who don't need it. | ZenML as core dep (too heavy), no ZenML compat at all |
-| ADR-014 | LightEx deferred — migration trigger documented | LightEx overlaps with JSONL + leaderboard logic. Migration is worth evaluating only if extending the query engine exceeds 2 days of effort. | Adopting LightEx in Phase 1 (unnecessary dep), ignoring it entirely |
-| ADR-015 | `Cleanlab` audit skippable via config flag | On large datasets (>500k rows), Cleanlab's cross-validation step can add minutes. `run_quality_audit: bool = True` keeps it default-on but lets users bypass it explicitly. | Always mandatory (breaks large-dataset iteration speed) |
-
----
-
-*Last updated: 2026-04-04 | Next review: after Phase 1 Milestone 1.4 completion*
+*Last updated: 2026-05-05 | Phase A+B+C complete — Next: Phase D*

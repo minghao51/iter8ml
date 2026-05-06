@@ -65,7 +65,7 @@ def setup_hpo_components(
     from tabular_blueprint.models.model_configs import ModelConfigs
 
     df = load_data(data_path)
-    adapter = DataAdapter(target_format="numpy")
+    adapter = DataAdapter()
     X, y = adapter.transform(df, target_col)
 
     hpo_config = ExperimentConfig(

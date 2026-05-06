@@ -107,6 +107,8 @@ def _run_embedding(
     data_prep_result: object,
     task: str,
     random_seed: int,
+    run_id: str,
+    workspace_dir: str,
     embedding_method: str = "entity",
     embedding_dim: int = 16,
     embedding_max_categories: int = 50,
@@ -117,19 +119,12 @@ def _run_embedding(
     embedding_ae_latent_dim: int = 32,
     embedding_ae_dropout: float = 0.2,
 ) -> tuple[np.ndarray, list[str]]:
-    from tabular_blueprint.config import ExperimentConfig
-    from tabular_blueprint.constants import EmbeddingMethod, TaskType
-    from tabular_blueprint.engine.embedding_trainer import EmbeddingEngine
-    from tabular_blueprint.engine.tracker import Tracker
+    from tabular_blueprint.data.embedding_engine import EmbeddingEngine
 
-    tracker = Tracker.__new__(Tracker)
-    cfg = ExperimentConfig(
-        name="embedding_node",
-        task=TaskType(task),
-        target_col="_target_",
-        data_path="",
-        embedding_enabled=True,
-        embedding_method=EmbeddingMethod(embedding_method),
+    engine = EmbeddingEngine(
+        task=task,
+        workspace_dir=workspace_dir,
+        embedding_method=embedding_method,
         embedding_dim=embedding_dim,
         embedding_max_categories=embedding_max_categories,
         embedding_epochs=embedding_epochs,
@@ -140,15 +135,13 @@ def _run_embedding(
         embedding_ae_dropout=embedding_ae_dropout,
         random_seed=random_seed,
     )
-    engine = EmbeddingEngine(cfg, tracker)
     return engine.fit_transform(
         df=getattr(data_prep_result, "_df", None),
         X=data_prep_result.X,
         y=data_prep_result.y,
         feature_names=data_prep_result.feature_names,
         target_col="_target_",
-        run_id="hamilton_embedding",
-        data_hash="",
+        run_id=run_id,
     )
 
 
@@ -189,6 +182,8 @@ if _HAS_HAMILTON:
         data_prep_result: object,
         task: str,
         random_seed: int,
+        run_id: str,
+        workspace_dir: str,
         embedding_method: str = "entity",
         embedding_dim: int = 16,
         embedding_max_categories: int = 50,
@@ -203,6 +198,8 @@ if _HAS_HAMILTON:
             data_prep_result,
             task,
             random_seed,
+            run_id,
+            workspace_dir,
             embedding_method,
             embedding_dim,
             embedding_max_categories,

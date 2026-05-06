@@ -1,0 +1,70 @@
+# Default benchmark datasets for validating hyperparameters.
+# Each entry: source (openml/sklearn), id/name, task, description.
+
+datasets:
+  - source: openml
+    id: 31
+    name: credit-g
+    task: classification
+    description: "German credit (binary, 1k rows)"
+  - source: openml
+    id: 1590
+    name: adult
+    task: classification
+    description: "Adult income (binary, 48k rows)"
+  - source: openml
+    id: 1596
+    name: covertype
+    task: classification
+    description: "Forest covertype (multiclass, 581k rows)"
+  - source: openml
+    id: 40685
+    name: shuttle
+    task: classification
+    description: "Shuttle (multiclass, 58k rows)"
+  - source: openml
+    id: 61
+    name: iris
+    task: classification
+    description: "Iris (multiclass, 150 rows)"
+  - source: openml
+    id: 572
+    name: house_16H
+    task: regression
+    description: "House prices (regression, 22k rows)"
+  - source: openml
+    id: 772
+    name: quake
+    task: regression
+    description: "Earthquake (regression, 2k rows)"
+  - source: sklearn
+    name: diabetes
+    task: regression
+    description: "Diabetes (regression, 442 rows)"
+  - source: sklearn
+    name: breast_cancer
+    task: classification
+    description: "Breast cancer (binary, 569 rows)"
+  - source: openml
+    id: 41147
+    name: ricci
+    task: classification
+    description: "Ricci fairness (binary, 6k rows)"
+
+models:
+  classification:
+    - catboost
+    - lightgbm
+    - xgboost
+    - tabpfn
+  regression:
+    - catboost
+    - lightgbm
+    - xgboost
+
+metrics:
+  classification: ["roc_auc", "f1_macro"]
+  regression: ["rmse", "r2"]
+
+cv_folds: 5
+random_seed: 42

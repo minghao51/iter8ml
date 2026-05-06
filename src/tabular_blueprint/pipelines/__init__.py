@@ -1,5 +1,4 @@
 from tabular_blueprint.pipelines.executor import PipelineExecutor, PipelineMode
-from tabular_blueprint.pipelines.hamilton_executor import HamiltonExecutor
 
 
 def visualize_pipeline(output_format: str = "mermaid") -> str:
@@ -9,4 +8,4 @@ def visualize_pipeline(output_format: str = "mermaid") -> str:
     return ""
 
 
-__all__ = ["HamiltonExecutor", "PipelineExecutor", "PipelineMode", "visualize_pipeline"]
+__all__ = ["PipelineExecutor", "PipelineMode", "visualize_pipeline"]

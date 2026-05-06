@@ -197,7 +197,7 @@ new_high = min(original_high, Q75 + expansion_factor × span)
 Shared setup for CLI and MCP HPO entry points:
 
 1. Loads data via `load_data()`
-2. Converts to numpy via `DataAdapter(target_format="numpy")`
+2. Converts to numpy via `DataAdapter()`
 3. Creates an `Evaluator` with default config
 4. Resolves the model's HPO search space from `ModelConfigs`
 

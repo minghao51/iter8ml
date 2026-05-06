@@ -19,9 +19,20 @@ class CatBoostModel:
         self.params = kwargs
         self.model: CatBoostClassifier | CatBoostRegressor | None = None
 
+    @staticmethod
+    def _detect_gpu() -> bool:
+        try:
+            from catboost.utils import get_gpu_count
+
+            return get_gpu_count() > 0
+        except Exception:
+            return False
+
     def _build_model(self) -> CatBoostClassifier | CatBoostRegressor:
         seed = self.params.get("random_seed", 42)
         kwargs = {k: v for k, v in self.params.items() if k != "random_seed"}
+        if self._detect_gpu():
+            kwargs.setdefault("task_type", "GPU")
         if self.task == "classification":
             return CatBoostClassifier(
                 cat_features=self.cat_features,

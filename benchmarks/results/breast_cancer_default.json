@@ -1,0 +1,50 @@
+[
+  {
+    "dataset": "breast_cancer",
+    "variant": "default",
+    "model": "catboost",
+    "task": "classification",
+    "n_rows": 569,
+    "n_features": 30,
+    "cv_scores": {
+      "roc_auc": 0.994718,
+      "f1_macro": 0.962265
+    },
+    "duration_seconds": 4.019
+  },
+  {
+    "dataset": "breast_cancer",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "classification",
+    "n_rows": 569,
+    "n_features": 30,
+    "cv_scores": {
+      "roc_auc": 0.992006,
+      "f1_macro": 0.967703
+    },
+    "duration_seconds": 4.472
+  },
+  {
+    "dataset": "breast_cancer",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "classification",
+    "n_rows": 569,
+    "n_features": 30,
+    "cv_scores": {
+      "roc_auc": 0.993718,
+      "f1_macro": 0.95099
+    },
+    "duration_seconds": 2.771
+  },
+  {
+    "dataset": "breast_cancer",
+    "variant": "default",
+    "model": "tabpfn",
+    "task": "classification",
+    "n_rows": 569,
+    "n_features": 30,
+    "error": "No module named 'tabpfn'"
+  }
+]

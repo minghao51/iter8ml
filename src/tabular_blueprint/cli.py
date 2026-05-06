@@ -54,7 +54,6 @@ def run(
     quick: bool = typer.Option(
         False, "--quick", help="Fast mode: 2 folds, 20% data, skip SHAP/AFE"
     ),
-    no_cache: bool = typer.Option(False, "--no-cache", help="Disable preprocessing cache"),
     resume: bool = typer.Option(
         False, "--resume", help="Resume previous run, skip completed models"
     ),
@@ -117,7 +116,6 @@ def run(
 
     trainer = Trainer(
         experiment_config,
-        use_cache=not no_cache,
         resume_run_id=None if not resume else _find_last_run_id(experiment_config),
     )
     results = trainer.run(df)

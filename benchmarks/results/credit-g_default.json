@@ -1,0 +1,38 @@
+[
+  {
+    "dataset": "credit-g",
+    "variant": "default",
+    "model": "catboost",
+    "task": "classification",
+    "n_rows": 1000,
+    "n_features": 20,
+    "error": "Bad value for num_feature[non_default_doc_idx=0,feature_idx=0]=\"<0\": Cannot convert '<0' to float"
+  },
+  {
+    "dataset": "credit-g",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "classification",
+    "n_rows": 1000,
+    "n_features": 20,
+    "error": "could not convert string to float: '<0'"
+  },
+  {
+    "dataset": "credit-g",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "classification",
+    "n_rows": 1000,
+    "n_features": 20,
+    "error": "could not convert string to float: '<0'"
+  },
+  {
+    "dataset": "credit-g",
+    "variant": "default",
+    "model": "tabpfn",
+    "task": "classification",
+    "n_rows": 1000,
+    "n_features": 20,
+    "error": "No module named 'tabpfn'"
+  }
+]

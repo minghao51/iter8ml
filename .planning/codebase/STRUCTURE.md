@@ -31,7 +31,6 @@ iter8ml/
 ├── CONTRIBUTING.md
 ├── CLAUDE.md
 ├── README.md
-├── strategic_roadmap.md
 ├── technical_roadmap.md
 └── uv.lock
 ```
@@ -65,29 +64,22 @@ iter8ml/
 
 | File | Purpose |
 |---|---|
-| `__init__.py` | Exports: `EmbeddingEngine`, `Evaluator`, `JSONLTracker`, `Trainer` |
-| `trainer.py` | `Trainer`: main orchestrator, Hamilton-first with imperative fallback |
-| `data_preparation.py` | `DataPreparationService`: preprocessing orchestration |
-| `model_trainer.py` | `ModelTrainer`: sequential/concurrent model training, baseline evaluation |
+| `__init__.py` | Exports: `Evaluator`, `JSONLTracker`, `Trainer` |
+| `trainer.py` | `Trainer`: main orchestrator for Hamilton DAG training execution |
 | `evaluator.py` | `Evaluator`: cross-validation evaluation loop |
 | `tracker.py` | `Tracker` protocol + `JSONLTracker` (default), `WandbTracker`, `MLflowTracker` |
 | `hpo.py` | `optimize_model()`, `setup_hpo_components()` for Optuna HPO |
 | `hpo_warmstart.py` | Historical trial injection from JSONL log |
 | `hpo_importance.py` | Parameter importance analysis (PedAnova) |
 | `calibration.py` | `CalibratedModel`: Platt/Isotonic calibration wrapper |
-| `drift_checker.py` | `DriftChecker`: standalone drift detection |
-| `embedding_trainer.py` | `EmbeddingEngine`: trains entity/autoencoder embeddings |
-| `explainability_service.py` | SHAP-based feature importance |
-| `feature_engineer.py` | AFE orchestration (imperative path) |
 | `state_observer.py` | `StateObserver`: generates `current_state.md` from logs + registry |
 
 ### `pipelines/` — Hamilton DAG Execution
 
 | File | Purpose |
 |---|---|
-| `__init__.py` | Exports: `HamiltonExecutor`, `PipelineExecutor`, `PipelineMode`, `visualize_pipeline` |
+| `__init__.py` | Exports: `PipelineExecutor`, `PipelineMode`, `visualize_pipeline` |
 | `executor.py` | `PipelineExecutor`: Hamilton driver builder with `PipelineMode` enum (TRAINING/DRIFT/EXPORT/HPO/INFERENCE) |
-| `hamilton_executor.py` | `HamiltonExecutor`: deprecated wrapper |
 | `preprocessing.py` | Re-exports all 9 preprocessing node functions |
 | `hooks/__init__.py` | Empty |
 | `hooks/tracking_hook.py` | `TrackingHook`: `NodeExecutionHook` adapter for Tracker protocol |

@@ -60,9 +60,6 @@ uv run tabblueprint run --data data.csv --target label --quick
 # Resume a previous run (skip already-completed models)
 uv run tabblueprint run --data data.csv --target label --resume
 
-# Disable preprocessing cache
-uv run tabblueprint run --data data.csv --target label --no-cache
-
 # Compare runs (Side-by-side config & metric diff)
 uv run tabblueprint diff exp_id_1 exp_id_2
 

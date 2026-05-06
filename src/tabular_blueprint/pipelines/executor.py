@@ -1,9 +1,37 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import polars as pl
+
+if TYPE_CHECKING:
+    from tabular_blueprint.config import ExperimentConfig
+
+_DIRECT_FIELDS: tuple[str, ...] = (
+    "target_col",
+    "cv_folds",
+    "metrics",
+    "calibration",
+    "afe_top_k",
+    "afe_lift_threshold",
+    "afe_pruning",
+    "afe_prune_min_importance",
+    "random_seed",
+    "run_quality_audit",
+    "auto_clean_noise",
+    "noise_quality_threshold",
+    "target_transform",
+    "target_skewness_threshold",
+    "embedding_dim",
+    "embedding_max_categories",
+    "embedding_epochs",
+    "embedding_lr",
+    "embedding_mlp_width",
+    "embedding_mlp_depth",
+    "embedding_ae_latent_dim",
+    "embedding_ae_dropout",
+)
 
 
 class PipelineMode(StrEnum):
@@ -18,12 +46,6 @@ def _get_module(mode: PipelineMode) -> Any:
     from tabular_blueprint.pipelines.nodes import preprocessing
 
     return preprocessing
-
-
-def _get_data_prep_module() -> Any:
-    from tabular_blueprint.pipelines.nodes import data_preparation
-
-    return data_preparation
 
 
 def _get_training_modules() -> list[Any]:
@@ -48,14 +70,6 @@ def _get_training_modules() -> list[Any]:
     ]
 
 
-_MODE_MODULES: dict[PipelineMode, list[Any]] = {
-    PipelineMode.TRAINING: [],
-    PipelineMode.DRIFT: [],
-    PipelineMode.EXPORT: [],
-    PipelineMode.HPO: [],
-    PipelineMode.INFERENCE: [],
-}
-
 _MODE_FINAL_VARS: dict[PipelineMode, list[str]] = {
     PipelineMode.TRAINING: ["processed_dataframe"],
     PipelineMode.DRIFT: ["drift_report"],
@@ -74,6 +88,32 @@ def _try_import_hamilton() -> Any:
         return None
 
 
+def _config_to_inputs(
+    config: ExperimentConfig,
+    df: pl.DataFrame,
+    run_id: str,
+    vram_gb: float,
+    run_leakage_audit: bool,
+    completed_models: set[str] | None = None,
+) -> dict[str, Any]:
+    inputs: dict[str, Any] = {
+        "df": df,
+        "run_id": run_id,
+        "vram_gb": vram_gb,
+        "run_leakage_audit": run_leakage_audit,
+        "task": config.task.value,
+        "config_models": config.models,
+        "experiment_name": config.name,
+        "cv_strategy": config.cv_strategy.value,
+        "workspace_dir": str(config.workspace_dir),
+        "embedding_method": config.embedding_method.value,
+        "completed_models": sorted(completed_models or set()),
+    }
+    for field in _DIRECT_FIELDS:
+        inputs[field] = getattr(config, field)
+    return inputs
+
+
 class PipelineExecutor:
     def __init__(
         self,
@@ -89,8 +129,7 @@ class PipelineExecutor:
 
         if self._driver_mod is not None:
             preprocessing = _get_module(mode)
-            extra = _MODE_MODULES.get(mode, [])
-            modules = [preprocessing, *extra]
+            modules = [preprocessing]
             builder = self._driver_mod.Builder().with_modules(*modules)
             if self._config:
                 builder = builder.with_config(self._config)
@@ -126,92 +165,22 @@ class PipelineExecutor:
         result = self.execute(inputs={"df": df})
         return result.get("processed_dataframe", df)
 
-    def run_data_prep(
-        self,
-        df: pl.DataFrame,
-        target_col: str,
-        task: str,
-        run_id: str | None = None,
-        run_quality_audit: bool = True,
-        auto_clean_noise: bool = False,
-        noise_quality_threshold: float = 0.5,
-        run_leakage_audit: bool = True,
-        target_transform: str = "none",
-        target_skewness_threshold: float = 1.0,
-    ) -> Any:
-        if self._dr is None:
-            return None
-        from tabular_blueprint.pipelines.nodes import data_preparation as dp_mod
-
-        preprocessing = _get_module(self._mode)
-        modules = [preprocessing, dp_mod]
-        builder = self._driver_mod.Builder().with_modules(*modules)
-        if self._tracker is not None:
-            from tabular_blueprint.pipelines.hooks.tracking_hook import TrackingHook
-
-            hook = TrackingHook(self._tracker, run_id)
-            builder = builder.with_adapters(hook)
-        dr = builder.build()
-        result = dr.execute(
-            ["data_prep_result"],
-            inputs={
-                "df": df,
-                "target_col": target_col,
-                "task": task,
-                "run_quality_audit": run_quality_audit,
-                "auto_clean_noise": auto_clean_noise,
-                "noise_quality_threshold": noise_quality_threshold,
-                "run_leakage_audit": run_leakage_audit,
-                "target_transform": target_transform,
-                "target_skewness_threshold": target_skewness_threshold,
-            },
-        )
-        return result.get("data_prep_result")
-
     def run_training(
         self,
+        config: ExperimentConfig,
         df: pl.DataFrame,
-        target_col: str,
-        task: str,
-        config_models: Any,
-        experiment_name: str,
         run_id: str,
-        workspace_dir: str,
         vram_gb: float = 0.0,
-        cv_folds: int = 5,
-        cv_strategy: str = "stratified",
-        metrics: list[str] | None = None,
-        calibration: str = "none",
-        afe_enabled: bool = False,
-        afe_top_k: int = 10,
-        afe_lift_threshold: float = 0.01,
-        afe_pruning: bool = False,
-        afe_prune_min_importance: float = 0.001,
-        random_seed: int = 42,
-        run_quality_audit: bool = True,
-        auto_clean_noise: bool = False,
-        noise_quality_threshold: float = 0.5,
         run_leakage_audit: bool = True,
-        target_transform: str = "none",
-        target_skewness_threshold: float = 1.0,
-        embedding_enabled: bool = False,
-        embedding_method: str = "entity",
-        embedding_dim: int = 16,
-        embedding_max_categories: int = 50,
-        embedding_epochs: int = 10,
-        embedding_lr: float = 1e-3,
-        embedding_mlp_width: int = 128,
-        embedding_mlp_depth: int = 2,
-        embedding_ae_latent_dim: int = 32,
-        embedding_ae_dropout: float = 0.2,
+        completed_models: set[str] | None = None,
     ) -> Any:
         if self._driver_mod is None:
             return None
 
         modules = _get_training_modules()
         builder = self._driver_mod.Builder().with_modules(*modules)
-        hamilton_config: dict[str, Any] = {"afe_enabled": afe_enabled}
-        if embedding_enabled:
+        hamilton_config: dict[str, Any] = {"afe_enabled": config.afe_enabled}
+        if config.embedding_enabled:
             hamilton_config["embedding_enabled"] = True
         builder = builder.with_config(hamilton_config)
         if self._tracker is not None:
@@ -221,40 +190,14 @@ class PipelineExecutor:
             builder = builder.with_adapters(hook)
         dr = builder.build()
 
-        inputs = {
-            "df": df,
-            "target_col": target_col,
-            "task": task,
-            "config_models": config_models,
-            "experiment_name": experiment_name,
-            "run_id": run_id,
-            "workspace_dir": workspace_dir,
-            "vram_gb": vram_gb,
-            "cv_folds": cv_folds,
-            "cv_strategy": cv_strategy,
-            "metrics": metrics or ["roc_auc", "f1_macro"],
-            "calibration": calibration,
-            "afe_top_k": afe_top_k,
-            "afe_lift_threshold": afe_lift_threshold,
-            "afe_pruning": afe_pruning,
-            "afe_prune_min_importance": afe_prune_min_importance,
-            "random_seed": random_seed,
-            "run_quality_audit": run_quality_audit,
-            "auto_clean_noise": auto_clean_noise,
-            "noise_quality_threshold": noise_quality_threshold,
-            "run_leakage_audit": run_leakage_audit,
-            "target_transform": target_transform,
-            "target_skewness_threshold": target_skewness_threshold,
-            "embedding_method": embedding_method,
-            "embedding_dim": embedding_dim,
-            "embedding_max_categories": embedding_max_categories,
-            "embedding_epochs": embedding_epochs,
-            "embedding_lr": embedding_lr,
-            "embedding_mlp_width": embedding_mlp_width,
-            "embedding_mlp_depth": embedding_mlp_depth,
-            "embedding_ae_latent_dim": embedding_ae_latent_dim,
-            "embedding_ae_dropout": embedding_ae_dropout,
-        }
+        inputs = _config_to_inputs(
+            config,
+            df,
+            run_id,
+            vram_gb,
+            run_leakage_audit,
+            completed_models=completed_models,
+        )
         result = dr.execute(["training_state"], inputs=inputs)
         return result.get("training_state")
 

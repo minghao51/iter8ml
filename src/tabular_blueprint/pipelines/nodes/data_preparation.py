@@ -69,7 +69,7 @@ def adapter_result(
     target_col: str,
 ) -> tuple[np.ndarray, np.ndarray]:
     df = quality_cleaned_df[0]
-    adapter = DataAdapter(target_format="numpy")
+    adapter = DataAdapter()
     X, y = adapter.transform(df, target_col)
     return X, y
 

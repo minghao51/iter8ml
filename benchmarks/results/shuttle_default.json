@@ -1,0 +1,38 @@
+[
+  {
+    "dataset": "shuttle",
+    "variant": "default",
+    "model": "catboost",
+    "task": "classification",
+    "n_rows": 11600,
+    "n_features": 9,
+    "error": "multi_class must be in ('ovo', 'ovr')"
+  },
+  {
+    "dataset": "shuttle",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "classification",
+    "n_rows": 11600,
+    "n_features": 9,
+    "error": "multi_class must be in ('ovo', 'ovr')"
+  },
+  {
+    "dataset": "shuttle",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "classification",
+    "n_rows": 11600,
+    "n_features": 9,
+    "error": "[10:41:24] /Users/runner/work/xgboost/xgboost/src/objective/regression_obj.cu:114: Check failed: is_valid: base_score must be in (0,1) for the logistic loss.\nStack trace:\n  [bt] (0) 1   libxgboost.dylib                    0x0000000120643dd8 dmlc::LogMessageFatal::~LogMessageFatal() + 124\n  [bt] (1) 2   libxgboost.dylib                    0x000000012096c18c xgboost::obj::RegLossObj<xgboost::obj::LogisticClassification>::ProbToMargin(xgboost::linalg::Tensor<float, 1>*) const + 920\n  [bt] (2) 3   libxgboost.dylib                    0x00000001208c7388 xgboost::(anonymous namespace)::Intercept::InitModelParam(xgboost::LearnerTrainParam const&, bool) + 220\n  [bt] (3) 4   libxgboost.dylib                    0x00000001208b9730 xgboost::LearnerImpl::UpdateOneIter(int, std::__1::shared_ptr<xgboost::DMatrix>) + 708\n  [bt] (4) 5   libxgboost.dylib                    0x000000012066d4f8 XGBoosterUpdateOneIter + 144\n  [bt] (5) 6   libpython3.13.dylib                 0x0000000104198050 ffi_call_SYSV + 80\n  [bt] (6) 7   libpython3.13.dylib                 0x00000001041964b4 ffi_call_int + 1452\n  [bt] (7) 8   libpython3.13.dylib                 0x0000000104195efc ffi_call + 52\n  [bt] (8) 9   libpython3.13.dylib                 0x00000001047caca4 _call_function_pointer + 248\n\n"
+  },
+  {
+    "dataset": "shuttle",
+    "variant": "default",
+    "model": "tabpfn",
+    "task": "classification",
+    "n_rows": 11600,
+    "n_features": 9,
+    "error": "No module named 'tabpfn'"
+  }
+]

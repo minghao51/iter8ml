@@ -1,0 +1,41 @@
+[
+  {
+    "dataset": "diabetes",
+    "variant": "default",
+    "model": "catboost",
+    "task": "regression",
+    "n_rows": 442,
+    "n_features": 10,
+    "cv_scores": {
+      "rmse": 57.485191,
+      "r2": 0.431588
+    },
+    "duration_seconds": 1.604
+  },
+  {
+    "dataset": "diabetes",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "regression",
+    "n_rows": 442,
+    "n_features": 10,
+    "cv_scores": {
+      "rmse": 61.910863,
+      "r2": 0.34049
+    },
+    "duration_seconds": 13.214
+  },
+  {
+    "dataset": "diabetes",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "regression",
+    "n_rows": 442,
+    "n_features": 10,
+    "cv_scores": {
+      "rmse": 62.996348,
+      "r2": 0.314677
+    },
+    "duration_seconds": 4.093
+  }
+]

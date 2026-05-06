@@ -46,30 +46,8 @@ class TrackerType(Enum):
     MLFLOW = "mlflow"
 
 
-# Conversion utilities for backward compatibility
 def from_task_type(value: str | TaskType) -> TaskType:
     """Convert string or TaskType to TaskType enum."""
     if isinstance(value, TaskType):
         return value
     return TaskType(value)
-
-
-def from_cv_strategy(value: str | CVStrategy) -> CVStrategy:
-    """Convert string or CVStrategy to CVStrategy enum."""
-    if isinstance(value, CVStrategy):
-        return value
-    return CVStrategy(value)
-
-
-def from_model_name(value: str | ModelName) -> ModelName:
-    """Convert string or ModelName to ModelName enum."""
-    if isinstance(value, ModelName):
-        return value
-    return ModelName(value)
-
-
-def from_tracker_type(value: str | TrackerType) -> TrackerType:
-    """Convert string or TrackerType to TrackerType enum."""
-    if isinstance(value, TrackerType):
-        return value
-    return TrackerType(value)

@@ -1,0 +1,17 @@
+variants:
+  - name: leaves_15
+    config:
+      lightgbm:
+        num_leaves: 15
+  - name: leaves_31
+    config:
+      lightgbm:
+        num_leaves: 31
+  - name: leaves_63
+    config:
+      lightgbm:
+        num_leaves: 63
+  - name: leaves_127
+    config:
+      lightgbm:
+        num_leaves: 127
