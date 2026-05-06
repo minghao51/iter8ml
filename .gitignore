@@ -23,6 +23,7 @@ htmlcov/
 # Workspace (keep .gitkeep)
 workspace/*
 !workspace/.gitkeep
+notebooks/workspace/*
 
 # Preprocessing cache
 .tabblueprint/
@@ -64,6 +65,8 @@ node_modules/
 # Benchmark output
 benchmark_results*.csv
 benchmark_results*.json
+benchmarks/results/*.json
+!benchmarks/results/.gitkeep
 
 # Generated docs
 docs/*-benchmark-report.md
