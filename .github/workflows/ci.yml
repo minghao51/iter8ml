@@ -18,7 +18,7 @@ jobs:
         with:
           enable-cache: true
           python-version: "3.11"
-      - run: uv sync --frozen --group dev --extra base --extra opinion
+      - run: uv sync --frozen --group dev --extra full
       - uses: pre-commit/action@v3.0.1
 
   typecheck:
@@ -29,7 +29,7 @@ jobs:
         with:
           enable-cache: true
           python-version: "3.11"
-      - run: uv sync --frozen --group dev --extra base --extra opinion
+      - run: uv sync --frozen --group dev --extra full
       - run: uv run mypy .
 
   test:
@@ -43,7 +43,7 @@ jobs:
         with:
           enable-cache: true
           python-version: ${{ matrix.python-version }}
-      - run: uv sync --frozen --group dev --extra base --extra opinion
+      - run: uv sync --frozen --group dev --extra full
       - run: uv run pytest tests/unit/ -v --tb=short
       - run: uv run pytest tests/integration/ -v --tb=short
       - run: uv run pytest tests/e2e/ -v --tb=short
@@ -56,7 +56,7 @@ jobs:
         with:
           enable-cache: true
           python-version: "3.11"
-      - run: uv sync --frozen --group dev --extra base --extra opinion
+      - run: uv sync --frozen --group dev --extra full
       - run: >
           uv run pytest tests/unit/ tests/integration/ tests/e2e/
           --cov=src/tabular_blueprint/engine
@@ -73,7 +73,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - run: uv sync --frozen --group dev
+      - run: uv sync --frozen --group dev --extra full
       - run: uv run pip-audit -f json -o pip-audit.json
       - uses: actions/upload-artifact@v4
         if: always()

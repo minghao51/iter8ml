@@ -32,7 +32,7 @@ Reference for Optuna-based hyperparameter optimization, warmstarting, and search
 
 ## Search Space Sampling
 
-**Source:** `src/tabular_blueprint/engine/hpo.py:151`
+**Source:** `src/tabular_blueprint/engine/hpo.py:178`
 
 The `objective()` closure within `optimize_model()` samples parameters from the configured search space:
 
@@ -56,7 +56,7 @@ Each parameter in the search space dict is a tuple:
 
 ## Full Optimization Loop
 
-**Source:** `src/tabular_blueprint/engine/hpo.py:86`
+**Source:** `src/tabular_blueprint/engine/hpo.py:87`
 
 **Function:** `optimize_model(model_cls, X, y, evaluator, model_name, n_trials, search_space, task, log_path)`
 
@@ -90,7 +90,7 @@ Each completed trial is logged as a JSONL event:
 
 ## Warmstarted HPO
 
-**Source:** `src/tabular_blueprint/engine/hpo_warmstart.py:85`
+**Source:** `src/tabular_blueprint/engine/hpo_warmstart.py:90`
 
 **Function:** `create_warmstarted_study(model_name, direction, log_path, n_trials, pruner)`
 
@@ -110,7 +110,7 @@ Pre-populates a new Optuna study with historical trial data from previous experi
 
 ### Distribution Inference
 
-**Source:** `src/tabular_blueprint/engine/hpo_warmstart.py:36`
+**Source:** `src/tabular_blueprint/engine/hpo_warmstart.py:41`
 
 **Function:** `_infer_distribution(name, value)`
 
@@ -134,7 +134,7 @@ Uses naming conventions to choose the right distribution:
 
 ## Parameter Importance Analysis
 
-**Source:** `src/tabular_blueprint/engine/hpo_importance.py:27`
+**Source:** `src/tabular_blueprint/engine/hpo_importance.py:31`
 
 **Function:** `compute_param_importance(study, evaluator_class)`
 
@@ -156,7 +156,7 @@ This is more robust than frequency-based methods and works well with small trial
 
 ## Search Space Refinement
 
-**Source:** `src/tabular_blueprint/engine/hpo_importance.py:71`
+**Source:** `src/tabular_blueprint/engine/hpo_importance.py:75`
 
 **Function:** `suggest_refined_space(study, original_space, top_k, importance_threshold, expansion_factor)`
 
@@ -190,7 +190,7 @@ new_high = min(original_high, Q75 + expansion_factor × span)
 
 ## Setup Helper
 
-**Source:** `src/tabular_blueprint/engine/hpo.py:42`
+**Source:** `src/tabular_blueprint/engine/hpo.py:43`
 
 **Function:** `setup_hpo_components(data_path, target_col, task, model)`
 

@@ -1,9 +1,18 @@
-"""TabNet model wrapper using pytorch-tabular."""
+"""TabNet model wrapper using pytorch-tabular.
+
+Note: uses pandas internally because pytorch-tabular requires DataFrames.
+This is a deep-model-only dependency, gated behind the `[deep]` extras group.
+"""
 
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
 
 
 class TabNetModel:
@@ -55,43 +64,46 @@ class TabNetModel:
             learning_rate=self.params.get("learning_rate", 1e-3),
         )
 
-    def fit(self, X: np.ndarray, y: np.ndarray, **kwargs: Any) -> None:
-        import pandas as pd
+    def apply_overrides(self, overrides: dict[str, Any]) -> None:
+        """Merge per-model hyperparameter overrides into self.params."""
+        self.params.update(overrides)
 
+    def _to_dataframe(
+        self, X: np.ndarray, include_target: np.ndarray | None = None
+    ) -> "pd.DataFrame":
+        if pd is None:
+            raise ImportError("pandas is required by pytorch-tabular. Install with: uv add pandas")
+        col_names = [f"f_{i}" for i in range(X.shape[1])]
+        df = pd.DataFrame(X, columns=col_names)
+        if include_target is not None:
+            df["target"] = include_target
+        return df
+
+    def fit(self, X: np.ndarray, y: np.ndarray, **kwargs: Any) -> None:
         n_features = X.shape[1]
         n_classes = len(np.unique(y)) if self.task == "classification" else None
         self.model = self._build_model(n_features, n_classes)
 
-        col_names = [f"f_{i}" for i in range(n_features)]
-        df = pd.DataFrame(X, columns=col_names)
-        target_name = "target"
-        df[target_name] = y
-
-        self.model.fit(train=df, target_col=[target_name])
+        df = self._to_dataframe(X, include_target=y)
+        self.model.fit(train=df, target_col=["target"])
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         if self.model is None:
             raise ValueError("Model not fitted")
-        import pandas as pd
-
-        col_names = [f"f_{i}" for i in range(X.shape[1])]
-        df = pd.DataFrame(X, columns=col_names)
+        df = self._to_dataframe(X)
         result = self.model.predict(df)
-        return result.iloc[:, 0].to_numpy()
+        return result.iloc[:, 0].to_numpy()  # type: ignore[no-any-return]
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray | None:
         if self.task != "classification":
             return None
         if self.model is None:
             raise ValueError("Model not fitted")
-        import pandas as pd
-
-        col_names = [f"f_{i}" for i in range(X.shape[1])]
-        df = pd.DataFrame(X, columns=col_names)
+        df = self._to_dataframe(X)
         result = self.model.predict(df)
         proba_cols = [c for c in result.columns if c.startswith("probability")]
         if proba_cols:
-            return result[proba_cols].to_numpy()
+            return result[proba_cols].to_numpy()  # type: ignore[no-any-return]
         return None
 
     def save(self, path: str) -> None:

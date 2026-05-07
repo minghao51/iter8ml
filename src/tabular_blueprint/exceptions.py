@@ -25,7 +25,7 @@ class RegistryError(TabularBlueprintError):
     """Raised when registry operations fail."""
 
 
-def track_errors(tracker_attr: str = "tracker") -> Callable:
+def track_errors(tracker_attr: str = "tracker") -> Callable[..., Any]:
     """Decorator that catches exceptions, logs them as events, and re-raises typed errors.
 
     Usage::

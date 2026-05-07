@@ -107,6 +107,37 @@ def _model_kwargs(model_name: str, overrides: dict[str, Any] | None) -> dict[str
     return {}
 
 
+def _preprocess_for_benchmark(
+    df: pl.DataFrame, target_col: str, task: str
+) -> tuple[np.ndarray, np.ndarray]:
+    from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
+
+    from tabular_blueprint.data.adapter import DataAdapter
+
+    adapter = DataAdapter()
+    X, y = adapter.transform(df, target_col)
+
+    if y.dtype == object or (hasattr(y.dtype, "kind") and y.dtype.kind in ("U", "S", "O")):
+        le = LabelEncoder()
+        y = le.fit_transform(y.astype(str))
+
+    if X.dtype == object or (hasattr(X.dtype, "kind") and X.dtype.kind in ("U", "S", "O")):
+        str_cols = []
+        for i in range(X.shape[1]):
+            col = X[:, i]
+            if hasattr(col, "dtype") and col.dtype == object:
+                try:
+                    X[:, i] = col.astype(float)
+                except (ValueError, TypeError):
+                    str_cols.append(i)
+        if str_cols:
+            enc = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)
+            X[:, str_cols] = enc.fit_transform(X[:, str_cols])
+        X = X.astype(np.float64)
+
+    return X, y
+
+
 def run_benchmark_for_dataset(
     df: pl.DataFrame,
     target_col: str,
@@ -122,12 +153,10 @@ def run_benchmark_for_dataset(
 ) -> list[dict[str, Any]]:
     from tabular_blueprint.config import CVStrategy, ExperimentConfig
     from tabular_blueprint.constants import TaskType
-    from tabular_blueprint.data.adapter import DataAdapter
     from tabular_blueprint.engine.evaluator import Evaluator
     from tabular_blueprint.models.factory import get_model_class
 
-    adapter = DataAdapter()
-    X, y = adapter.transform(df, target_col)
+    X, y = _preprocess_for_benchmark(df, target_col, task)
     n_rows, n_features = X.shape
 
     config = ExperimentConfig(

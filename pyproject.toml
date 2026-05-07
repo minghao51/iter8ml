@@ -30,19 +30,33 @@ base = [
     "optuna>=3.6",
     "sf-hamilton>=1.70",
 ]
-opinion = [
+deep = [
+    "torch>=2.3",
+    "accelerate>=0.30",
+    "transformers>=4.40",
+    "tabpfn>=2.0",
+    "pytorch-tabular>=1.0",
+]
+tracking = [
+    "wandb>=0.17",
+    "mlflow>=2.13",
+]
+agent = [
+    "mcp>=0.9",
+    "litellm>=1.40",
+]
+audit = [
     "shap>=0.44",
     "cleanlab>=2.6",
-    "torch>=2.3", "accelerate>=0.30", "transformers>=4.40",
-    "tabpfn>=2.0", "pytorch-tabular>=1.0",
-    "wandb>=0.17", "mlflow>=2.13",
-    "mcp>=0.9", "litellm>=1.40",
 ]
 docs = [
     "mkdocs-material>=9.5",
     "mkdocstrings[python]>=0.25",
     "mike>=2.0",
     "pymdown-extensions>=10.0",
+]
+full = [
+    "tabular-blueprint[base,deep,tracking,agent,audit,docs]",
 ]
 
 [dependency-groups]
@@ -87,21 +101,6 @@ module = [
     "torch.*", "torch.utils.*", "transformers.*",
 ]
 ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = [
-    "tabular_blueprint.engine.hpo",
-    "tabular_blueprint.engine.hpo_warmstart",
-    "tabular_blueprint.engine.hpo_importance",
-]
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = [
-    "tabular_blueprint.pipelines.nodes.*",
-    "tabular_blueprint.engine.trainer",
-]
-ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = [

@@ -9,6 +9,8 @@ from sklearn.model_selection import StratifiedKFold
 
 
 class CalibrationResult(BaseModel):
+    """Result of applying probability calibration (Platt/Isotonic)."""
+
     method: str
     n_classes: int
     applied: bool
@@ -61,14 +63,14 @@ class CalibratedModel:
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         if self._calibrated is not None:
-            return self._calibrated.predict(X)
-        return self.base_model.predict(X)
+            return self._calibrated.predict(X)  # type: ignore[no-any-return]
+        return self.base_model.predict(X)  # type: ignore[no-any-return]
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray | None:
         if self._calibrated is not None:
-            return self._calibrated.predict_proba(X)
+            return self._calibrated.predict_proba(X)  # type: ignore[no-any-return]
         if hasattr(self.base_model, "predict_proba"):
-            return self.base_model.predict_proba(X)
+            return self.base_model.predict_proba(X)  # type: ignore[no-any-return]
         return None
 
     def save(self, path: str) -> None:

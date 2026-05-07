@@ -116,8 +116,8 @@ workspace/artifacts/shap_{run_id}/dependence_{i}.png
 
 ## Orchestration
 
-**Source:** `src/tabular_blueprint/engine/explainability_service.py:11`
+**Source:** `src/tabular_blueprint/monitoring/explainability.py:28`
 
-**Class:** `ExplainabilityService`
+**Class:** `Explainer`
 
-The service layer orchestrates SHAP explanation and logs results to the experiment tracker. Called automatically during the training pipeline when SHAP is enabled in the experiment config.
+The explainer orchestrates SHAP explanation and logs results to the experiment tracker. Called automatically during the training pipeline when SHAP is enabled in the experiment config.

@@ -53,7 +53,7 @@ if _HAS_HAMILTON:
     def psi_drift_report__psi(
         reference_features: pl.DataFrame,
         live_features: pl.DataFrame,
-    ) -> object:
+    ) -> Any:
         from tabular_blueprint.monitoring.psi_drift import PSIDriftDetector
 
         detector = PSIDriftDetector(reference_features)
@@ -63,7 +63,7 @@ if _HAS_HAMILTON:
     def domain_drift_report__domain(
         reference_features: pl.DataFrame,
         live_features: pl.DataFrame,
-    ) -> object:
+    ) -> Any:
         from tabular_blueprint.monitoring.domain_classifier import (
             DomainClassifierDriftDetector,
         )
@@ -73,7 +73,7 @@ if _HAS_HAMILTON:
 
     @config.when(drift_method="psi")
     def drift_report__psi(
-        psi_drift_report: object,
+        psi_drift_report: Any,
     ) -> DriftReport:
         return DriftReport(
             drift_detected=psi_drift_report.drift_detected,
@@ -83,7 +83,7 @@ if _HAS_HAMILTON:
 
     @config.when(drift_method="domain_classifier")
     def drift_report__domain(
-        domain_drift_report: object,
+        domain_drift_report: Any,
     ) -> DriftReport:
         return DriftReport(
             drift_detected=domain_drift_report.drift_detected,
@@ -95,7 +95,7 @@ if _HAS_HAMILTON:
     def psi_drift_report__both(
         reference_features: pl.DataFrame,
         live_features: pl.DataFrame,
-    ) -> object:
+    ) -> Any:
         from tabular_blueprint.monitoring.psi_drift import PSIDriftDetector
 
         detector = PSIDriftDetector(reference_features)
@@ -105,7 +105,7 @@ if _HAS_HAMILTON:
     def domain_drift_report__both(
         reference_features: pl.DataFrame,
         live_features: pl.DataFrame,
-    ) -> object:
+    ) -> Any:
         from tabular_blueprint.monitoring.domain_classifier import (
             DomainClassifierDriftDetector,
         )
@@ -115,8 +115,8 @@ if _HAS_HAMILTON:
 
     @config.when(drift_method="both")
     def drift_report__both(
-        psi_drift_report: object,
-        domain_drift_report: object,
+        psi_drift_report: Any,
+        domain_drift_report: Any,
     ) -> DriftReport:
         return DriftReport(
             drift_detected=psi_drift_report.drift_detected or domain_drift_report.drift_detected,

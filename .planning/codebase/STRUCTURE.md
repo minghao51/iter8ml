@@ -31,7 +31,8 @@ iter8ml/
 ├── CONTRIBUTING.md
 ├── CLAUDE.md
 ├── README.md
-├── technical_roadmap.md
+├── docs/
+│   └── technical_roadmap.md
 └── uv.lock
 ```
 

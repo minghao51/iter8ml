@@ -16,6 +16,8 @@ from tabular_blueprint.utils.jsonl import iter_events
 
 
 class PromotionResult(BaseModel):
+    """Result of attempting to promote a run to champion status."""
+
     status: str
     message: str
     entry: dict[str, Any] | None = None
@@ -48,7 +50,7 @@ class RegistryService:
         """Load registry from disk, returns empty dict if not exists."""
         if self.registry_path.exists():
             with open(self.registry_path) as f:
-                return json.load(f)
+                return json.load(f)  # type: ignore[no-any-return]
         return {}
 
     def update_if_better(

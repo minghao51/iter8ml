@@ -7,17 +7,30 @@ from tabular_blueprint.models.gbdt_base import BaseGBDTModel
 
 
 class LightGBMModel(BaseGBDTModel):
-    def _build_params(self) -> dict:
+    def _build_params(self) -> dict[str, Any]:
+        if self.task == "classification":
+            n_cls = getattr(self, "_n_classes", 2)
+            if n_cls > 2:
+                objective = "multiclass"
+                metric = "multi_logloss"
+            else:
+                objective = "binary"
+                metric = "auc"
+        else:
+            objective = "regression"
+            metric = "rmse"
         base = {
-            "objective": "binary" if self.task == "classification" else "regression",
-            "metric": "auc" if self.task == "classification" else "rmse",
+            "objective": objective,
+            "metric": metric,
             "verbose": -1,
             "seed": self.params.get("random_seed", 42),
         }
+        if objective == "multiclass":
+            base["num_class"] = n_cls
         base.update(self.params)
         return base
 
-    def _create_model(self, params: dict) -> Any:
+    def _create_model(self, params: dict[str, Any]) -> Any:
         return (
             lgb.LGBMClassifier(**params)
             if self.task == "classification"
@@ -36,13 +49,21 @@ class LightGBMModel(BaseGBDTModel):
             raise ValueError("Model not fitted")
         preds = self._model.predict(X)
         if self.task == "classification":
-            return (preds >= 0.5).astype(int)
-        return preds
+            n_cls = getattr(self, "_n_classes", 2)
+            if n_cls > 2:
+                pred_idx = np.argmax(preds, axis=1)
+                return self._decode_class_indices(pred_idx)
+            pred_idx = (preds >= 0.5).astype(int)
+            return self._decode_class_indices(pred_idx)
+        return preds  # type: ignore[no-any-return]
 
     def _predict_proba_impl(self, X: np.ndarray) -> np.ndarray:
         if self._model is None:
             raise ValueError("Model not fitted")
         preds = self._model.predict(X)
+        n_cls = getattr(self, "_n_classes", 2)
+        if n_cls > 2:
+            return preds
         return np.column_stack([1 - preds, preds])
 
     def load(self, path: str) -> None:

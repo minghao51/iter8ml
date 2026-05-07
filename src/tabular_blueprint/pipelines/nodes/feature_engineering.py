@@ -17,7 +17,7 @@ if not _HAS_HAMILTON:
     config = MagicMock()
 
 
-def _passthrough(data_prep_result: object) -> tuple[np.ndarray, list[str]]:
+def _passthrough(data_prep_result: Any) -> tuple[np.ndarray, list[str]]:
     return data_prep_result.X, data_prep_result.feature_names
 
 
@@ -104,7 +104,7 @@ def _run_afe(
 
 
 def _run_embedding(
-    data_prep_result: object,
+    data_prep_result: Any,
     task: str,
     random_seed: int,
     run_id: str,
@@ -149,13 +149,13 @@ if _HAS_HAMILTON:
 
     @config.when_not(afe_enabled=True)
     def training_features__default(
-        data_prep_result: object,
+        data_prep_result: Any,
     ) -> tuple[np.ndarray, list[str]]:
         return _passthrough(data_prep_result)
 
     @config.when(afe_enabled=True)
     def training_features__afe_enabled(
-        data_prep_result: object,
+        data_prep_result: Any,
         models_to_run: list[str],
         afe_top_k: int,
         afe_lift_threshold: float,
@@ -179,7 +179,7 @@ if _HAS_HAMILTON:
 
     @config.when(embedding_enabled=True)
     def training_features__embedding_enabled(
-        data_prep_result: object,
+        data_prep_result: Any,
         task: str,
         random_seed: int,
         run_id: str,

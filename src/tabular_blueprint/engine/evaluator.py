@@ -91,6 +91,8 @@ class Evaluator:
             metric_name: METRICS_REGISTRY[model_task][metric_name] for metric_name in self.metrics
         }
 
+        all_classes = np.unique(y)
+
         for train_idx, val_idx in cv.split(X, y):
             X_train, X_val = X[train_idx], X[val_idx]
             y_train, y_val = y[train_idx], y[val_idx]
@@ -120,10 +122,13 @@ class Evaluator:
                             f"'{getattr(model, 'model_name', type(model).__name__)}' "
                             "returned None."
                         )
-                    auc_input = (
-                        y_proba[:, 1] if y_proba.ndim == 2 and y_proba.shape[1] > 1 else y_proba
-                    )
-                    fold_scores[metric_name].append(metric_fn(y_val, auc_input))
+                    if y_proba.ndim == 2 and y_proba.shape[1] > 2:
+                        score = roc_auc_score(y_val, y_proba, multi_class="ovr", labels=all_classes)
+                    elif y_proba.ndim == 2 and y_proba.shape[1] > 1:
+                        score = metric_fn(y_val, y_proba[:, 1])
+                    else:
+                        score = metric_fn(y_val, y_proba)
+                    fold_scores[metric_name].append(score)
                 else:
                     fold_scores[metric_name].append(metric_fn(y_val, y_pred))
 

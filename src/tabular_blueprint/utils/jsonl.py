@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 
-def load_events(path: str | Path) -> list[dict]:
+def load_events(path: str | Path) -> list[dict[str, Any]]:
     """Load events from a JSONL file.
 
     Args:

@@ -13,7 +13,7 @@ def baseline_models() -> dict[str, type[Any]]:
 
 
 def baseline_scores(
-    data_prep_result: object,
+    data_prep_result: Any,
     baseline_models: dict[str, type[Any]],
     task: str,
     cv_folds: int,

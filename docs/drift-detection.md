@@ -171,4 +171,4 @@ Available as Hamilton DAG config variants:
 | `drift_report__domain` | Domain classifier drift |
 | `drift_report__both` | Runs both PSI and domain classifier, merges reports |
 
-**Orchestrator:** `src/tabular_blueprint/engine/drift_checker.py:9` — performs an 80/20 temporal split and runs drift detection between the two halves.
+**Orchestrator:** The drift detection pipeline is available via `PipelineExecutor.run_drift()` (`src/tabular_blueprint/pipelines/executor.py:208`) or directly via the monitoring classes (`DriftDetector`, `PSIDriftDetector`, `DomainClassifierDriftDetector`).

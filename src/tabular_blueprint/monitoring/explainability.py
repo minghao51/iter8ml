@@ -10,11 +10,15 @@ from pydantic import BaseModel
 
 
 class FeatureImportance(BaseModel):
+    """A single feature's importance score from SHAP."""
+
     feature_name: str
     importance: float
 
 
 class SHAPExplanationResult(BaseModel):
+    """Complete SHAP explanation result with feature rankings and plot paths."""
+
     model_name: str
     n_features: int
     top_features: list[FeatureImportance]

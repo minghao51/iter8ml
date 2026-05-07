@@ -1,7 +1,9 @@
 import numpy as np
+import pytest
 
 from tabular_blueprint.pipelines.nodes import (
     model_selection,
+    model_training,
     state_generation,
 )
 from tabular_blueprint.pipelines.nodes.model_training import ModelResult
@@ -172,3 +174,79 @@ class TestStateGeneration:
         )
         assert state.best_model is None
         assert state.best_score is None
+
+
+class _OverrideAwareModel:
+    def __init__(self, task="classification"):
+        self.task = task
+        self.params = {}
+
+    @property
+    def model_name(self):
+        return "OverrideAwareModel"
+
+    def apply_overrides(self, overrides):
+        allowed = {"depth", "learning_rate"}
+        unknown = set(overrides) - allowed
+        if unknown:
+            raise ValueError(f"Unsupported override keys: {sorted(unknown)}")
+        self.params.update(overrides)
+
+    def fit(self, X, y):
+        return None
+
+    def save(self, path):
+        return None
+
+
+class TestModelOverrides:
+    @pytest.fixture(autouse=True)
+    def _patch_evaluator(self, monkeypatch):
+        monkeypatch.setattr(
+            model_training,
+            "_evaluate_model",
+            lambda *args, **kwargs: {"roc_auc": 0.9},
+        )
+
+    @pytest.fixture(autouse=True)
+    def _patch_model_factory(self, monkeypatch):
+        monkeypatch.setattr(
+            "tabular_blueprint.models.factory.get_model_class",
+            lambda _name: _OverrideAwareModel,
+        )
+
+    def test_training_applies_model_overrides(self, tmp_path):
+        result = model_training._train_one(
+            name="catboost",
+            X=np.random.rand(20, 4),
+            y=np.random.randint(0, 2, 20),
+            task="classification",
+            cv_folds=3,
+            cv_strategy="stratified",
+            metrics=["roc_auc"],
+            calibration="none",
+            workspace_dir=str(tmp_path),
+            run_id="override_ok",
+            baseline_scores={},
+            model_overrides={"catboost": {"depth": 8}},
+        )
+        assert result.error is None
+        assert result.params == {"depth": 8}
+
+    def test_training_returns_explicit_error_on_invalid_override(self, tmp_path):
+        result = model_training._train_one(
+            name="catboost",
+            X=np.random.rand(20, 4),
+            y=np.random.randint(0, 2, 20),
+            task="classification",
+            cv_folds=3,
+            cv_strategy="stratified",
+            metrics=["roc_auc"],
+            calibration="none",
+            workspace_dir=str(tmp_path),
+            run_id="override_bad",
+            baseline_scores={},
+            model_overrides={"catboost": {"bad_key": 8}},
+        )
+        assert result.error is not None
+        assert "Unsupported override keys" in result.error

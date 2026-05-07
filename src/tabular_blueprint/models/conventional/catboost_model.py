@@ -12,10 +12,12 @@ class CatBoostModel:
         self,
         task: str = "classification",
         cat_features: list[int] | None = None,
+        n_classes: int = 0,
         **kwargs: Any,
     ):
         self.task = task
         self.cat_features = cat_features
+        self._n_classes = n_classes
         self.params = kwargs
         self.model: CatBoostClassifier | CatBoostRegressor | None = None
 
@@ -24,7 +26,7 @@ class CatBoostModel:
         try:
             from catboost.utils import get_gpu_count
 
-            return get_gpu_count() > 0
+            return get_gpu_count() > 0  # type: ignore[no-any-return]
         except Exception:
             return False
 
@@ -34,6 +36,8 @@ class CatBoostModel:
         if self._detect_gpu():
             kwargs.setdefault("task_type", "GPU")
         if self.task == "classification":
+            if self._n_classes and self._n_classes > 2:
+                kwargs.setdefault("classes_count", self._n_classes)
             return CatBoostClassifier(
                 cat_features=self.cat_features,
                 verbose=False,
@@ -47,6 +51,10 @@ class CatBoostModel:
             **kwargs,
         )
 
+    def apply_overrides(self, overrides: dict[str, Any]) -> None:
+        """Merge per-model hyperparameter overrides into self.params."""
+        self.params.update(overrides)
+
     def fit(self, X: np.ndarray, y: np.ndarray, **kwargs: Any) -> None:
         self.model = self._build_model()
         self.model.fit(X, y, cat_features=self.cat_features)
@@ -54,11 +62,11 @@ class CatBoostModel:
     def predict(self, X: np.ndarray) -> np.ndarray:
         if self.model is None:
             raise ValueError("Model not fitted")
-        return self.model.predict(X)
+        return self.model.predict(X)  # type: ignore[no-any-return]
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray | None:
         if self.task == "classification" and self.model is not None:
-            return self.model.predict_proba(X)
+            return self.model.predict_proba(X)  # type: ignore[no-any-return]
         return None
 
     def save(self, path: str) -> None:

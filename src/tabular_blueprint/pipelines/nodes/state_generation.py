@@ -71,7 +71,7 @@ def training_state(
             f"{experiment_name}:{task}",
             best_model,
             run_id,
-            best_score,
+            best_score if best_score is not None else 0.0,
             artifact,
             metric_name=primary_metric,
         )

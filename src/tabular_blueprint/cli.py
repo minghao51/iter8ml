@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import Any
 
 import typer
 from rich.console import Console
@@ -360,8 +361,8 @@ def diff(
         typer.echo(f"Run ID not found: {id2}")
         raise typer.Exit(1)
 
-    def _extract_run_summary(events: list[dict]) -> dict:
-        summary: dict = {"run_id": events[0].get("run_id", "?")}
+    def _extract_run_summary(events: list[dict[str, Any]]) -> dict[str, Any]:
+        summary: dict[str, Any] = {"run_id": events[0].get("run_id", "?")}
         for event in events:
             if event.get("event") == "experiment_started":
                 config = event.get("config", {})

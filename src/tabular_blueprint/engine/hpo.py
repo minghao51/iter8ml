@@ -19,6 +19,7 @@ def create_study(
     pruner: str = "median",
 ) -> optuna.Study:
     """Create an Optuna study for a given model."""
+    pruner_obj: optuna.pruners.BasePruner
     if pruner == "median":
         pruner_obj = optuna.pruners.MedianPruner()
     elif pruner == "hyperband":

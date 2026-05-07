@@ -2,19 +2,28 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from tabular_blueprint.config import DEFAULT_LLM_MODEL
 
 
 class LLMCommentary(BaseModel):
+    """A single section of LLM-generated natural language commentary."""
+
     section: str
     content: str
 
 
 class LLMAgentConfig(BaseModel):
+    """Configuration for the LLM-powered TabularAgent."""
+
     enabled: bool = False
-    model: str = "claude-sonnet-4-20250514"
+    model: str = Field(
+        default_factory=lambda: os.getenv("TABBLUEPRINT_LLM_MODEL", DEFAULT_LLM_MODEL)
+    )
     api_key_env: str = ""
     api_base: str | None = None
 

@@ -76,7 +76,7 @@ class EntityEmbedding(nn.Module):  # type: ignore[misc]
     def _update_oov_means(self) -> None:
         for col in self._column_order:
             buf = getattr(self, f"_oov_mean_{col}")
-            buf.data.copy_(self.embeddings[col].weight.data.mean(dim=0))
+            buf.data.copy_(self.embeddings[col].weight.data.mean(dim=0))  # type: ignore[operator]
 
     def forward(self, cat_codes: dict[str, torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
         emb_list = [self.embeddings[col](cat_codes[col]) for col in self._column_order]
@@ -152,7 +152,7 @@ class TabularDAE(nn.Module):  # type: ignore[misc]
     def _update_oov_means(self) -> None:
         for col in self._column_order:
             buf = getattr(self, f"_oov_mean_{col}")
-            buf.data.copy_(self.embeddings[col].weight.data.mean(dim=0))
+            buf.data.copy_(self.embeddings[col].weight.data.mean(dim=0))  # type: ignore[operator]
 
     def _embed_and_concat(self, cat_codes: dict[str, torch.Tensor]) -> torch.Tensor:
         emb_list = [self.embeddings[col](cat_codes[col]) for col in self._column_order]

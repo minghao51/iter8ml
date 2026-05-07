@@ -12,6 +12,8 @@ LOWER_IS_BETTER_METRICS = {"rmse", "mae", "mse", "log_loss", "loss", "error"}
 
 
 class LeaderboardEntry(BaseModel):
+    """A single model run entry in the experiment leaderboard."""
+
     model: str
     run_id: str
     cv_scores: dict[str, Any]
@@ -29,6 +31,8 @@ class LeaderboardEntry(BaseModel):
 
 
 class ExperimentReport(BaseModel):
+    """Canonical experiment report with leaderboard and registry state."""
+
     leaderboard: list[LeaderboardEntry]
     latest_run: LeaderboardEntry | None
     registry: dict[str, Any]
@@ -155,7 +159,7 @@ class ReportService:
     def _load_registry(self) -> dict[str, Any]:
         if self.registry_path.exists():
             with open(self.registry_path, encoding="utf-8") as f:
-                return json.load(f)
+                return json.load(f)  # type: ignore[no-any-return]
         return {}
 
     def _to_entry(self, event: dict[str, Any], preferred_metric: str | None) -> LeaderboardEntry:

@@ -16,7 +16,7 @@ jobs:
         with:
           enable-cache: true
           python-version: "3.11"
-      - run: uv sync --frozen --group dev --extra base --extra opinion
+      - run: uv sync --frozen --group dev --extra full
       - run: uv run python benchmarks/run_openml_benchmark.py --quick --fail-on-errors --check-regression benchmarks/results/baseline_summary.json
       - uses: actions/upload-artifact@v4
         with:

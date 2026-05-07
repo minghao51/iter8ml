@@ -6,6 +6,8 @@ from scipy import stats
 
 
 class ColumnDriftResult(BaseModel):
+    """Per-column statistical test result."""
+
     column: str
     p_value: float
     drift_detected: bool
@@ -13,6 +15,8 @@ class ColumnDriftResult(BaseModel):
 
 
 class DriftReport(BaseModel):
+    """Aggregate drift detection report across all columns."""
+
     drift_detected: bool
     n_columns_tested: int
     n_drifted: int
@@ -77,7 +81,7 @@ class DriftDetector:
             return 1.0
 
         _, p_value = stats.ks_2samp(ref_series.to_numpy(), new_series.to_numpy())
-        return p_value
+        return p_value  # type: ignore[no-any-return]
 
     def _chi2_test(self, col: str, new_df: pl.DataFrame) -> float:
         ref_counts = self.reference_df[col].drop_nulls().value_counts()
@@ -94,4 +98,4 @@ class DriftDetector:
             return 1.0
 
         _, p_value, _, _ = stats.chi2_contingency([ref_observed, new_observed])
-        return p_value
+        return p_value  # type: ignore[no-any-return]

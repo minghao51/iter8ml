@@ -103,7 +103,7 @@ def target_transform_result(
     _, y_raw = adapter_result
     y, transform_result, transformer = transform_target(
         y_raw,
-        method=target_transform,
+        method=target_transform,  # type: ignore[arg-type]
         skewness_threshold=target_skewness_threshold,
     )
     return (

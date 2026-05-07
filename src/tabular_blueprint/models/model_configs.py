@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field, model_validator
 
 
 class CatBoostConfig(BaseModel):
+    """CatBoost hyperparameter configuration and HPO search space."""
+
     iterations: int = 1000
     depth: int = 6
     learning_rate: float = 0.05
@@ -38,6 +40,8 @@ class CatBoostConfig(BaseModel):
 
 
 class LightGBMConfig(BaseModel):
+    """LightGBM hyperparameter configuration and HPO search space."""
+
     n_estimators: int = 1000
     max_depth: int = -1
     learning_rate: float = 0.05
@@ -59,6 +63,8 @@ class LightGBMConfig(BaseModel):
 
 
 class XGBoostConfig(BaseModel):
+    """XGBoost hyperparameter configuration and HPO search space."""
+
     n_estimators: int = 1000
     max_depth: int = 6
     learning_rate: float = 0.05
@@ -78,6 +84,8 @@ class XGBoostConfig(BaseModel):
 
 
 class TabPFNConfig(BaseModel):
+    """TabPFN hyperparameter configuration."""
+
     n_estimators: int = 4
     device: str = "cpu"
     random_seed: int = 42
@@ -88,6 +96,8 @@ class TabPFNConfig(BaseModel):
 
 
 class TabNetConfig(BaseModel):
+    """TabNet hyperparameter configuration and HPO search space."""
+
     n_epochs: int = 50
     batch_size: int = 256
     learning_rate: float = 1e-3
@@ -102,6 +112,8 @@ class TabNetConfig(BaseModel):
 
 
 class FTTransformerConfig(BaseModel):
+    """FT-Transformer hyperparameter configuration and HPO search space."""
+
     n_epochs: int = 100
     batch_size: int = 128
     learning_rate: float = 1e-4
@@ -122,6 +134,8 @@ class FTTransformerConfig(BaseModel):
 
 
 class ModelConfigs(BaseModel):
+    """Container for all per-model configuration objects."""
+
     catboost: CatBoostConfig = Field(default_factory=CatBoostConfig)
     lightgbm: LightGBMConfig = Field(default_factory=LightGBMConfig)
     xgboost: XGBoostConfig = Field(default_factory=XGBoostConfig)

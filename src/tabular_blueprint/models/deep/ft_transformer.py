@@ -1,13 +1,42 @@
 """FT-Transformer wrapper for PyTorch-based tabular learning."""
 
+from __future__ import annotations
+
 from typing import Any
 
 import numpy as np
-import torch
-from torch import nn
-from torch.utils.data import DataLoader, TensorDataset
+
+try:
+    import torch
+    from torch import nn
+    from torch.utils.data import DataLoader, TensorDataset
+
+    _HAS_TORCH = True
+except ImportError:
+    torch = None  # type: ignore[assignment]
+    nn = None  # type: ignore[assignment]
+    DataLoader = None  # type: ignore[assignment, misc]
+    TensorDataset = None  # type: ignore[assignment, misc]
+    _HAS_TORCH = False
 
 from tabular_blueprint.models.model_configs import FTTransformerConfig
+
+
+def _check_torch() -> None:
+    if not _HAS_TORCH:
+        raise ImportError(
+            "PyTorch is required for FT-Transformer. Install with: uv sync --extra deep"
+        )
+
+
+if _HAS_TORCH:
+    _ModuleBase = nn.Module
+else:
+
+    class _ModuleBase:  # type: ignore[no-redef]
+        """Placeholder base when torch is not installed."""
+
+        pass
 
 
 class FTTransformerModel:
@@ -23,6 +52,7 @@ class FTTransformerModel:
         n_classes: int = 2,
         config: FTTransformerConfig | None = None,
     ):
+        _check_torch()
         self.task = task
         self.n_features = n_features
         self.n_classes = n_classes
@@ -49,8 +79,17 @@ class FTTransformerModel:
             dropout=self.dropout,
         )
 
+    def apply_overrides(self, overrides: dict[str, Any]) -> None:
+        """Merge per-model hyperparameter overrides into self.config."""
+        # FT-Transformer uses a Pydantic config, update matching fields
+        for key, value in overrides.items():
+            if hasattr(self.config, key):
+                setattr(self.config, key, value)
+            else:
+                setattr(self, key, value)
+
     def fit(self, X: np.ndarray, y: np.ndarray, **kwargs: Any) -> None:
-        from accelerate import Accelerator  # type: ignore[import-not-found]
+        from accelerate import Accelerator  # type: ignore[import-untyped, import-not-found]
 
         torch.manual_seed(self.random_seed)
         self.accelerator = Accelerator()
@@ -93,8 +132,8 @@ class FTTransformerModel:
             output = self.model(X_tensor)
         if self.task == "classification":
             preds = output.argmax(dim=1)
-            return preds.cpu().numpy()
-        return output.squeeze().cpu().numpy()
+            return preds.cpu().numpy()  # type: ignore[no-any-return]
+        return output.squeeze().cpu().numpy()  # type: ignore[no-any-return]
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray | None:
         if self.task != "classification":
@@ -105,7 +144,7 @@ class FTTransformerModel:
         X_tensor = torch.tensor(X, dtype=torch.float32, device=next(self.model.parameters()).device)
         with torch.no_grad():
             output = self.model(X_tensor)
-        return torch.softmax(output, dim=1).cpu().numpy()
+        return torch.softmax(output, dim=1).cpu().numpy()  # type: ignore[no-any-return]
 
     def save(self, path: str) -> None:
         from pathlib import Path
@@ -136,7 +175,7 @@ class FTTransformerModel:
         return "FT-Transformer"
 
 
-class _FTTransformer(nn.Module):
+class _FTTransformer(_ModuleBase):  # type: ignore[misc,valid-type]
     """Simplified FT-Transformer architecture."""
 
     def __init__(
@@ -148,6 +187,7 @@ class _FTTransformer(nn.Module):
         n_layers: int = 3,
         dropout: float = 0.1,
     ):
+        _check_torch()
         super().__init__()
         self.feature_embed = nn.Linear(n_features, d_hidden)
         encoder_layer = nn.TransformerEncoderLayer(

@@ -1,5 +1,7 @@
 """Leakage detection audit: flags features where permutation destroys performance."""
 
+from typing import Any
+
 import numpy as np
 from pydantic import BaseModel
 from sklearn.linear_model import LogisticRegression, Ridge
@@ -7,7 +9,9 @@ from sklearn.model_selection import cross_val_score
 
 
 class LeakageReport(BaseModel):
-    flagged_features: list[dict]
+    """Report of features flagged for potential data leakage."""
+
+    flagged_features: list[dict[str, Any]]
     n_features_tested: int
     n_flagged: int
     baseline_score: float

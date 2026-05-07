@@ -51,6 +51,10 @@ class TabPFNModel:
             random_state=self.params.get("random_seed", 42),
         )
 
+    def apply_overrides(self, overrides: dict[str, Any]) -> None:
+        """Merge per-model hyperparameter overrides into self.params."""
+        self.params.update(overrides)
+
     def fit(self, X: np.ndarray, y: np.ndarray, **kwargs: Any) -> None:
         if len(X) > self.max_rows:
             raise DataSizeError(
@@ -63,7 +67,7 @@ class TabPFNModel:
     def predict(self, X: np.ndarray) -> np.ndarray:
         if self.model is None:
             raise ValueError("Model not fitted")
-        return self.model.predict(X)
+        return self.model.predict(X)  # type: ignore[no-any-return]
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray | None:
         if (
@@ -71,7 +75,7 @@ class TabPFNModel:
             and self.model is not None
             and hasattr(self.model, "predict_proba")
         ):
-            return self.model.predict_proba(X)
+            return self.model.predict_proba(X)  # type: ignore[no-any-return]
         return None
 
     def save(self, path: str) -> None:

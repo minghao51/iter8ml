@@ -48,7 +48,7 @@ def detect_high_cardinality_columns(
 def extract_cat_codes(
     df: pl.DataFrame,
     cat_columns: list[str],
-) -> tuple[dict[str, np.ndarray], dict[str, int], dict[str, dict]]:
+) -> tuple[dict[str, np.ndarray], dict[str, int], dict[str, dict[str, Any]]]:
     """Extract contiguous integer codes for each categorical column.
 
     Returns:
@@ -58,15 +58,15 @@ def extract_cat_codes(
     """
     codes: dict[str, np.ndarray] = {}
     vocab_sizes: dict[str, int] = {}
-    mappings: dict[str, dict] = {}
+    mappings: dict[str, dict[str, Any]] = {}
 
     for col in cat_columns:
         series = df[col]
         unique_vals = series.unique().sort()
-        val_to_code: dict = {v: i for i, v in enumerate(unique_vals)}
+        val_to_code: dict[Any, int] = {v: i for i, v in enumerate(unique_vals)}
         mapping = val_to_code
 
-        def _map_val(v: Any, _m: dict = mapping) -> int:
+        def _map_val(v: Any, _m: dict[Any, int] = mapping) -> int:
             return _m.get(v, 0)
 
         code_series = series.map_elements(_map_val, return_dtype=pl.Int64)
@@ -144,7 +144,7 @@ class EmbeddingEngine:
         self._model: Any = None
         self._cat_columns: list[str] = []
         self._vocab_sizes: dict[str, int] = {}
-        self._mappings: dict[str, dict] = {}
+        self._mappings: dict[str, dict[str, Any]] = {}
         self._embed_dim: int = 0
 
     def fit_transform(
@@ -353,7 +353,7 @@ class EmbeddingEngine:
         )
 
         mappings_path = save_dir / f"{run_id}_mappings.json"
-        serializable: dict[str, dict] = {}
+        serializable: dict[str, dict[str, Any]] = {}
         for col, mapping in self._mappings.items():
             serializable[col] = {str(k): int(v) for k, v in mapping.items()}
         mappings_path.write_text(json.dumps(serializable, indent=2))

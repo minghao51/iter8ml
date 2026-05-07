@@ -31,6 +31,7 @@ _DIRECT_FIELDS: tuple[str, ...] = (
     "embedding_mlp_depth",
     "embedding_ae_latent_dim",
     "embedding_ae_dropout",
+    "model_overrides",
 )
 
 
@@ -45,7 +46,11 @@ class PipelineMode(StrEnum):
 def _get_module(mode: PipelineMode) -> Any:
     from tabular_blueprint.pipelines.nodes import preprocessing
 
-    return preprocessing
+    if mode == PipelineMode.DRIFT:
+        from tabular_blueprint.pipelines.nodes import drift_detection
+
+        return [preprocessing, drift_detection]
+    return [preprocessing]
 
 
 def _get_training_modules() -> list[Any]:
@@ -128,8 +133,7 @@ class PipelineExecutor:
         self._tracker = tracker
 
         if self._driver_mod is not None:
-            preprocessing = _get_module(mode)
-            modules = [preprocessing]
+            modules = _get_module(mode)
             builder = self._driver_mod.Builder().with_modules(*modules)
             if self._config:
                 builder = builder.with_config(self._config)
@@ -149,7 +153,7 @@ class PipelineExecutor:
             return {}
 
         targets = final_vars or _MODE_FINAL_VARS.get(self._mode, ["processed_dataframe"])
-        return self._dr.execute(targets, inputs=inputs, overrides=overrides)
+        return self._dr.execute(targets, inputs=inputs, overrides=overrides)  # type: ignore[no-any-return]
 
     def get_mermaid_graph(self) -> str:
         if self._dr is None:
@@ -163,7 +167,7 @@ class PipelineExecutor:
         if self._dr is None:
             return df
         result = self.execute(inputs={"df": df})
-        return result.get("processed_dataframe", df)
+        return result.get("processed_dataframe", df)  # type: ignore[no-any-return]
 
     def run_training(
         self,

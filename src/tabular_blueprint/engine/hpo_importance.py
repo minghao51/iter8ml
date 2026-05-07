@@ -8,6 +8,8 @@ from pydantic import BaseModel, ConfigDict
 
 
 class ParamImportance(BaseModel):
+    """A single hyperparameter's importance score."""
+
     model_config = ConfigDict(frozen=True)
 
     param_name: str
@@ -15,6 +17,8 @@ class ParamImportance(BaseModel):
 
 
 class ImportanceReport(BaseModel):
+    """Complete hyperparameter importance analysis result."""
+
     model_config = ConfigDict(frozen=True)
 
     model_name: str
@@ -120,7 +124,7 @@ def suggest_refined_space(
             continue
 
         if isinstance(trial_values[0], float):
-            sorted_vals = sorted(trial_values)
+            sorted_vals = sorted([v for v in trial_values if v is not None])
             q25 = sorted_vals[len(sorted_vals) // 4]
             q75 = sorted_vals[3 * len(sorted_vals) // 4]
             span = q75 - q25
@@ -132,7 +136,7 @@ def suggest_refined_space(
             else:
                 refined[param_name] = (new_low, new_high)
         elif isinstance(trial_values[0], int):
-            sorted_vals = sorted(trial_values)
+            sorted_vals = sorted([v for v in trial_values if v is not None])
             q25 = sorted_vals[len(sorted_vals) // 4]
             q75 = sorted_vals[3 * len(sorted_vals) // 4]
             span = max(1, q75 - q25)

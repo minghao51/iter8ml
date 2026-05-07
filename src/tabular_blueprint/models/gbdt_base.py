@@ -18,21 +18,41 @@ class BaseGBDTModel:
         self.task = task
         self.params = kwargs
         self._model: Any = None
+        self._n_classes: int = kwargs.pop("n_classes", 0)
+        self._class_labels: np.ndarray | None = None
 
     @abstractmethod
-    def _build_params(self) -> dict:
+    def _build_params(self) -> dict[str, Any]:
         """Build model-specific parameters."""
         pass
 
     @abstractmethod
-    def _create_model(self, params: dict) -> Any:
+    def _create_model(self, params: dict[str, Any]) -> Any:
         """Create the underlying model instance."""
         pass
 
+    def apply_overrides(self, overrides: dict[str, Any]) -> None:
+        """Merge per-model hyperparameter overrides into self.params."""
+        self.params.update(overrides)
+
     def fit(self, X: np.ndarray, y: np.ndarray, **kwargs: Any) -> None:
+        if self.task == "classification":
+            labels, y_encoded = np.unique(y, return_inverse=True)
+            self._class_labels = labels
+            self._n_classes = self._n_classes or int(labels.size)
+            y_train = y_encoded
+        else:
+            self._n_classes = 1
+            y_train = y
         params = self._build_params()
         self._model = self._create_model(params)
-        self._train_model(X, y)
+        self._train_model(X, y_train)
+
+    def _decode_class_indices(self, y_pred: np.ndarray) -> np.ndarray:
+        if self.task != "classification" or self._class_labels is None:
+            return y_pred
+        idx = y_pred.astype(int)
+        return self._class_labels[idx]
 
     @abstractmethod
     def _train_model(self, X: np.ndarray, y: np.ndarray) -> None:

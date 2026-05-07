@@ -2,8 +2,7 @@
 
 import json
 from pathlib import Path
-
-from mcp.server.fastmcp import FastMCP
+from typing import Any
 
 from tabular_blueprint.config import ExperimentConfig
 from tabular_blueprint.constants import from_task_type
@@ -14,17 +13,39 @@ from tabular_blueprint.models.factory import get_model_class
 from tabular_blueprint.services.registry_service import RegistryService
 from tabular_blueprint.utils.jsonl import load_events
 
-mcp = FastMCP("tabular-blueprint")
+_TOOLS: list[Any] = []
 
 
-@mcp.tool()
+def _tool(func: Any) -> Any:
+    """Deferred tool registration — wired to FastMCP on first access."""
+    _TOOLS.append(func)
+    return func
+
+
+def _init_mcp() -> Any:
+    """Lazy initializer for the FastMCP server."""
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("tabular-blueprint")
+    for func in _TOOLS:
+        mcp.tool()(func)
+    return mcp
+
+
+def __getattr__(name: str) -> Any:
+    if name == "mcp":
+        return _init_mcp()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+@_tool
 def get_experiment_state() -> str:
     """Returns current_state.md content with leaderboard and resource status."""
     observer = StateObserver()
     return observer.generate()
 
 
-@mcp.tool()
+@_tool
 def get_column_stats(data_path: str) -> str:
     """Returns Polars describe() output for a dataset."""
     df = load_data(data_path)
@@ -39,7 +60,7 @@ def get_column_stats(data_path: str) -> str:
     return "\n".join("| " + " | ".join(row) + " |" for row in rows)
 
 
-@mcp.tool()
+@_tool
 def run_baseline(data_path: str, target_col: str, task: str = "classification") -> str:
     """Triggers a TabPFN/CatBoost quick baseline run."""
     df = load_data(data_path)
@@ -57,7 +78,7 @@ def run_baseline(data_path: str, target_col: str, task: str = "classification") 
     return json.dumps(results, indent=2)
 
 
-@mcp.tool()
+@_tool
 def run_hpo(
     data_path: str,
     target_col: str,
@@ -86,7 +107,7 @@ def run_hpo(
     return json.dumps(result, indent=2)
 
 
-@mcp.tool()
+@_tool
 def get_event_log(n: int = 10) -> str:
     """Returns last N JSONL events."""
     log_path = Path("workspace/experiments.jsonl")
@@ -97,7 +118,7 @@ def get_event_log(n: int = 10) -> str:
     return json.dumps(events[-n:], indent=2)
 
 
-@mcp.tool()
+@_tool
 def registry_show() -> str:
     """Returns current registry.json content."""
     registry = RegistryService("workspace/registry.json")
@@ -107,7 +128,7 @@ def registry_show() -> str:
     return json.dumps(data, indent=2)
 
 
-@mcp.tool()
+@_tool
 def registry_promote(run_id: str, key: str) -> str:
     """Promotes a run_id to champion in the registry."""
     log_path = Path("workspace/experiments.jsonl")
@@ -119,7 +140,7 @@ def registry_promote(run_id: str, key: str) -> str:
     return result.model_dump_json(indent=2)
 
 
-@mcp.tool()
+@_tool
 def detect_drift(reference_path: str, new_path: str) -> str:
     """Detects distribution drift between reference and new datasets."""
     from tabular_blueprint.monitoring.drift import DriftDetector
@@ -133,7 +154,7 @@ def detect_drift(reference_path: str, new_path: str) -> str:
     return json.dumps(report.model_dump(), indent=2)
 
 
-@mcp.tool()
+@_tool
 def export_champion(key: str, target_col: str = "") -> str:
     """Export the champion model for a registry key as a portable package."""
     from tabular_blueprint.services.export_service import ExportService

@@ -59,6 +59,41 @@ def test_roc_auc_uses_probabilities():
     assert scores["roc_auc"] > 0.9
 
 
+class MulticlassModel:
+    """Model for 3+ class classification."""
+
+    def __init__(self, task: str = "classification"):
+        self.task = task
+
+    def fit(self, X: np.ndarray, y: np.ndarray, **kwargs: object) -> None:
+        return None
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        return np.argmax(X[:, :3], axis=1)
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray | None:
+        raw = np.abs(X[:, :3])
+        return raw / raw.sum(axis=1, keepdims=True)
+
+
+def test_multiclass_roc_auc():
+    rng = np.random.RandomState(42)
+    y = rng.randint(0, 3, size=150)
+    X = np.column_stack(
+        [(y == c).astype(float) + 0.1 * rng.randn(150) for c in range(3)] + [rng.randn(150)]
+    )
+    config = ExperimentConfig(
+        name="eval_mc",
+        task=TaskType.CLASSIFICATION,
+        target_col="target",
+        data_path="",
+        cv_folds=3,
+        metrics=["roc_auc"],
+    )
+    scores = Evaluator(config).evaluate(MulticlassModel, X, y)
+    assert scores["roc_auc"] > 0.5
+
+
 def test_roc_auc_requires_predict_proba():
     X = np.random.RandomState(0).rand(40, 3)
     y = np.random.RandomState(1).randint(0, 2, size=40)

@@ -3,6 +3,7 @@
 import time
 import uuid
 from pathlib import Path
+from typing import Any
 
 import polars as pl
 
@@ -12,6 +13,8 @@ from tabular_blueprint.pipelines.executor import PipelineExecutor, PipelineMode
 
 
 class Trainer:
+    """Thin orchestrator that ties config + data + model into an experiment run."""
+
     def __init__(
         self,
         config: ExperimentConfig,
@@ -19,6 +22,7 @@ class Trainer:
         run_leakage_audit: bool = True,
         resume_run_id: str | None = None,
     ):
+        """Initialize trainer with experiment config and optional resume support."""
         HardwareProfile.configure_omp_threads()
         self.config = config
         self.resume_run_id = resume_run_id
@@ -73,7 +77,7 @@ class Trainer:
         self.tracker.finish()
         return state.results if state is not None else {}
 
-    def _log_state_events(self, state: object, run_id: str) -> None:
+    def _log_state_events(self, state: Any, run_id: str) -> None:
         for model_name, entry in state.results.items():
             if entry.get("is_baseline"):
                 continue

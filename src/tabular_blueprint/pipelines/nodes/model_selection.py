@@ -4,7 +4,7 @@ from typing import Any
 
 
 def models_to_run(
-    data_prep_result: object,
+    data_prep_result: Any,
     task: str,
     vram_gb: float,
     config_models: Any,
@@ -23,7 +23,7 @@ def models_to_run(
     selector = ModelSelector()
     selected = selector.select(
         n_rows=data_prep_result.n_rows,
-        task=task,
+        task=task,  # type: ignore[arg-type]
         vram_gb=vram_gb,
         include_baselines=include_baselines,
     )

@@ -35,7 +35,7 @@ The pipeline layer uses [Hamilton](https://github.com/DAGWorks-Inc/hamilton) to 
 
 ### Entry Point: `Trainer.run()`
 
-**Source:** `src/tabular_blueprint/engine/trainer.py:55`
+**Source:** `src/tabular_blueprint/engine/trainer.py:50`
 
 1. Calls `PipelineExecutor.run_training()` — builds and executes the full DAG
 
@@ -43,7 +43,7 @@ The pipeline layer uses [Hamilton](https://github.com/DAGWorks-Inc/hamilton) to 
 
 ## Pipeline Executor
 
-**Source:** `src/tabular_blueprint/pipelines/executor.py:77`
+**Source:** `src/tabular_blueprint/pipelines/executor.py:122`
 
 **Class:** `PipelineExecutor`
 
@@ -72,7 +72,7 @@ The pipeline layer uses [Hamilton](https://github.com/DAGWorks-Inc/hamilton) to 
 
 ## Training Pipeline DAG (7 Modules)
 
-**Source:** `pipelines/executor.py:29`
+**Source:** `pipelines/executor.py:56`
 
 The full training pipeline composes 7 node modules in order:
 

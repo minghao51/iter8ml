@@ -64,7 +64,7 @@ For probability-based metrics (`roc_auc`, `log_loss`), `predict_proba()` is call
 
 ## Lift Computation
 
-**Source:** `src/tabular_blueprint/engine/evaluator.py:132`
+**Source:** `src/tabular_blueprint/engine/evaluator.py:144`
 
 **Method:** `Evaluator.compute_lift(model_scores, baseline_scores, metric_name)`
 
@@ -86,7 +86,7 @@ Returns a fraction (e.g., `0.15` = 15% lift). Returns `0.0` if baseline is zero.
 
 ## Probability Calibration
 
-**Source:** `src/tabular_blueprint/engine/calibration.py:17`
+**Source:** `src/tabular_blueprint/engine/calibration.py:19`
 
 **Class:** `CalibratedModel`
 

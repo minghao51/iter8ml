@@ -34,7 +34,7 @@ WHITELISTED_CLASSES: frozenset[str] = frozenset(
 
 
 class RestrictedUnpickler(pickle.Unpickler):
-    def find_class(self, module: str, name: str) -> type:
+    def find_class(self, module: str, name: str) -> Any:
         fqn = f"{module}.{name}"
         if fqn in WHITELISTED_CLASSES:
             return super().find_class(module, name)

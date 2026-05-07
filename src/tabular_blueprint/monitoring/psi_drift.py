@@ -8,12 +8,16 @@ from pydantic import BaseModel
 
 
 class FeaturePSI(BaseModel):
+    """PSI drift score for a single feature."""
+
     feature: str
     psi_value: float
     drift_level: str  # "none", "moderate", "severe"
 
 
 class PSIDriftReport(BaseModel):
+    """Aggregate PSI drift report across all numeric features."""
+
     drift_detected: bool
     n_features_tested: int
     n_moderate: int

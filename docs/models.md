@@ -127,7 +127,7 @@ Uses `lgb.Dataset` for efficient in-memory representation and `lgb.train` for th
 
 ### XGBoost
 
-**Source:** `src/tabular_blueprint/models/conventional/xgboost_model.py:7`
+**Source:** `src/tabular_blueprint/models/conventional/xgboost_model.py:9`
 
 **Description:** XGBoost — uses `hist` tree method for fast approximate splitting and the native `xgb.train` + `DMatrix` API.
 
@@ -169,7 +169,7 @@ where `T` is the number of leaves, `w` are leaf weights, `γ` is `gamma` (minimu
 
 ### FT-Transformer
 
-**Source:** `src/tabular_blueprint/models/deep/ft_transformer.py:13`
+**Source:** `src/tabular_blueprint/models/deep/ft_transformer.py:42`
 
 **Description:** Feature Tokenizer Transformer — embeds all features into a shared latent space, then processes through a standard Transformer encoder. Requires GPU with >12 GB VRAM.
 
@@ -222,7 +222,7 @@ Input → Linear(n_features, d_hidden)
 
 ### TabNet
 
-**Source:** `src/tabular_blueprint/models/deep/tabnet_model.py:9`
+**Source:** `src/tabular_blueprint/models/deep/tabnet_model.py:18`
 
 **Description:** TabNet via `pytorch-tabular` — uses sequential attention to select features at each decision step, combining the interpretability of tree-based models with deep learning.
 

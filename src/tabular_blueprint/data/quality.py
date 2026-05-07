@@ -16,7 +16,7 @@ def audit_data_quality(
     *,
     output_path: str | Path | None = None,
     enabled: bool = True,
-) -> dict:
+) -> dict[str, Any]:
     """
     Run Cleanlab-based label noise detection.
 

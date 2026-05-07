@@ -14,7 +14,7 @@ The AFE pipeline runs after initial preprocessing and baseline training:
 2. **Interaction Discovery** — test pairwise multiply/ratio features among top-K
 3. **Pruning** (optional) — drop features below minimum importance threshold
 
-**Orchestrator:** `src/tabular_blueprint/engine/feature_engineer.py:18` (`FeatureEngineer.run_afe()`)
+**Orchestrator:** `src/tabular_blueprint/pipelines/nodes/feature_engineering.py` (Hamilton DAG node: `training_features__afe_enabled`)
 
 ---
 
@@ -117,9 +117,7 @@ Only interactions with `lift > lift_threshold` are kept.
 
 ## Full AFE Pipeline
 
-**Source:** `src/tabular_blueprint/engine/feature_engineer.py:18`
-
-**Method:** `FeatureEngineer.run_afe()`
+**Source:** `src/tabular_blueprint/pipelines/nodes/feature_engineering.py` (Hamilton DAG node: `training_features__afe_enabled`)
 
 ```
 1. Fit importance model (LightGBM/CatBoost)

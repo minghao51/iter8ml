@@ -77,7 +77,7 @@ class LinearBaseline:
     def predict(self, X: np.ndarray) -> np.ndarray:
         if self._model is None:
             raise ValueError("Model not fitted")
-        return self._model.predict(X)
+        return self._model.predict(X)  # type: ignore[no-any-return]
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray | None:
         if (
@@ -85,7 +85,7 @@ class LinearBaseline:
             and self._model is not None
             and hasattr(self._model, "predict_proba")
         ):
-            return self._model.predict_proba(X)
+            return self._model.predict_proba(X)  # type: ignore[no-any-return]
         return None
 
     def save(self, path: str) -> None:

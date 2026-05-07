@@ -4,16 +4,16 @@ import json
 import threading
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 
 class Tracker(Protocol):
     current_run_id: str | None
 
-    def log_metrics(self, metrics: dict, step: int | None = None) -> None: ...
-    def log_params(self, params: dict) -> None: ...
+    def log_metrics(self, metrics: dict[str, Any], step: int | None = None) -> None: ...
+    def log_params(self, params: dict[str, Any]) -> None: ...
     def log_artifact(self, path: str) -> None: ...
-    def log_event(self, event: dict) -> None: ...
+    def log_event(self, event: dict[str, Any]) -> None: ...
     def finish(self) -> None: ...
 
 
@@ -62,16 +62,16 @@ class JSONLTracker:
         # Move current log to .1
         self.log_path.rename(self.log_path.with_suffix(".jsonl.1"))
 
-    def log_metrics(self, metrics: dict, step: int | None = None) -> None:
+    def log_metrics(self, metrics: dict[str, Any], step: int | None = None) -> None:
         self.log_event({"event": "metrics", "metrics": metrics, "step": step})
 
-    def log_params(self, params: dict) -> None:
+    def log_params(self, params: dict[str, Any]) -> None:
         self.log_event({"event": "params", "params": params})
 
     def log_artifact(self, path: str) -> None:
         self.log_event({"event": "artifact", "path": path})
 
-    def log_event(self, event: dict) -> None:
+    def log_event(self, event: dict[str, Any]) -> None:
         with self._lock:
             # Check if we need to rotate before writing
             if self._should_rotate():
@@ -100,10 +100,10 @@ class WandbTracker:
         except ImportError as e:
             raise ImportError("wandb is required. Install with: pip install wandb") from e
 
-    def log_metrics(self, metrics: dict, step: int | None = None) -> None:
+    def log_metrics(self, metrics: dict[str, Any], step: int | None = None) -> None:
         self.wandb.log(metrics, step=step)
 
-    def log_params(self, params: dict) -> None:
+    def log_params(self, params: dict[str, Any]) -> None:
         self.run.config.update(params)
 
     def log_artifact(self, path: str) -> None:
@@ -111,7 +111,7 @@ class WandbTracker:
         artifact.add_file(path)
         self.run.log_artifact(artifact)
 
-    def log_event(self, event: dict) -> None:
+    def log_event(self, event: dict[str, Any]) -> None:
         self.wandb.log(event)
 
     def finish(self) -> None:
@@ -133,16 +133,16 @@ class MLflowTracker:
         except ImportError as e:
             raise ImportError("mlflow is required. Install with: pip install mlflow") from e
 
-    def log_metrics(self, metrics: dict, step: int | None = None) -> None:
+    def log_metrics(self, metrics: dict[str, Any], step: int | None = None) -> None:
         self.mlflow.log_metrics(metrics, step=step)
 
-    def log_params(self, params: dict) -> None:
+    def log_params(self, params: dict[str, Any]) -> None:
         self.mlflow.log_params(params)
 
     def log_artifact(self, path: str) -> None:
         self.mlflow.log_artifact(path)
 
-    def log_event(self, event: dict) -> None:
+    def log_event(self, event: dict[str, Any]) -> None:
         for key, value in event.items():
             if isinstance(value, (int, float, str)):
                 self.mlflow.log_param(key, str(value))

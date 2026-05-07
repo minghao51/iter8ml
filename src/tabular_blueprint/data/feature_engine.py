@@ -14,6 +14,8 @@ from sklearn.model_selection import cross_val_score
 
 
 class TargetTransformResult(BaseModel):
+    """Result of applying a target transformation (log1p, box-cox, yeo-johnson)."""
+
     original_skewness: float
     transformed_skewness: float
     method: str
@@ -21,6 +23,8 @@ class TargetTransformResult(BaseModel):
 
 
 class InteractionCandidate(BaseModel):
+    """A single candidate interaction feature discovered during AFE."""
+
     feature_names: tuple[str, ...]
     operation: str
     lift: float
@@ -28,6 +32,8 @@ class InteractionCandidate(BaseModel):
 
 
 class InteractionDiscoveryResult(BaseModel):
+    """Summary of AFE interaction search."""
+
     n_candidates_tested: int
     n_candidates_kept: int
     candidates: list[InteractionCandidate]
@@ -35,6 +41,8 @@ class InteractionDiscoveryResult(BaseModel):
 
 
 class PruningResult(BaseModel):
+    """Result of pruning low-importance features."""
+
     n_original: int
     n_kept: int
     n_dropped: int
@@ -103,24 +111,24 @@ class _TargetTransformer:
 
     def fit_transform(self, y: np.ndarray) -> np.ndarray:
         if self.method == "log1p":
-            return np.log1p(y)
+            return np.log1p(y)  # type: ignore[no-any-return]
         elif self.method == "yeo-johnson":
             from sklearn.preprocessing import PowerTransformer
 
             self._scaler = PowerTransformer(method="yeo-johnson")
-            return self._scaler.fit_transform(y.reshape(-1, 1)).ravel()
+            return self._scaler.fit_transform(y.reshape(-1, 1)).ravel()  # type: ignore[no-any-return]
         elif self.method == "box-cox":
             from sklearn.preprocessing import PowerTransformer
 
             self._scaler = PowerTransformer(method="box-cox")
-            return self._scaler.fit_transform(y.reshape(-1, 1)).ravel()
+            return self._scaler.fit_transform(y.reshape(-1, 1)).ravel()  # type: ignore[no-any-return]
         return y
 
     def inverse_transform(self, y: np.ndarray) -> np.ndarray:
         if self._scaler is not None:
-            return self._scaler.inverse_transform(y.reshape(-1, 1)).ravel()
+            return self._scaler.inverse_transform(y.reshape(-1, 1)).ravel()  # type: ignore[no-any-return]
         elif self.method == "log1p":
-            return np.expm1(y)
+            return np.expm1(y)  # type: ignore[no-any-return]
         return y
 
 

@@ -39,4 +39,4 @@ def get_model_class(model_name: str) -> type:
     module = importlib.import_module(module_path)
     cls = getattr(module, class_name)
     _MODEL_CLASS_CACHE[model_name] = cls
-    return cls
+    return cls  # type: ignore[no-any-return]

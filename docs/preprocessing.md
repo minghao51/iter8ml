@@ -76,7 +76,7 @@ This converts each categorical value to its integer representation. No one-hot e
 
 ## Target Transformation
 
-**Source:** `src/tabular_blueprint/data/feature_engine.py:49`
+**Source:** `src/tabular_blueprint/data/feature_engine.py:57`
 
 ### Skewness Detection
 
@@ -142,7 +142,7 @@ Drops rows where `quality_score < threshold`. Falls back to dropping `flagged_in
 
 ## Leakage Detection
 
-**Source:** `src/tabular_blueprint/data/leakage.py:16`
+**Source:** `src/tabular_blueprint/data/leakage.py:20`
 
 **Function:** `detect_leakage(X, y, task, threshold, cv_folds)`
 

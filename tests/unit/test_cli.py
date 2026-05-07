@@ -213,6 +213,7 @@ def test_run_python_config_allowed_with_unsafe_flag(tmp_path):
     assert "Unsupported file format: .txt" in result.stdout
 
 
+@pytest.mark.slow
 def test_run_with_csv(sample_csv):
     result = runner.invoke(
         app,
@@ -232,6 +233,7 @@ def test_run_with_csv(sample_csv):
     assert "catboost" in result.stdout.lower()
 
 
+@pytest.mark.slow
 def test_run_with_parquet(sample_parquet):
     result = runner.invoke(
         app,
@@ -249,6 +251,7 @@ def test_run_with_parquet(sample_parquet):
     assert "Loaded 100 rows" in result.stdout
 
 
+@pytest.mark.slow
 def test_leaderboard_after_run(sample_csv, tmp_path):
     orig = os.getcwd()
     os.chdir(str(tmp_path))
@@ -298,6 +301,7 @@ def test_drift_detection(sample_parquet, tmp_path):
     assert "Drift detected" in result.stdout
 
 
+@pytest.mark.slow
 def test_hpo_command(sample_csv):
     result = runner.invoke(
         app,

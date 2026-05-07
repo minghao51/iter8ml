@@ -10,6 +10,8 @@ from sklearn.model_selection import cross_val_score
 
 
 class DomainDriftReport(BaseModel):
+    """Multivariate drift detection result from domain classifier AUC."""
+
     drift_detected: bool
     auc_score: float
     threshold: float

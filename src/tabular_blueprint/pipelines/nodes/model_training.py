@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -71,9 +72,11 @@ def _train_one(
     workspace_dir: str,
     run_id: str,
     baseline_scores: dict[str, dict[str, float]],
+    model_overrides: dict[str, dict[str, Any]] | None = None,
 ) -> ModelResult:
     start = time.time()
     n_features = X.shape[1]
+    overrides = (model_overrides or {}).get(name)
 
     try:
         from tabular_blueprint.models.factory import get_model_class
@@ -87,10 +90,13 @@ def _train_one(
         else:
             model = model_cls(task=task)
 
+        if overrides and hasattr(model, "apply_overrides"):
+            model.apply_overrides(overrides)
+
         if calibration != "none" and task == "classification":
             from tabular_blueprint.engine.calibration import CalibratedModel
 
-            model = CalibratedModel(model, method=calibration)
+            model = CalibratedModel(model, method=calibration)  # type: ignore[arg-type]
             model.fit(X, y)
         else:
             model.fit(X, y)
@@ -138,7 +144,7 @@ def _train_one(
 
 def training_results(
     training_features: tuple[np.ndarray, list[str]],
-    data_prep_result: object,
+    data_prep_result: Any,
     models_to_run: list[str],
     baseline_scores: dict[str, dict[str, float]],
     task: str,
@@ -148,6 +154,7 @@ def training_results(
     calibration: str,
     workspace_dir: str,
     run_id: str,
+    model_overrides: dict[str, dict[str, Any]] | None = None,
 ) -> list[ModelResult]:
     X, _ = training_features
     y = data_prep_result.y
@@ -168,6 +175,7 @@ def training_results(
             workspace_dir,
             run_id,
             baseline_scores,
+            model_overrides=model_overrides,
         )
         results.append(result)
     return results

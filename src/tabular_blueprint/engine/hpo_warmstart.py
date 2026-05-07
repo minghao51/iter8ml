@@ -15,6 +15,8 @@ from tabular_blueprint.utils.jsonl import load_events
 
 
 class WarmstartInjection(BaseModel):
+    """Metadata about historical HPO trials injected into a new study."""
+
     n_trials_injected: int
     n_runs_scanned: int
     n_skipped_missing_scores: int = 0
@@ -104,6 +106,7 @@ def create_warmstarted_study(
     Returns:
         Tuple of (Optuna study, WarmstartInjection metadata)
     """
+    pruner_obj: optuna.pruners.BasePruner
     if pruner == "median":
         pruner_obj = optuna.pruners.MedianPruner()
     elif pruner == "hyperband":

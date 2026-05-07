@@ -16,7 +16,7 @@ class StateObserver:
         output_path: str = "workspace/current_state.md",
         leaderboard_path: str | None = None,
         llm_enabled: bool = False,
-        llm_model: str = "claude-sonnet-4-20250514",
+        llm_model: str | None = None,
         llm_api_key_env: str = "",
         llm_api_base: str | None = None,
     ):
@@ -29,9 +29,17 @@ class StateObserver:
             else self.output_path.with_name("leaderboard.md")
         )
         self._llm_enabled = llm_enabled
-        self._llm_model = llm_model
+        self._llm_model = llm_model if llm_model is not None else self._default_llm_model()
         self._llm_api_key_env = llm_api_key_env
         self._llm_api_base = llm_api_base
+
+    @staticmethod
+    def _default_llm_model() -> str:
+        import os
+
+        from tabular_blueprint.config import DEFAULT_LLM_MODEL
+
+        return os.getenv("TABBLUEPRINT_LLM_MODEL", DEFAULT_LLM_MODEL)
 
     def generate(self) -> str:
         """Read experiment state and render current_state.md and leaderboard.md."""
@@ -218,7 +226,9 @@ class StateObserver:
             )
         )
 
-    def _render_llm_commentary(self, all_events: list[dict], report: ExperimentReport) -> list[str]:
+    def _render_llm_commentary(
+        self, all_events: list[dict[str, Any]], report: ExperimentReport
+    ) -> list[str]:
         agent = self._get_agent()
         lines: list[str] = ["\n## LLM Commentary\n"]
 
@@ -244,7 +254,7 @@ class StateObserver:
 
         return lines
 
-    def _load_all_events(self) -> list[dict]:
+    def _load_all_events(self) -> list[dict[str, Any]]:
         from tabular_blueprint.utils.jsonl import load_events
 
         return load_events(self.log_path)

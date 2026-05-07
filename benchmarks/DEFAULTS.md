@@ -15,20 +15,28 @@ include benchmark evidence.
 
 ## Baseline Results (Quick Mode)
 
-Run: `2026-05-05` via `run_openml_benchmark.py --quick`
+Run: `2026-05-07` via `run_openml_benchmark.py --quick`
 
 ### Classification (ROC-AUC)
 
 | Dataset | CatBoost | LightGBM | XGBoost | TabPFN |
 |---------|----------|----------|---------|--------|
 | breast_cancer | 0.9947 | 0.9920 | 0.9937 | N/A |
+| credit-g | 0.7977 | 0.7672 | 0.7718 | N/A |
+| adult | 0.9130 | 0.8985 | 0.8900 | N/A |
+| iris | 0.9960 | 0.9833 | 0.9667 | N/A |
+| covertype | 0.9857 | 0.9381 | 0.9942 | N/A |
+| shuttle | NaN* | NaN* | NaN* | N/A |
+
+\* Shuttle has extreme class imbalance (7 classes, some with <5 samples). ROC-AUC is NaN; F1-macro used instead.
 
 ### Regression (R²)
 
 | Dataset | CatBoost | LightGBM | XGBoost |
 |---------|----------|----------|---------|
-| diabetes | 0.4573 | 0.4315 | 0.3910 |
-| house_16H | 0.9371 | 0.8671 | 0.8783 |
+| diabetes | 0.4316 | 0.3405 | 0.3147 |
+| house_16H | 0.9628 | 0.9581 | 0.9546 |
+| quake | -0.0920 | -0.4253 | -0.4947 |
 
 > Note: Quick mode samples large datasets to 20%. Full baseline pending.
 
