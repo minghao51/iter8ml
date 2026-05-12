@@ -6,7 +6,7 @@ from pathlib import Path
 import optuna
 import pytest
 
-from tabular_blueprint.engine.hpo_warmstart import (
+from iter8ml.engine.hpo_warmstart import (
     WarmstartInjection,
     _build_trial_data,
     _infer_distribution,
@@ -68,14 +68,14 @@ def sample_jsonl(tmp_path: Path) -> Path:
 
 class TestParseModelCompletedEvents:
     def test_yields_only_model_completed(self, sample_jsonl):
-        from tabular_blueprint.utils.jsonl import load_events
+        from iter8ml.utils.io import load_events
 
         events = load_events(sample_jsonl)
         catboost_events = list(_parse_model_completed_events(events, "catboost"))
         assert len(catboost_events) == 3
 
     def test_filters_by_model_name(self, sample_jsonl):
-        from tabular_blueprint.utils.jsonl import load_events
+        from iter8ml.utils.io import load_events
 
         events = load_events(sample_jsonl)
         lgb_events = list(_parse_model_completed_events(events, "lightgbm"))
@@ -83,7 +83,7 @@ class TestParseModelCompletedEvents:
         assert lgb_events[0]["run_id"] == "exp_003"
 
     def test_empty_when_no_matching_model(self, sample_jsonl):
-        from tabular_blueprint.utils.jsonl import load_events
+        from iter8ml.utils.io import load_events
 
         events = load_events(sample_jsonl)
         xgb_events = list(_parse_model_completed_events(events, "xgboost"))

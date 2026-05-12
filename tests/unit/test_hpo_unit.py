@@ -3,10 +3,10 @@
 import numpy as np
 import pytest
 
-from tabular_blueprint.config import ExperimentConfig
-from tabular_blueprint.constants import TaskType
-from tabular_blueprint.engine.evaluator import Evaluator
-from tabular_blueprint.engine.hpo import create_study, optimize_model
+from iter8ml.config import ExperimentConfig
+from iter8ml.constants import TaskType
+from iter8ml.engine.evaluator import Evaluator
+from iter8ml.engine.hpo import create_study, optimize_model
 
 
 class DummyModel:
@@ -154,8 +154,8 @@ def test_optimize_model_preserves_exception_context():
     """Test that evaluation failures preserve exception context."""
     from unittest.mock import Mock
 
-    from tabular_blueprint.engine.hpo import optimize_model
-    from tabular_blueprint.models.conventional.catboost_model import CatBoostModel
+    from iter8ml.engine.hpo import optimize_model
+    from iter8ml.engine.models.catboost_model import CatBoostModel
 
     # Create invalid data to trigger error
     X = np.array([[1, 2], [3, 4]])
@@ -205,7 +205,7 @@ def test_optimize_model_reports_warmstart_summary_and_warnings(sample_data, tmp_
         '{"event":"hpo_trial_completed","model":"dummy","cv_scores":{"roc_auc":0.7},"params":"bad"}\n'
     )
 
-    import tabular_blueprint.engine.hpo_importance as hpo_importance
+    import iter8ml.engine.hpo_importance as hpo_importance
 
     def _raise_importance(study):
         raise RuntimeError("importance failed")

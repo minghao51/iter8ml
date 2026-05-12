@@ -3,7 +3,7 @@
 import numpy as np
 import polars as pl
 
-from tabular_blueprint.monitoring.domain_classifier import (
+from iter8ml.analysis.domain_classifier import (
     DOMAIN_AUC_THRESHOLD,
     DomainClassifierDriftDetector,
 )

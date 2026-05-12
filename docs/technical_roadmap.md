@@ -422,7 +422,7 @@ Raw Data (CSV / Parquet / DB)
 - [x] Drift detection: PSI (univariate) + Domain Classifier (multivariate) + KS/Chi²
 - [x] SHAP explainability (gated behind `shap_enabled=False`)
 - [x] Leaderboard auto-generation from JSONL
-- [x] Configuration diffing: `tabblueprint diff <id1> <id2>`
+- [x] Configuration diffing: `iter8 diff <id1> <id2>`
 
 ### MCP & LLM
 - [x] FastMCP server with 8 atomic tools for LLM agents
@@ -773,7 +773,7 @@ Curate 8-10 datasets covering task × size combinations:
 ## 15. Repository Structure
 
 ```
-src/tabular_blueprint/
+src/iter8ml/
 ├── __init__.py
 ├── cli.py                          # Typer CLI (476 lines, 10 commands)
 ├── config.py                       # ExperimentConfig + HardwareProfile (243 lines)
@@ -931,8 +931,8 @@ src/tabular_blueprint/
 - Assert `leaderboard.md` updates after run
 - Assert `registry.json` updates when new champion detected
 - TabPFN guardrail: warning emitted when n_rows > 50k
-- CLI: `tabblueprint leaderboard` exits 0 and prints expected table headers
-- CLI: `tabblueprint run --config ...` executes full Hamilton DAG path
+- CLI: `iter8 leaderboard` exits 0 and prints expected table headers
+- CLI: `iter8 run --config ...` executes full Hamilton DAG path
 
 ### Benchmark Regression Tests (after Phase C)
 
@@ -961,7 +961,7 @@ To be completed before public release:
 - [x] `ruff` passes with zero warnings on full repo
 - [x] No `import pandas` in `src/` core — only in `models/deep/tabnet_model.py` (pytorch-tabular API constraint)
 - [x] `mypy --strict` passes with zero errors (disallow_untyped_defs; no ignore_errors overrides)
-- [x] `import tabular_blueprint` completes in <1s with only core deps
+- [x] `import iter8ml` completes in <1s with only core deps
 
 **CI/CD**
 - [x] GitHub Actions: `ruff check` + `mypy` + `pytest` on every PR (`ci.yml`)

@@ -3,8 +3,8 @@
 import json
 from types import SimpleNamespace
 
-from tabular_blueprint.engine.tracker import JSONLTracker
-from tabular_blueprint.pipelines.hooks.tracking_hook import TrackingHook
+from iter8ml.engine.pipelines.hooks.tracking_hook import TrackingHook
+from iter8ml.engine.tracker import JSONLTracker
 
 
 def _read_events(path):

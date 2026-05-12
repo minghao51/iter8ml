@@ -9,7 +9,7 @@ import pytest
 from sklearn.datasets import make_classification
 from typer.testing import CliRunner
 
-from tabular_blueprint.cli import app
+from iter8ml.cli import app
 
 runner = CliRunner()
 
@@ -182,8 +182,8 @@ def test_run_config_missing_config_object_exits_with_error(tmp_path):
 def test_run_python_config_rejected_without_unsafe_flag(tmp_path):
     config_path = tmp_path / "config.py"
     config_path.write_text(
-        "from tabular_blueprint.config import ExperimentConfig\n"
-        "from tabular_blueprint.constants import TaskType\n"
+        "from iter8ml.config import ExperimentConfig\n"
+        "from iter8ml.constants import TaskType\n"
         "config = ExperimentConfig("
         "name='x', task=TaskType.CLASSIFICATION, target_col='target', data_path='d.csv')\n"
     )
@@ -200,8 +200,8 @@ def test_run_python_config_allowed_with_unsafe_flag(tmp_path):
     data_path = tmp_path / "data.txt"
     data_path.write_text("x")
     config_path.write_text(
-        "from tabular_blueprint.config import ExperimentConfig\n"
-        "from tabular_blueprint.constants import TaskType\n"
+        "from iter8ml.config import ExperimentConfig\n"
+        "from iter8ml.constants import TaskType\n"
         f"config = ExperimentConfig("
         f"name='x', task=TaskType.CLASSIFICATION, target_col='target', data_path='{data_path}')\n"
     )

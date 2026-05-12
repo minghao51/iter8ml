@@ -3,8 +3,9 @@
 import numpy as np
 import pytest
 
-from tabular_blueprint.config import ExperimentConfig
-from tabular_blueprint.data.cache import PreprocessingCache, _cache_key
+from iter8ml.config import ExperimentConfig
+from iter8ml.constants import FeatureStrategy
+from iter8ml.data.cache import PreprocessingCache, _cache_key
 
 
 @pytest.fixture
@@ -47,7 +48,7 @@ class TestPreprocessingCache:
 
     def test_miss_when_partial_files(self, cache, config, tmp_path):
         key = _cache_key("abc123", config)
-        (tmp_path / ".tabblueprint/cache" / f"{key}_X.npy").write_text("junk")
+        (tmp_path / ".iter8ml/cache" / f"{key}_X.npy").write_text("junk")
         result = cache.load("abc123", config)
         assert result is None
 
@@ -105,8 +106,7 @@ class TestPreprocessingCache:
             target_col="price",
             data_path="data.parquet",
             cv_folds=10,
-            afe_enabled=True,
-            embedding_enabled=True,
+            feature_strategy=FeatureStrategy.AFE,
         )
         X = np.random.rand(50, 5)
         y = np.random.rand(50)

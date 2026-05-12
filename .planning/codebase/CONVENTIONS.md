@@ -78,7 +78,7 @@
 Sorted by `ruff` I001 (isort-style). Convention observed:
 1. Standard library (top-level imports, then `collections.abc`, `pathlib`, etc.)
 2. Third-party libraries (polars, numpy, pydantic, sklearn, etc.)
-3. Internal `tabular_blueprint.*` imports
+3. Internal `iter8ml.*` imports
 4. Lazy imports at point-of-use for heavy dependencies (torch, wandb, mlflow, typer inside methods)
 5. No `from typing import Optional` — uses `| None` syntax
 6. `__all__` explicitly declared in `__init__.py` for public API
@@ -92,7 +92,7 @@ Sorted by `ruff` I001 (isort-style). Convention observed:
 ## Module `__init__` Pattern
 
 Each subpackage has an `__init__.py` that re-exports public API via `__all__`:
-- `tabular_blueprint/__init__.py`: minimal (`__all__ = []`)
-- `tabular_blueprint/models/__init__.py`: re-exports `AbstractModel`, `ModelSelector`, factory functions
-- `tabular_blueprint/data/__init__.py`: re-exports loader and embedding functions
+- `iter8ml/__init__.py`: minimal (`__all__ = []`)
+- `iter8ml/models/__init__.py`: re-exports `AbstractModel`, `ModelSelector`, factory functions
+- `iter8ml/data/__init__.py`: re-exports loader and embedding functions
 - Pipeline files may use `__all__` to control what Hamilton discovers

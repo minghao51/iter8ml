@@ -4,7 +4,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from tabular_blueprint.engine.tracker import JSONLTracker
+from iter8ml.engine.tracker import JSONLTracker
 
 
 def test_log_rotation_when_file_exceeds_limit():

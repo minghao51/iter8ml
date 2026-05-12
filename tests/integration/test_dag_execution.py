@@ -4,9 +4,9 @@ import polars as pl
 import pytest
 from sklearn.datasets import make_classification
 
-from tabular_blueprint.config import ExperimentConfig
-from tabular_blueprint.engine.tracker import JSONLTracker
-from tabular_blueprint.pipelines.executor import PipelineExecutor, PipelineMode
+from iter8ml.config import ExperimentConfig
+from iter8ml.engine.pipelines.executor import PipelineExecutor, PipelineMode
+from iter8ml.engine.tracker import JSONLTracker
 
 pytestmark = [
     pytest.mark.integration,

@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from tabular_blueprint.data.feature_engine import (
+from iter8ml.data.features import (
     _safe_ratio,
     detect_target_skewness,
     discover_interactions,

@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from tabular_blueprint.models.tabular_foundation.tabpfn_model import (
+from iter8ml.engine.models.tabpfn_model import (
     DataSizeError,
     TabPFNModel,
 )

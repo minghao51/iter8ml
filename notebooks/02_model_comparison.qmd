@@ -1,6 +1,6 @@
 ---
 title: "Model Comparison & Evaluation"
-description: "Compare multiple models side-by-side using the Evaluator API with custom cross-validation strategies and per-fold metric breakdowns."
+description: "Compare multiple models side-by-side using the Evaluator API with custom cross-validation strategies, per-fold metric breakdowns, lift analysis, and calibration."
 date: today
 format:
   html:
@@ -11,16 +11,19 @@ format:
 ---
 
 Compare multiple models side-by-side using the **Evaluator** API directly,
-with custom cross-validation strategies and per-fold metric breakdowns.
+with custom cross-validation strategies, per-fold metric breakdowns,
+lift analysis, and probability calibration.
 
 ## 1. Prepare Classification Data
 
 ```{python}
 #| label: prepare-classification-data
 #| cache: true
+import matplotlib.pyplot as plt
+import numpy as np
 import polars as pl
 from sklearn.datasets import make_classification
-from tabular_blueprint.data.adapter import DataAdapter
+from iter8ml.data.adapter import DataAdapter
 
 X_raw, y_raw = make_classification(
     n_samples=3000, n_features=25, n_informative=12, random_state=42
@@ -36,8 +39,8 @@ print(f"X shape: {X.shape}, y shape: {y.shape}, positive rate: {y.mean():.2%}")
 
 ```{python}
 #| label: configure-evaluator
-from tabular_blueprint.config import ExperimentConfig
-from tabular_blueprint.engine.evaluator import Evaluator
+from iter8ml.config import ExperimentConfig
+from iter8ml.engine.evaluator import Evaluator
 
 eval_config = ExperimentConfig(
     name="compare",
@@ -57,7 +60,7 @@ print(f"Task: {evaluator.task}  |  Folds: {evaluator.cv_folds}  |  Strategy: {ev
 ```{python}
 #| label: evaluate-all-models
 #| cache: true
-from tabular_blueprint.models.factory import get_model_class
+from iter8ml.models.factory import get_model_class
 
 models_to_compare = ["catboost", "lightgbm", "xgboost", "naive_baseline", "linear_baseline"]
 scores = {}
@@ -67,36 +70,151 @@ for model_name in models_to_compare:
 scores
 ```
 
-## 4. Leaderboard with Lift Over Baseline
+## 4. Metric Comparison Chart
 
 ```{python}
-#| label: leaderboard-lift
-baseline = scores["naive_baseline"]
+#| label: metric-comparison-chart
+#| fig-cap: "Cross-validated metrics across all models (higher is better for AUC/F1/Acc; lower is better for Log Loss)"
+#| fig-width: 11
+#| fig-height: 5
+gbdt_models = ["catboost", "lightgbm", "xgboost"]
+baseline_models = ["naive_baseline", "linear_baseline"]
+all_models = gbdt_models + baseline_models
 
-leaderboard_rows = []
-for model_nm, s in scores.items():
-    lift = Evaluator.compute_lift(s, baseline, "roc_auc")
-    leaderboard_rows.append(
-        f"| {model_nm:20s} | {s['roc_auc']:.4f} | {s['f1_macro']:.4f} | {s['accuracy']:.4f} | {lift:+.2%} |"
-    )
+metrics_display = ["roc_auc", "f1_macro", "accuracy"]
+n_metrics = len(metrics_display)
+n_models = len(all_models)
+x = np.arange(n_models)
+width = 0.22
 
-leaderboard_table = (
-    "| Model | ROC AUC | F1 Macro | Accuracy | Lift over Naive |\n"
-    "|-------|---------|----------|----------|----------------|\n" + "\n".join(leaderboard_rows)
-)
-print(leaderboard_table)
+fig, axes = plt.subplots(1, 2, figsize=(11, 5), gridspec_kw={"width_ratios": [3, 1]})
+
+colors = ["#4C72B0", "#55A868", "#C44E52"]
+for i, metric in enumerate(metrics_display):
+    vals = [scores[m].get(metric, 0) for m in all_models]
+    bars = axes[0].bar(x + i * width, vals, width, label=metric.upper(), color=colors[i])
+    for bar, v in zip(bars, vals):
+        axes[0].text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.003,
+                     f"{v:.3f}", ha="center", va="bottom", fontsize=7, rotation=45)
+
+axes[0].set_xticks(x + width)
+axes[0].set_xticklabels([m.replace("_", "\n") for m in all_models], fontsize=9)
+axes[0].set_ylim(0.4, 1.05)
+axes[0].set_ylabel("Score")
+axes[0].set_title("Classification Metrics")
+axes[0].legend(fontsize=8, loc="upper right")
+axes[0].grid(axis="y", alpha=0.3)
+
+log_vals = [scores[m].get("log_loss", 0) for m in all_models]
+bar_colors = ["#4C72B0" if m in gbdt_models else "#AAAAAA" for m in all_models]
+bars = axes[1].bar(range(n_models), log_vals, color=bar_colors)
+axes[1].set_xticks(range(n_models))
+axes[1].set_xticklabels([m.replace("_", "\n") for m in all_models], fontsize=8)
+axes[1].set_ylabel("Log Loss")
+axes[1].set_title("Log Loss (lower = better)")
+axes[1].grid(axis="y", alpha=0.3)
+for bar, v in zip(bars, log_vals):
+    axes[1].text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.01,
+                 f"{v:.3f}", ha="center", va="bottom", fontsize=7)
+
+plt.tight_layout()
+plt.show()
 ```
 
-## 5. Regression Comparison
+## 5. Lift Over Naive Baseline
+
+```{python}
+#| label: lift-chart
+#| fig-cap: "ROC AUC lift over the naive baseline — measures how much each model improves relative to predicting the majority class"
+#| fig-width: 8
+#| fig-height: 4
+baseline = scores["naive_baseline"]
+lift_data = {}
+for m in gbdt_models + ["linear_baseline"]:
+    lift_data[m] = Evaluator.compute_lift(scores[m], baseline, "roc_auc")
+
+fig, ax = plt.subplots(figsize=(8, 4))
+names = list(lift_data.keys())
+lifts = [lift_data[m] for m in names]
+colors_lift = ["#55A868" if m in gbdt_models else "#DD8452" for m in names]
+bars = ax.barh(names, [l * 100 for l in lifts], color=colors_lift)
+for bar, l in zip(bars, lifts):
+    ax.text(bar.get_width() + 0.3, bar.get_y() + bar.get_height() / 2,
+            f"+{l:.2%}", va="center", fontsize=10)
+ax.set_xlabel("Lift over Naive Baseline (%)")
+ax.set_title("ROC AUC Improvement over Naive Baseline")
+ax.axvline(0, color="gray", linewidth=0.5)
+ax.grid(axis="x", alpha=0.3)
+ax.invert_yaxis()
+plt.tight_layout()
+plt.show()
+```
+
+## 6. Probability Calibration
+
+```{python}
+#| label: calibration-demo
+#| cache: true
+#| fig-cap: "Reliability diagram comparing raw vs calibrated probabilities (Platt scaling)"
+#| fig-width: 10
+#| fig-height: 4
+from sklearn.calibration import calibration_curve
+from sklearn.model_selection import StratifiedKFold
+from iter8ml.models.factory import get_model_class as GMC
+from iter8ml.engine.calibration import CalibratedModel
+
+skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+raw_proba = np.zeros(len(y))
+cal_proba = np.zeros(len(y))
+
+for train_idx, val_idx in skf.split(X, y):
+    X_tr, X_val = X[train_idx], X[val_idx]
+    y_tr, y_val = y[train_idx], y[val_idx]
+
+    base = GMC("lightgbm")(task="classification")
+    cal_model = CalibratedModel(base, method="platt", cv_folds=3)
+    cal_model.fit(X_tr, y_tr)
+
+    raw_model = GMC("lightgbm")(task="classification")
+    raw_model.fit(X_tr, y_tr)
+
+    raw_proba[val_idx] = raw_model.predict_proba(X_val)[:, 1]
+    cal_proba[val_idx] = cal_model.predict_proba(X_val)[:, 1]
+
+fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+
+for ax, proba, title in [
+    (axes[0], raw_proba, "Raw LightGBM"),
+    (axes[1], cal_proba, "Calibrated (Platt)"),
+]:
+    fraction_pos, mean_predicted = calibration_curve(y, proba, n_bins=10)
+    ax.plot(mean_predicted, fraction_pos, "s-", color="#4C72B0", label="Model")
+    ax.plot([0, 1], [0, 1], "--", color="gray", alpha=0.5, label="Perfect")
+    ax.set_xlabel("Mean Predicted Probability")
+    ax.set_ylabel("Fraction of Positives")
+    ax.set_title(title)
+    ax.legend(fontsize=8)
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.grid(alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+```
+
+## 7. Regression Comparison
 
 ```{python}
 #| label: regression-comparison
 #| cache: true
+#| fig-cap: "Regression metrics for GBDT models vs linear baseline"
+#| fig-width: 9
+#| fig-height: 4
 from sklearn.datasets import make_regression
-from tabular_blueprint.data.adapter import DataAdapter as DA2
-from tabular_blueprint.engine.evaluator import Evaluator as Eval2
-from tabular_blueprint.config import ExperimentConfig as Cfg2
-from tabular_blueprint.models.factory import get_model_class as GMC2
+from iter8ml.data.adapter import DataAdapter as DA2
+from iter8ml.engine.evaluator import Evaluator as Eval2
+from iter8ml.config import ExperimentConfig as Cfg2
+from iter8ml.models.factory import get_model_class as GMC2
 
 X_reg_raw, y_reg_raw = make_regression(
     n_samples=2000, n_features=15, noise=10, random_state=42
@@ -120,9 +238,22 @@ reg_config = Cfg2(
 )
 reg_eval = Eval2(reg_config)
 
+reg_models = ["catboost", "lightgbm", "xgboost", "linear_baseline"]
 reg_scores = {}
-for rnm in ["catboost", "lightgbm", "xgboost", "linear_baseline"]:
+for rnm in reg_models:
     rcl = GMC2(rnm)
     reg_scores[rnm] = reg_eval.evaluate(rcl, X_r, y_r)
-reg_scores
+
+fig, axes = plt.subplots(1, 3, figsize=(9, 3.5))
+reg_colors = ["#4C72B0" if m != "linear_baseline" else "#AAAAAA" for m in reg_models]
+for ax, metric in zip(axes, ["rmse", "mae", "r2"]):
+    vals = [reg_scores[m][metric] for m in reg_models]
+    ax.bar(reg_models, vals, color=reg_colors)
+    ax.set_title(metric.upper())
+    ax.grid(axis="y", alpha=0.3)
+    for i, v in enumerate(vals):
+        ax.text(i, v + 0.01 * max(vals), f"{v:.3f}", ha="center", fontsize=8)
+
+plt.tight_layout()
+plt.show()
 ```

@@ -20,17 +20,17 @@ uv run ruff format .
 
 - **Functional over class-heavy** — prefer pure functions
 - **Explicit over magic** — no hidden state or silent fallbacks
-- **Polars as single source of truth** — no Pandas in `src/tabular_blueprint/`
+- **Polars as single source of truth** — no Pandas in `src/iter8ml/`
 - **Config is code** — Pydantic models, not YAML
 - **Observability first** — JSONL events, not separate databases
 - **Hardware-aware by default** — auto-route based on dataset size + VRAM
 
 ## Adding a New Model
 
-1. Create wrapper in `src/tabular_blueprint/models/` conforming to `AbstractModel` protocol.
-2. Register the wrapper in `src/tabular_blueprint/models/factory.py` (`_MODEL_REGISTRY`).
-3. Add defaults/search space in `src/tabular_blueprint/models/model_configs.py`.
-4. Update `src/tabular_blueprint/models/selector.py` routing if needed.
+1. Create wrapper in `src/iter8ml/models/` conforming to `AbstractModel` protocol.
+2. Register the wrapper in `src/iter8ml/models/factory.py` (`_MODEL_REGISTRY`).
+3. Add defaults/search space in `src/iter8ml/models/model_configs.py`.
+4. Update `src/iter8ml/models/selector.py` routing if needed.
 5. Add unit and integration tests.
 
 ## Testing

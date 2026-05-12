@@ -2,7 +2,7 @@
 
 import pytest
 
-from tabular_blueprint.utils.jsonl import load_events
+from iter8ml.utils.io import load_events
 
 
 def test_load_events_handles_empty_file(tmp_path):

@@ -2,7 +2,7 @@
 
 import json
 
-from tabular_blueprint.services.report_service import ReportService
+from iter8ml.services.reporting import ReportService
 
 
 def test_build_report_empty(tmp_path):

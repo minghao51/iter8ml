@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from tabular_blueprint.services.export_service import ExportService
+from iter8ml.services.export import ExportService
 
 
 @pytest.fixture

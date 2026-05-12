@@ -3,7 +3,7 @@
 import numpy as np
 import polars as pl
 
-from tabular_blueprint.monitoring.psi_drift import (
+from iter8ml.analysis.psi import (
     PSIDriftDetector,
     classify_drift,
     compute_psi,

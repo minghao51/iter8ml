@@ -4,9 +4,9 @@ import polars as pl
 import pytest
 from sklearn.datasets import make_classification, make_regression
 
-from tabular_blueprint.config import ExperimentConfig
-from tabular_blueprint.engine.hpo import create_study, optimize_model
-from tabular_blueprint.models.factory import get_model_class
+from iter8ml.config import ExperimentConfig
+from iter8ml.engine.hpo import create_study, optimize_model
+from iter8ml.engine.models.factory import get_model_class
 
 
 @pytest.fixture
@@ -57,7 +57,7 @@ def test_hpo_returns_best_params(hpo_classification_data, tmp_path):
         metrics=["roc_auc"],
     )
 
-    from tabular_blueprint.engine.evaluator import Evaluator
+    from iter8ml.engine.evaluator import Evaluator
 
     evaluator = Evaluator(config)
     model_cls = get_model_class("catboost")
@@ -92,7 +92,7 @@ def test_hpo_respects_time_limit(hpo_classification_data, tmp_path):
         metrics=["roc_auc"],
     )
 
-    from tabular_blueprint.engine.evaluator import Evaluator
+    from iter8ml.engine.evaluator import Evaluator
 
     evaluator = Evaluator(config)
     model_cls = get_model_class("catboost")
@@ -125,7 +125,7 @@ def test_hpo_invalid_search_space_raises(hpo_classification_data, tmp_path):
         metrics=["roc_auc"],
     )
 
-    from tabular_blueprint.engine.evaluator import Evaluator
+    from iter8ml.engine.evaluator import Evaluator
 
     evaluator = Evaluator(config)
     model_cls = get_model_class("catboost")
@@ -157,7 +157,7 @@ def test_hpo_pruning_works(hpo_classification_data, tmp_path):
         metrics=["roc_auc"],
     )
 
-    from tabular_blueprint.engine.evaluator import Evaluator
+    from iter8ml.engine.evaluator import Evaluator
 
     evaluator = Evaluator(config)
     model_cls = get_model_class("catboost")
@@ -187,7 +187,7 @@ def test_hpo_warmstart_injects_logged_trials(hpo_classification_data, tmp_path):
         cv_folds=3,
         metrics=["roc_auc"],
     )
-    from tabular_blueprint.engine.evaluator import Evaluator
+    from iter8ml.engine.evaluator import Evaluator
 
     evaluator = Evaluator(config)
     model_cls = get_model_class("catboost")

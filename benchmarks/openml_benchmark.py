@@ -111,7 +111,6 @@ def _preprocess_for_benchmark(
     df: pl.DataFrame, target_col: str, task: str
 ) -> tuple[np.ndarray, np.ndarray]:
     from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
-
     from tabular_blueprint.data.adapter import DataAdapter
 
     adapter = DataAdapter()

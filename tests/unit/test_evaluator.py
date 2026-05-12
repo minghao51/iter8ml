@@ -3,9 +3,9 @@
 import numpy as np
 import pytest
 
-from tabular_blueprint.config import ExperimentConfig
-from tabular_blueprint.constants import TaskType
-from tabular_blueprint.engine.evaluator import Evaluator
+from iter8ml.config import ExperimentConfig
+from iter8ml.constants import TaskType
+from iter8ml.engine.evaluator import Evaluator
 
 
 class ProbaDrivenModel:

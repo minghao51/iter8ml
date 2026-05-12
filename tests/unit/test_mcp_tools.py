@@ -1,6 +1,7 @@
 """Tests for MCP server tools."""
 
 import json
+import os
 from pathlib import Path
 
 import polars as pl
@@ -9,7 +10,7 @@ from sklearn.datasets import make_classification
 
 pytest.importorskip("mcp.server.fastmcp")
 
-from tabular_blueprint.mcp.tools import (
+from iter8ml.services.mcp import (
     detect_drift,
     get_column_stats,
     get_event_log,
@@ -19,6 +20,8 @@ from tabular_blueprint.mcp.tools import (
     run_baseline,
     run_hpo,
 )
+
+_HAS_TABPFN_TOKEN = bool(os.environ.get("TABPFN_TOKEN"))
 
 
 @pytest.fixture
@@ -71,12 +74,20 @@ def test_get_column_stats_unsupported_format(tmp_path):
         get_column_stats(bad_path)
 
 
+@pytest.mark.skipif(
+    not _HAS_TABPFN_TOKEN,
+    reason="TABPFN_TOKEN not set — TabPFN needs license in CI",
+)
 def test_run_baseline_csv(sample_csv):
     result = run_baseline(sample_csv, "target", task="classification")
     data = json.loads(result)
     assert "catboost" in data
 
 
+@pytest.mark.skipif(
+    not _HAS_TABPFN_TOKEN,
+    reason="TABPFN_TOKEN not set — TabPFN needs license in CI",
+)
 def test_run_baseline_parquet(sample_parquet):
     result = run_baseline(sample_parquet, "target", task="classification")
     data = json.loads(result)
@@ -183,7 +194,7 @@ def test_run_hpo_forwards_task(sample_csv, monkeypatch):
         captured["task"] = kwargs.get("task")
         return {"best_params": {}, "best_value": 0.0, "n_trials": 1}
 
-    monkeypatch.setattr("tabular_blueprint.engine.hpo.optimize_model", fake_optimize_model)
+    monkeypatch.setattr("iter8ml.engine.hpo.optimize_model", fake_optimize_model)
 
     result = run_hpo(sample_csv, "target", model="catboost", task="regression", trials=1)
 
@@ -206,8 +217,8 @@ def test_run_hpo_uses_shared_model_factory(sample_csv, monkeypatch):
         captured["model_cls"] = model_cls
         return {"best_params": {}, "best_value": 0.0, "n_trials": 1}
 
-    monkeypatch.setattr("tabular_blueprint.mcp.tools.get_model_class", fake_get_model_class)
-    monkeypatch.setattr("tabular_blueprint.engine.hpo.optimize_model", fake_optimize_model)
+    monkeypatch.setattr("iter8ml.services.mcp.get_model_class", fake_get_model_class)
+    monkeypatch.setattr("iter8ml.engine.hpo.optimize_model", fake_optimize_model)
 
     result = run_hpo(sample_csv, "target", model="catboost", trials=1)
 
@@ -221,7 +232,7 @@ def test_get_column_stats_uses_centralized_loader(monkeypatch):
     """Verify get_column_stats uses load_data from core.data.loaders."""
     from unittest.mock import patch
 
-    with patch("tabular_blueprint.mcp.tools.load_data") as mock_load:
+    with patch("iter8ml.services.mcp.load_data") as mock_load:
         mock_load.return_value = pl.DataFrame({"a": [1, 2, 3]})
         get_column_stats("test.csv")
         mock_load.assert_called_once()
@@ -231,11 +242,11 @@ def test_registry_tools_use_service(monkeypatch, tmp_path):
     """Verify registry tools use RegistryService."""
     from unittest.mock import Mock, patch
 
-    from tabular_blueprint.mcp.tools import registry_show
+    from iter8ml.services.mcp import registry_show
 
     mock_registry = Mock()
     mock_registry.get_all.return_value = {"key1": {"model": "catboost"}}
 
-    with patch("tabular_blueprint.mcp.tools.RegistryService", return_value=mock_registry):
+    with patch("iter8ml.services.mcp.RegistryService", return_value=mock_registry):
         result = registry_show()
         assert "catboost" in result

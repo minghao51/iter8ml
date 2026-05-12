@@ -9,7 +9,7 @@ import numpy as np
 import polars as pl
 import pytest
 
-from tabular_blueprint.data.quality import audit_data_quality, clean_noise
+from iter8ml.data.quality import audit_data_quality, clean_noise
 
 CLEANLAB_AVAILABLE = importlib.util.find_spec("cleanlab") is not None
 

@@ -1,6 +1,6 @@
 ---
 title: "Methodology & Benchmarks"
-description: "Comprehensive overview of modeling methods, evaluation techniques, and the benchmarking system powering tabular-blueprint."
+description: "Comprehensive overview of modeling methods, evaluation techniques, and the benchmarking system powering iter8ml."
 date: today
 format:
   html:
@@ -11,7 +11,7 @@ format:
 ---
 
 Comprehensive overview of all modeling methods, evaluation techniques,
-and the benchmarking system powering **tabular-blueprint**.
+and the benchmarking system powering **iter8ml**.
 
 ## Contents
 
@@ -325,61 +325,21 @@ DATA_SIZES = [
 | `pipeline` | Full data preparation pipeline |
 | `data_io` | DataFrame hashing |
 
-### Run Benchmarks
+### Running Benchmarks
 
-```{python}
-#| label: setup-benchmarks
-#| error: true
-import sys
-from pathlib import Path
+Benchmarks are run via the dedicated CLI:
 
-root = Path("..").resolve()
-if str(root) not in sys.path:
-    sys.path.insert(0, str(root))
+```bash
+uv run python benchmarks/run_benchmarks.py
+```
 
-from tabular_blueprint.models.factory import get_model_class
-from benchmarks.benchmark_utils import make_numpy
+Or individually in Python:
+
+```python
 from benchmarks.benchmark_models import bench_model_fit
+from benchmarks.benchmark_utils import make_numpy
 
-available = ["catboost", "lightgbm", "xgboost", "naive_baseline", "linear_baseline"]
-available_info = [(m, get_model_class(m).__name__) for m in available]
-print(f"Available models: {len(available)}")
-```
-
-```{python}
-#| label: run-fit-benchmarks
-#| cache: true
-#| error: true
-sizes_for_demo = [(500, 10), (5000, 20)]
-results = []
-for n_samples, n_features in sizes_for_demo:
-    X, y = make_numpy(n_samples, n_features)
-    for model_name in ["catboost", "lightgbm", "xgboost"]:
-        r = bench_model_fit(model_name, X, y, "classification", warmup=1, runs=3)
-        results.append(r)
-results
-```
-
-```{python}
-#| label: print-benchmark-results
-#| error: true
-from benchmarks.benchmark_utils import _print_plain
-
-_print_plain(results)
-```
-
-```{python}
-#| label: benchmark-table
-#| error: true
-table_lines = []
-for br in sorted(results, key=lambda x: x.mean):
-    param = ", ".join(f"{k}={v}" for k, v in br.params.items())
-    table_lines.append(
-        f"| {br.name:35s} | {param:25s} | {br.mean:.4f}s | {br.median:.4f}s | {br.stdev:.4f}s |"
-    )
-table = (
-    "| Benchmark | Params | Mean | Median | StdDev |\n"
-    "|-----------|--------|------|--------|--------|\n" + "\n".join(table_lines)
-)
-print(table)
+X, y = make_numpy(5000, 20)
+result = bench_model_fit("catboost", X, y, "classification")
+print(f"Mean: {result.mean:.4f}s  |  Median: {result.median:.4f}s")
 ```

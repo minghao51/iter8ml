@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from tabular_blueprint.services.registry_service import RegistryService
+from iter8ml.services.registry import RegistryService
 
 
 @pytest.fixture

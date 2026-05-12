@@ -10,8 +10,8 @@ import polars as pl
 import pytest
 from sklearn.datasets import make_classification
 
-from tabular_blueprint.models.conventional.catboost_model import CatBoostModel
-from tabular_blueprint.services.export_service import ExportService
+from iter8ml.engine.models.catboost_model import CatBoostModel
+from iter8ml.services.export import ExportService
 
 
 def _setup_export_workspace(tmp_path: Path) -> tuple[Path, Path, object]:
@@ -89,7 +89,7 @@ def test_exported_predictor_uses_hamilton_preprocessing(tmp_path: Path):
 
 def test_export_preprocessing_parity_with_training_pipeline(tmp_path: Path):
     pytest.importorskip("hamilton")
-    from tabular_blueprint.pipelines.executor import PipelineExecutor
+    from iter8ml.engine.pipelines.executor import PipelineExecutor
 
     _, export_path, _ = _setup_export_workspace(tmp_path)
 

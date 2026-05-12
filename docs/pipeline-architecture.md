@@ -35,7 +35,7 @@ The pipeline layer uses [Hamilton](https://github.com/DAGWorks-Inc/hamilton) to 
 
 ### Entry Point: `Trainer.run()`
 
-**Source:** `src/tabular_blueprint/engine/trainer.py:50`
+**Source:** `src/iter8ml/engine/trainer.py:50`
 
 1. Calls `PipelineExecutor.run_training()` — builds and executes the full DAG
 
@@ -43,7 +43,7 @@ The pipeline layer uses [Hamilton](https://github.com/DAGWorks-Inc/hamilton) to 
 
 ## Pipeline Executor
 
-**Source:** `src/tabular_blueprint/pipelines/executor.py:122`
+**Source:** `src/iter8ml/pipelines/executor.py:122`
 
 **Class:** `PipelineExecutor`
 
@@ -249,7 +249,7 @@ Config is set via `builder.with_config({"drift_method": "psi"})`.
 
 ## Tracking Hooks
 
-**Source:** `src/tabular_blueprint/pipelines/hooks/tracking_hook.py`
+**Source:** `src/iter8ml/pipelines/hooks/tracking_hook.py`
 
 **Class:** `TrackingHook` — a Hamilton lifecycle adapter that logs node execution to the experiment tracker.
 
@@ -277,7 +277,7 @@ dr = builder.build()
 
 ## Configuration
 
-**Source:** `src/tabular_blueprint/config.py`
+**Source:** `src/iter8ml/config.py`
 
 ### `ExperimentConfig` — Pipeline Parameters
 

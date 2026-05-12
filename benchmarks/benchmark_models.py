@@ -10,6 +10,8 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from tabular_blueprint.models.factory import get_model_class
+
 from benchmarks.benchmark_utils import (
     BENCH_RUNS,
     WARMUP_RUNS,
@@ -17,7 +19,6 @@ from benchmarks.benchmark_utils import (
     bench_fn,
     make_numpy,
 )
-from tabular_blueprint.models.factory import get_model_class
 
 CONVENTIONAL_MODELS = ["catboost", "lightgbm", "xgboost"]
 BASELINE_MODELS = ["naive_baseline", "linear_baseline"]

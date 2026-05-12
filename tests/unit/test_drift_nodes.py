@@ -2,7 +2,7 @@ import numpy as np
 import polars as pl
 import pytest
 
-from tabular_blueprint.pipelines.nodes.drift_detection import (
+from iter8ml.engine.pipelines.nodes.drift_detection import (
     DriftReport,
     live_features,
     reference_features,
@@ -49,7 +49,7 @@ class TestDriftReport:
 class TestDriftDAGIntegration:
     def test_psi_drift_via_executor(self, ref_df, live_df):
         pytest.importorskip("hamilton")
-        from tabular_blueprint.pipelines.executor import PipelineExecutor
+        from iter8ml.engine.pipelines.executor import PipelineExecutor
 
         executor = PipelineExecutor()
         report = executor.run_drift(ref_df, live_df, drift_method="psi")
@@ -59,7 +59,7 @@ class TestDriftDAGIntegration:
 
     def test_domain_drift_via_executor(self, ref_df, live_df):
         pytest.importorskip("hamilton")
-        from tabular_blueprint.pipelines.executor import PipelineExecutor
+        from iter8ml.engine.pipelines.executor import PipelineExecutor
 
         executor = PipelineExecutor()
         report = executor.run_drift(ref_df, live_df, drift_method="domain_classifier")
@@ -69,7 +69,7 @@ class TestDriftDAGIntegration:
 
     def test_both_drift_via_executor(self, ref_df, live_df):
         pytest.importorskip("hamilton")
-        from tabular_blueprint.pipelines.executor import PipelineExecutor
+        from iter8ml.engine.pipelines.executor import PipelineExecutor
 
         executor = PipelineExecutor()
         report = executor.run_drift(ref_df, live_df, drift_method="both")
@@ -79,7 +79,7 @@ class TestDriftDAGIntegration:
 
     def test_detects_shifted_data(self, ref_df, live_df):
         pytest.importorskip("hamilton")
-        from tabular_blueprint.pipelines.executor import PipelineExecutor
+        from iter8ml.engine.pipelines.executor import PipelineExecutor
 
         executor = PipelineExecutor()
         report = executor.run_drift(ref_df, live_df, drift_method="psi")
@@ -87,7 +87,7 @@ class TestDriftDAGIntegration:
 
     def test_no_drift_identical_data(self, ref_df):
         pytest.importorskip("hamilton")
-        from tabular_blueprint.pipelines.executor import PipelineExecutor
+        from iter8ml.engine.pipelines.executor import PipelineExecutor
 
         executor = PipelineExecutor()
         report = executor.run_drift(ref_df, ref_df, drift_method="psi")

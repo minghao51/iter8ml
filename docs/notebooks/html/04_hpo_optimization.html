@@ -2251,7 +2251,7 @@ vertical-align: -.125em;
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.datasets <span class="im">import</span> make_classification</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.data.adapter <span class="im">import</span> DataAdapter</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.data.adapter <span class="im">import</span> DataAdapter</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>X_raw, y_raw <span class="op">=</span> make_classification(</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    n_samples<span class="op">=</span><span class="dv">3000</span>, n_features<span class="op">=</span><span class="dv">20</span>, n_informative<span class="op">=</span><span class="dv">12</span>, random_state<span class="op">=</span><span class="dv">42</span></span>
@@ -2272,7 +2272,7 @@ vertical-align: -.125em;
 <div id="create-study" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.engine.hpo <span class="im">import</span> create_study</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.engine.hpo <span class="im">import</span> create_study</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>study <span class="op">=</span> create_study(</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    model_name<span class="op">=</span><span class="st">&quot;catboost&quot;</span>,</span>
@@ -2298,10 +2298,10 @@ vertical-align: -.125em;
 <div id="catboost-hpo" class="cell" data-cache="true" data-execution_count="3">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.engine.hpo <span class="im">import</span> optimize_model</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.engine.evaluator <span class="im">import</span> Evaluator</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.config <span class="im">import</span> ExperimentConfig</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.models.factory <span class="im">import</span> get_model_class</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.engine.hpo <span class="im">import</span> optimize_model</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.engine.evaluator <span class="im">import</span> Evaluator</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.config <span class="im">import</span> ExperimentConfig</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.models.factory <span class="im">import</span> get_model_class</span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>eval_config <span class="op">=</span> ExperimentConfig(</span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">&quot;hpo_nb&quot;</span>,</span>
@@ -2374,7 +2374,7 @@ vertical-align: -.125em;
 <pre><code>Best ROC AUC: 0.9833</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
-<pre><code>/Users/minghao/Desktop/personal/iter8ml/src/tabular_blueprint/engine/hpo_importance.py:54: ExperimentalWarning: PedAnovaImportanceEvaluator is experimental (supported from v3.6.0). The interface can change in the future.
+<pre><code>/Users/minghao/Desktop/personal/iter8ml/src/iter8ml/engine/hpo_importance.py:54: ExperimentalWarning: PedAnovaImportanceEvaluator is experimental (supported from v3.6.0). The interface can change in the future.
   evaluator = evaluator_class()</code></pre>
 </div>
 </div>
@@ -2392,10 +2392,10 @@ vertical-align: -.125em;
 <div id="lightgbm-hpo" class="cell" data-cache="true" data-execution_count="5">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.engine.hpo <span class="im">import</span> optimize_model <span class="im">as</span> om2</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.engine.evaluator <span class="im">import</span> Evaluator <span class="im">as</span> Ev2</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.config <span class="im">import</span> ExperimentConfig <span class="im">as</span> Ec2</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.models.factory <span class="im">import</span> get_model_class <span class="im">as</span> Gc2</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.engine.hpo <span class="im">import</span> optimize_model <span class="im">as</span> om2</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.engine.evaluator <span class="im">import</span> Evaluator <span class="im">as</span> Ev2</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.config <span class="im">import</span> ExperimentConfig <span class="im">as</span> Ec2</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.models.factory <span class="im">import</span> get_model_class <span class="im">as</span> Gc2</span>
 <span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>eval_cfg2 <span class="op">=</span> Ec2(</span>
 <span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">&quot;hpo_lgbm&quot;</span>,</span>
@@ -2468,7 +2468,7 @@ vertical-align: -.125em;
 <pre><code>LightGBM Best ROC AUC: 0.9812</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
-<pre><code>/Users/minghao/Desktop/personal/iter8ml/src/tabular_blueprint/engine/hpo_importance.py:54: ExperimentalWarning: PedAnovaImportanceEvaluator is experimental (supported from v3.6.0). The interface can change in the future.
+<pre><code>/Users/minghao/Desktop/personal/iter8ml/src/iter8ml/engine/hpo_importance.py:54: ExperimentalWarning: PedAnovaImportanceEvaluator is experimental (supported from v3.6.0). The interface can change in the future.
   evaluator = evaluator_class()</code></pre>
 </div>
 </div>
@@ -2493,10 +2493,10 @@ vertical-align: -.125em;
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tempfile</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.engine.hpo <span class="im">import</span> optimize_model <span class="im">as</span> om3</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.engine.evaluator <span class="im">import</span> Evaluator <span class="im">as</span> Ev3</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.config <span class="im">import</span> ExperimentConfig <span class="im">as</span> Ec3</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.models.factory <span class="im">import</span> get_model_class <span class="im">as</span> Gc3</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.engine.hpo <span class="im">import</span> optimize_model <span class="im">as</span> om3</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.engine.evaluator <span class="im">import</span> Evaluator <span class="im">as</span> Ev3</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.config <span class="im">import</span> ExperimentConfig <span class="im">as</span> Ec3</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.models.factory <span class="im">import</span> get_model_class <span class="im">as</span> Gc3</span>
 <span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>log_path <span class="op">=</span> Path(tempfile.mkdtemp()) <span class="op">/</span> <span class="st">&quot;hpo_warmstart.jsonl&quot;</span></span>
 <span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a></span>
@@ -2558,7 +2558,7 @@ vertical-align: -.125em;
 
 <span class="ansi-green-fg">[I 2026-05-04 00:44:52,243]</span> Trial 9 finished with value: 0.9797119734638938 and parameters: {}. Best is trial 0 with value: 0.9797119734638938.
 
-/Users/minghao/Desktop/personal/iter8ml/src/tabular_blueprint/engine/hpo_importance.py:54: ExperimentalWarning: PedAnovaImportanceEvaluator is experimental (supported from v3.6.0). The interface can change in the future.
+/Users/minghao/Desktop/personal/iter8ml/src/iter8ml/engine/hpo_importance.py:54: ExperimentalWarning: PedAnovaImportanceEvaluator is experimental (supported from v3.6.0). The interface can change in the future.
 
   evaluator = evaluator_class()
 
@@ -2590,7 +2590,7 @@ vertical-align: -.125em;
 <pre><code>First pass: 0.9797  -&gt;  Warmstarted: 0.9797  |  Warmstart trials: 0</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
-<pre><code>/Users/minghao/Desktop/personal/iter8ml/src/tabular_blueprint/engine/hpo_importance.py:54: ExperimentalWarning: PedAnovaImportanceEvaluator is experimental (supported from v3.6.0). The interface can change in the future.
+<pre><code>/Users/minghao/Desktop/personal/iter8ml/src/iter8ml/engine/hpo_importance.py:54: ExperimentalWarning: PedAnovaImportanceEvaluator is experimental (supported from v3.6.0). The interface can change in the future.
   evaluator = evaluator_class()</code></pre>
 </div>
 </div>
@@ -3078,7 +3078,7 @@ vertical-align: -.125em;
 <span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
 <span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
 <span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.datasets <span class="im">import</span> make_classification</span>
-<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.data.adapter <span class="im">import</span> DataAdapter</span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.data.adapter <span class="im">import</span> DataAdapter</span>
 <span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb17-32"><a href="#cb17-32" aria-hidden="true" tabindex="-1"></a>X_raw, y_raw <span class="op">=</span> make_classification(</span>
 <span id="cb17-33"><a href="#cb17-33" aria-hidden="true" tabindex="-1"></a>    n_samples<span class="op">=</span><span class="dv">3000</span>, n_features<span class="op">=</span><span class="dv">20</span>, n_informative<span class="op">=</span><span class="dv">12</span>, random_state<span class="op">=</span><span class="dv">42</span></span>
@@ -3094,7 +3094,7 @@ vertical-align: -.125em;
 <span id="cb17-43"><a href="#cb17-43" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb17-46"><a href="#cb17-46" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
 <span id="cb17-47"><a href="#cb17-47" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: create-study</span></span>
-<span id="cb17-48"><a href="#cb17-48" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.engine.hpo <span class="im">import</span> create_study</span>
+<span id="cb17-48"><a href="#cb17-48" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.engine.hpo <span class="im">import</span> create_study</span>
 <span id="cb17-49"><a href="#cb17-49" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb17-50"><a href="#cb17-50" aria-hidden="true" tabindex="-1"></a>study <span class="op">=</span> create_study(</span>
 <span id="cb17-51"><a href="#cb17-51" aria-hidden="true" tabindex="-1"></a>    model_name<span class="op">=</span><span class="st">&quot;catboost&quot;</span>,</span>
@@ -3110,10 +3110,10 @@ vertical-align: -.125em;
 <span id="cb17-63"><a href="#cb17-63" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
 <span id="cb17-64"><a href="#cb17-64" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: catboost-hpo</span></span>
 <span id="cb17-65"><a href="#cb17-65" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
-<span id="cb17-66"><a href="#cb17-66" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.engine.hpo <span class="im">import</span> optimize_model</span>
-<span id="cb17-67"><a href="#cb17-67" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.engine.evaluator <span class="im">import</span> Evaluator</span>
-<span id="cb17-68"><a href="#cb17-68" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.config <span class="im">import</span> ExperimentConfig</span>
-<span id="cb17-69"><a href="#cb17-69" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.models.factory <span class="im">import</span> get_model_class</span>
+<span id="cb17-66"><a href="#cb17-66" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.engine.hpo <span class="im">import</span> optimize_model</span>
+<span id="cb17-67"><a href="#cb17-67" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.engine.evaluator <span class="im">import</span> Evaluator</span>
+<span id="cb17-68"><a href="#cb17-68" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.config <span class="im">import</span> ExperimentConfig</span>
+<span id="cb17-69"><a href="#cb17-69" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.models.factory <span class="im">import</span> get_model_class</span>
 <span id="cb17-70"><a href="#cb17-70" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb17-71"><a href="#cb17-71" aria-hidden="true" tabindex="-1"></a>eval_config <span class="op">=</span> ExperimentConfig(</span>
 <span id="cb17-72"><a href="#cb17-72" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">&quot;hpo_nb&quot;</span>,</span>
@@ -3149,10 +3149,10 @@ vertical-align: -.125em;
 <span id="cb17-106"><a href="#cb17-106" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
 <span id="cb17-107"><a href="#cb17-107" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: lightgbm-hpo</span></span>
 <span id="cb17-108"><a href="#cb17-108" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
-<span id="cb17-109"><a href="#cb17-109" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.engine.hpo <span class="im">import</span> optimize_model <span class="im">as</span> om2</span>
-<span id="cb17-110"><a href="#cb17-110" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.engine.evaluator <span class="im">import</span> Evaluator <span class="im">as</span> Ev2</span>
-<span id="cb17-111"><a href="#cb17-111" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.config <span class="im">import</span> ExperimentConfig <span class="im">as</span> Ec2</span>
-<span id="cb17-112"><a href="#cb17-112" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.models.factory <span class="im">import</span> get_model_class <span class="im">as</span> Gc2</span>
+<span id="cb17-109"><a href="#cb17-109" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.engine.hpo <span class="im">import</span> optimize_model <span class="im">as</span> om2</span>
+<span id="cb17-110"><a href="#cb17-110" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.engine.evaluator <span class="im">import</span> Evaluator <span class="im">as</span> Ev2</span>
+<span id="cb17-111"><a href="#cb17-111" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.config <span class="im">import</span> ExperimentConfig <span class="im">as</span> Ec2</span>
+<span id="cb17-112"><a href="#cb17-112" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.models.factory <span class="im">import</span> get_model_class <span class="im">as</span> Gc2</span>
 <span id="cb17-113"><a href="#cb17-113" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb17-114"><a href="#cb17-114" aria-hidden="true" tabindex="-1"></a>eval_cfg2 <span class="op">=</span> Ec2(</span>
 <span id="cb17-115"><a href="#cb17-115" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">&quot;hpo_lgbm&quot;</span>,</span>
@@ -3192,10 +3192,10 @@ vertical-align: -.125em;
 <span id="cb17-153"><a href="#cb17-153" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tempfile</span>
 <span id="cb17-154"><a href="#cb17-154" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
 <span id="cb17-155"><a href="#cb17-155" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-156"><a href="#cb17-156" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.engine.hpo <span class="im">import</span> optimize_model <span class="im">as</span> om3</span>
-<span id="cb17-157"><a href="#cb17-157" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.engine.evaluator <span class="im">import</span> Evaluator <span class="im">as</span> Ev3</span>
-<span id="cb17-158"><a href="#cb17-158" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.config <span class="im">import</span> ExperimentConfig <span class="im">as</span> Ec3</span>
-<span id="cb17-159"><a href="#cb17-159" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.models.factory <span class="im">import</span> get_model_class <span class="im">as</span> Gc3</span>
+<span id="cb17-156"><a href="#cb17-156" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.engine.hpo <span class="im">import</span> optimize_model <span class="im">as</span> om3</span>
+<span id="cb17-157"><a href="#cb17-157" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.engine.evaluator <span class="im">import</span> Evaluator <span class="im">as</span> Ev3</span>
+<span id="cb17-158"><a href="#cb17-158" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.config <span class="im">import</span> ExperimentConfig <span class="im">as</span> Ec3</span>
+<span id="cb17-159"><a href="#cb17-159" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.models.factory <span class="im">import</span> get_model_class <span class="im">as</span> Gc3</span>
 <span id="cb17-160"><a href="#cb17-160" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb17-161"><a href="#cb17-161" aria-hidden="true" tabindex="-1"></a>log_path <span class="op">=</span> Path(tempfile.mkdtemp()) <span class="op">/</span> <span class="st">&quot;hpo_warmstart.jsonl&quot;</span></span>
 <span id="cb17-162"><a href="#cb17-162" aria-hidden="true" tabindex="-1"></a></span>

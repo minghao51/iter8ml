@@ -2277,7 +2277,7 @@ vertical-align: -.125em;
 <div id="ks-drift" class="cell" data-cache="true" data-execution_count="2">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.monitoring.drift <span class="im">import</span> DriftDetector</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.monitoring.drift <span class="im">import</span> DriftDetector</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>ks_detector <span class="op">=</span> DriftDetector(df_ref, alpha<span class="op">=</span><span class="fl">0.05</span>)</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>ks_report <span class="op">=</span> ks_detector.detect(df_live)</span>
@@ -2316,7 +2316,7 @@ DRIFT  |  feat_7      |  p=0.000000  |  test=ks_test
 <div id="psi-drift" class="cell" data-cache="true" data-execution_count="4">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.monitoring.psi_drift <span class="im">import</span> PSIDriftDetector</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.monitoring.psi_drift <span class="im">import</span> PSIDriftDetector</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>psi_detector <span class="op">=</span> PSIDriftDetector(df_ref, n_bins<span class="op">=</span><span class="dv">10</span>)</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>psi_report <span class="op">=</span> psi_detector.detect(df_live)</span>
@@ -2357,7 +2357,7 @@ DRIFT  |  feat_7      |  p=0.000000  |  test=ks_test
 <div id="domain-classifier" class="cell" data-cache="true" data-execution_count="6">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.monitoring.domain_classifier <span class="im">import</span> DomainClassifierDriftDetector</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.monitoring.domain_classifier <span class="im">import</span> DomainClassifierDriftDetector</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>dc_detector <span class="op">=</span> DomainClassifierDriftDetector(df_ref, threshold<span class="op">=</span><span class="fl">0.7</span>, random_seed<span class="op">=</span><span class="dv">42</span>)</span>
 <span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>dc_report <span class="op">=</span> dc_detector.detect(df_live)</span>
@@ -2373,7 +2373,7 @@ DRIFT  |  feat_7      |  p=0.000000  |  test=ks_test
 <div id="dag-drift" class="cell" data-execution_count="7">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.pipelines.executor <span class="im">import</span> PipelineExecutor</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.pipelines.executor <span class="im">import</span> PipelineExecutor</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>executor <span class="op">=</span> PipelineExecutor()</span>
 <span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> executor.available:</span>
@@ -2892,7 +2892,7 @@ DRIFT  |  feat_7      |  p=0.000000  |  test=ks_test
 <span id="cb15-51"><a href="#cb15-51" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
 <span id="cb15-52"><a href="#cb15-52" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: ks-drift</span></span>
 <span id="cb15-53"><a href="#cb15-53" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
-<span id="cb15-54"><a href="#cb15-54" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.monitoring.drift <span class="im">import</span> DriftDetector</span>
+<span id="cb15-54"><a href="#cb15-54" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.monitoring.drift <span class="im">import</span> DriftDetector</span>
 <span id="cb15-55"><a href="#cb15-55" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb15-56"><a href="#cb15-56" aria-hidden="true" tabindex="-1"></a>ks_detector <span class="op">=</span> DriftDetector(df_ref, alpha<span class="op">=</span><span class="fl">0.05</span>)</span>
 <span id="cb15-57"><a href="#cb15-57" aria-hidden="true" tabindex="-1"></a>ks_report <span class="op">=</span> ks_detector.detect(df_live)</span>
@@ -2913,7 +2913,7 @@ DRIFT  |  feat_7      |  p=0.000000  |  test=ks_test
 <span id="cb15-76"><a href="#cb15-76" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
 <span id="cb15-77"><a href="#cb15-77" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: psi-drift</span></span>
 <span id="cb15-78"><a href="#cb15-78" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
-<span id="cb15-79"><a href="#cb15-79" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.monitoring.psi_drift <span class="im">import</span> PSIDriftDetector</span>
+<span id="cb15-79"><a href="#cb15-79" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.monitoring.psi_drift <span class="im">import</span> PSIDriftDetector</span>
 <span id="cb15-80"><a href="#cb15-80" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb15-81"><a href="#cb15-81" aria-hidden="true" tabindex="-1"></a>psi_detector <span class="op">=</span> PSIDriftDetector(df_ref, n_bins<span class="op">=</span><span class="dv">10</span>)</span>
 <span id="cb15-82"><a href="#cb15-82" aria-hidden="true" tabindex="-1"></a>psi_report <span class="op">=</span> psi_detector.detect(df_live)</span>
@@ -2934,7 +2934,7 @@ DRIFT  |  feat_7      |  p=0.000000  |  test=ks_test
 <span id="cb15-101"><a href="#cb15-101" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
 <span id="cb15-102"><a href="#cb15-102" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: domain-classifier</span></span>
 <span id="cb15-103"><a href="#cb15-103" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
-<span id="cb15-104"><a href="#cb15-104" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.monitoring.domain_classifier <span class="im">import</span> DomainClassifierDriftDetector</span>
+<span id="cb15-104"><a href="#cb15-104" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.monitoring.domain_classifier <span class="im">import</span> DomainClassifierDriftDetector</span>
 <span id="cb15-105"><a href="#cb15-105" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb15-106"><a href="#cb15-106" aria-hidden="true" tabindex="-1"></a>dc_detector <span class="op">=</span> DomainClassifierDriftDetector(df_ref, threshold<span class="op">=</span><span class="fl">0.7</span>, random_seed<span class="op">=</span><span class="dv">42</span>)</span>
 <span id="cb15-107"><a href="#cb15-107" aria-hidden="true" tabindex="-1"></a>dc_report <span class="op">=</span> dc_detector.detect(df_live)</span>
@@ -2946,7 +2946,7 @@ DRIFT  |  feat_7      |  p=0.000000  |  test=ks_test
 <span id="cb15-115"><a href="#cb15-115" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
 <span id="cb15-116"><a href="#cb15-116" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: dag-drift</span></span>
 <span id="cb15-117"><a href="#cb15-117" aria-hidden="true" tabindex="-1"></a><span class="co">#| error: true</span></span>
-<span id="cb15-118"><a href="#cb15-118" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.pipelines.executor <span class="im">import</span> PipelineExecutor</span>
+<span id="cb15-118"><a href="#cb15-118" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.pipelines.executor <span class="im">import</span> PipelineExecutor</span>
 <span id="cb15-119"><a href="#cb15-119" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb15-120"><a href="#cb15-120" aria-hidden="true" tabindex="-1"></a>executor <span class="op">=</span> PipelineExecutor()</span>
 <span id="cb15-121"><a href="#cb15-121" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> executor.available:</span>

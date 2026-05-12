@@ -4,7 +4,7 @@ import optuna
 import pytest
 from pydantic import ValidationError
 
-from tabular_blueprint.engine.hpo_importance import (
+from iter8ml.engine.hpo_importance import (
     ImportanceReport,
     ParamImportance,
     compute_param_importance,

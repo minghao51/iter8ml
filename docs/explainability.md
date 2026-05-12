@@ -6,7 +6,7 @@ Reference for SHAP-based model explanations: global feature importance and visua
 
 ## SHAP Explainer
 
-**Source:** `src/tabular_blueprint/monitoring/explainability.py:24`
+**Source:** `src/iter8ml/monitoring/explainability.py:24`
 
 **Class:** `Explainer`
 
@@ -116,7 +116,7 @@ workspace/artifacts/shap_{run_id}/dependence_{i}.png
 
 ## Orchestration
 
-**Source:** `src/tabular_blueprint/monitoring/explainability.py:28`
+**Source:** `src/iter8ml/monitoring/explainability.py:28`
 
 **Class:** `Explainer`
 

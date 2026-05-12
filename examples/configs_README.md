@@ -1,12 +1,12 @@
 # Example Configuration
 
-This file provides a complete, runnable example for the tabular-blueprint experiment configuration using `ExperimentConfig` (Pydantic). Use this as a template for your own projects.
+This file provides a complete, runnable example for the iter8ml experiment configuration using `ExperimentConfig` (Pydantic). Use this as a template for your own projects.
 
 ## Basic Classification Example
 
 ```python
-from tabular_blueprint.config import ExperimentConfig
-from tabular_blueprint.constants import CVStrategy, TaskType, TrackerType
+from iter8ml.config import ExperimentConfig
+from iter8ml.constants import CVStrategy, TaskType, TrackerType
 
 config = ExperimentConfig(
     name="credit_risk_v1",
@@ -29,8 +29,8 @@ config = ExperimentConfig(
 ## Basic Regression Example
 
 ```python
-from tabular_blueprint.config import ExperimentConfig
-from tabular_blueprint.constants import CVStrategy, TaskType, TrackerType
+from iter8ml.config import ExperimentConfig
+from iter8ml.constants import CVStrategy, TaskType, TrackerType
 
 config = ExperimentConfig(
     name="house_prices_regression",
@@ -50,8 +50,8 @@ config = ExperimentConfig(
 ## With HPO and Multiple Models
 
 ```python
-from tabular_blueprint.config import ExperimentConfig
-from tabular_blueprint.constants import TaskType, TrackerType
+from iter8ml.config import ExperimentConfig
+from iter8ml.constants import TaskType, TrackerType
 
 config = ExperimentConfig(
     name="tabular_benchmark",
@@ -125,8 +125,8 @@ config = ExperimentConfig(
 
 ```bash
 # Using an example config
-uv run tabblueprint run --config examples/credit_risk.py
+uv run iter8 run --config examples/credit_risk.py
 
 # View leaderboard after run
-uv run tabblueprint leaderboard --top 5 --metric roc_auc
+uv run iter8 leaderboard --top 5 --metric roc_auc
 ```

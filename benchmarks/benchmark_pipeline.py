@@ -10,18 +10,19 @@ import polars as pl
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from benchmarks.benchmark_utils import (
-    BenchResult,
-    bench_fn,
-    make_class_df,
-    make_numpy,
-)
 from tabular_blueprint.data.adapter import DataAdapter
 from tabular_blueprint.data.feature_engine import (
     discover_interactions,
     extract_top_k_features,
     prune_features,
     transform_target,
+)
+
+from benchmarks.benchmark_utils import (
+    BenchResult,
+    bench_fn,
+    make_class_df,
+    make_numpy,
 )
 
 

@@ -19,7 +19,7 @@ class TestImportTime:
             (
                 "import time, sys; "
                 "t0 = time.perf_counter(); "
-                "import tabular_blueprint; "
+                "import iter8ml; "
                 "elapsed = time.perf_counter() - t0; "
                 "print(f'import_time={elapsed:.3f}s'); "
                 "sys.exit(0 if elapsed < 1.0 else 1)"
@@ -35,7 +35,7 @@ class TestImportTime:
         """FT-Transformer should raise ImportError when torch is unavailable."""
         # The module should be importable even without torch installed.
         # The error only happens when you try to instantiate the model.
-        from tabular_blueprint.models.deep.ft_transformer import FTTransformerModel
+        from iter8ml.engine.models.ft_transformer import FTTransformerModel
 
         with pytest.raises(ImportError):
             FTTransformerModel()
@@ -43,7 +43,7 @@ class TestImportTime:
     @pytest.mark.skipif(not _HAS_TORCH, reason="torch not installed in this environment")
     def test_deep_models_construct_when_torch_present(self) -> None:
         """FT-Transformer should construct successfully when torch is available."""
-        from tabular_blueprint.models.deep.ft_transformer import FTTransformerModel
+        from iter8ml.engine.models.ft_transformer import FTTransformerModel
 
         model = FTTransformerModel()
         assert model.model_name == "FT-Transformer"
@@ -52,7 +52,7 @@ class TestImportTime:
         """mcp.tools should be importable even if mcp package is missing."""
         # The tool functions are plain Python functions — only accessing ``mcp``
         # triggers the lazy FastMCP initializer.
-        from tabular_blueprint.mcp.tools import (
+        from iter8ml.services.mcp import (
             get_column_stats,
             get_event_log,
             get_experiment_state,

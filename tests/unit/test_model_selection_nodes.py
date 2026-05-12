@@ -1,4 +1,4 @@
-from tabular_blueprint.pipelines.nodes.model_selection import models_to_run
+from iter8ml.engine.pipelines.nodes.train import models_to_run
 
 
 class _Prep:

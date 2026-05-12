@@ -22,6 +22,7 @@ engineered distribution shift:
 ```{python}
 #| label: create-datasets
 #| cache: true
+import matplotlib.pyplot as plt
 import numpy as np
 import polars as pl
 from sklearn.datasets import make_classification
@@ -42,12 +43,36 @@ df_live = df_live.with_columns(target=pl.Series(y_ref[:800]))
 print(f"Reference: {df_ref.shape}  |  Live: {df_live.shape}  |  Shifted columns: feat_0, feat_3, feat_7")
 ```
 
+```{python}
+#| label: distribution-overlay
+#| fig-cap: "Reference (blue) vs Live (orange) distributions for drifted and stable features"
+#| fig-width: 12
+#| fig-height: 3.5
+shifted_cols = [0, 3, 7]
+stable_cols = [1, 2]
+cols_to_plot = shifted_cols + stable_cols
+
+fig, axes = plt.subplots(1, len(cols_to_plot), figsize=(12, 3.5))
+for ax, col_idx in zip(axes, cols_to_plot):
+    ax.hist(X_ref[:, col_idx], bins=40, alpha=0.5, density=True, label="Reference", color="#4C72B0")
+    ax.hist(X_live[:, col_idx], bins=40, alpha=0.5, density=True, label="Live", color="#DD8452")
+    label = "DRIFTED" if col_idx in shifted_cols else "stable"
+    ax.set_title(f"feat_{col_idx} ({label})", fontsize=10,
+                 color="#C44E52" if col_idx in shifted_cols else "#55A868")
+    ax.set_yticks([])
+    ax.legend(fontsize=7)
+
+plt.suptitle("Distribution Comparison: Reference vs Live", fontsize=12, y=1.02)
+plt.tight_layout()
+plt.show()
+```
+
 ## 2. KS / Chi-squared Drift Detection
 
 ```{python}
 #| label: ks-drift
 #| cache: true
-from tabular_blueprint.monitoring.drift import DriftDetector
+from iter8ml.monitoring.drift import DriftDetector
 
 ks_detector = DriftDetector(df_ref, alpha=0.05)
 ks_report = ks_detector.detect(df_live)
@@ -55,12 +80,25 @@ print(f"Drift detected: {ks_report.drift_detected}  |  Columns drifted: {ks_repo
 ```
 
 ```{python}
-#| label: ks-drift-details
-ks_lines = []
-for c in ks_report.column_results:
-    status = "DRIFT" if c.drift_detected else "  OK"
-    ks_lines.append(f"{status}  |  {c.column:10s}  |  p={c.p_value:.6f}  |  test={c.test_used}")
-print("\n".join(ks_lines))
+#| label: ks-drift-chart
+#| fig-cap: "KS test p-values per feature — red dashed line is the significance threshold (alpha=0.05)"
+#| fig-width: 8
+#| fig-height: 4
+features = [c.column for c in ks_report.column_results]
+p_values = [c.p_value for c in ks_report.column_results]
+drifted = [c.drift_detected for c in ks_report.column_results]
+
+fig, ax = plt.subplots(figsize=(8, 4))
+colors = ["#C44E52" if d else "#55A868" for d in drifted]
+bars = ax.barh(features, p_values, color=colors)
+ax.axvline(0.05, color="#C44E52", linestyle="--", linewidth=1.5, label="alpha = 0.05")
+ax.set_xlabel("p-value")
+ax.set_title("KS/Chi-squared Drift Detection per Feature")
+ax.legend()
+ax.invert_yaxis()
+ax.grid(axis="x", alpha=0.3)
+plt.tight_layout()
+plt.show()
 ```
 
 ## 3. PSI (Population Stability Index)
@@ -68,7 +106,7 @@ print("\n".join(ks_lines))
 ```{python}
 #| label: psi-drift
 #| cache: true
-from tabular_blueprint.monitoring.psi_drift import PSIDriftDetector
+from iter8ml.monitoring.psi_drift import PSIDriftDetector
 
 psi_detector = PSIDriftDetector(df_ref, n_bins=10)
 psi_report = psi_detector.detect(df_live)
@@ -76,12 +114,28 @@ print(f"PSI drift detected: {psi_report.drift_detected}  |  Moderate: {psi_repor
 ```
 
 ```{python}
-#| label: psi-drift-details
-psi_rows = []
-for f in psi_report.feature_psi:
-    psi_rows.append(f"| {f.feature:10s} | {f.psi_value:.4f} | {f.drift_level:10s} |")
-table = "| Feature | PSI | Level |\n|----------|------|--------|\n" + "\n".join(psi_rows)
-print(table)
+#| label: psi-chart
+#| fig-cap: "PSI values per feature with severity thresholds (green < 0.1, orange 0.1-0.25, red > 0.25)"
+#| fig-width: 8
+#| fig-height: 4
+psi_features = [f.feature for f in psi_report.feature_psi]
+psi_values = [f.psi_value for f in psi_report.feature_psi]
+psi_levels = [f.drift_level for f in psi_report.feature_psi]
+
+level_colors = {"none": "#55A868", "moderate": "#DD8452", "severe": "#C44E52"}
+bar_colors = [level_colors.get(l, "#888888") for l in psi_levels]
+
+fig, ax = plt.subplots(figsize=(8, 4))
+bars = ax.barh(psi_features, psi_values, color=bar_colors)
+ax.axvline(0.1, color="#DD8452", linestyle="--", linewidth=1, label="Moderate (0.1)")
+ax.axvline(0.25, color="#C44E52", linestyle="--", linewidth=1, label="Severe (0.25)")
+ax.set_xlabel("PSI Value")
+ax.set_title("Population Stability Index per Feature")
+ax.legend(fontsize=8)
+ax.invert_yaxis()
+ax.grid(axis="x", alpha=0.3)
+plt.tight_layout()
+plt.show()
 ```
 
 ## 4. Domain Classifier (Multivariate Drift)
@@ -89,24 +143,96 @@ print(table)
 ```{python}
 #| label: domain-classifier
 #| cache: true
-from tabular_blueprint.monitoring.domain_classifier import DomainClassifierDriftDetector
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import RocCurveDisplay
+from sklearn.model_selection import cross_val_predict
+from iter8ml.monitoring.domain_classifier import DomainClassifierDriftDetector
 
 dc_detector = DomainClassifierDriftDetector(df_ref, threshold=0.7, random_seed=42)
 dc_report = dc_detector.detect(df_live)
-print(f"AUC: {dc_report.auc_score:.4f}  |  Threshold: {dc_report.threshold}  |  Drift: {dc_report.drift_detected}  |  Ref n={dc_report.n_reference}, Live n={dc_report.n_live}")
+print(f"AUC: {dc_report.auc_score:.4f}  |  Threshold: {dc_report.threshold}  |  Drift: {dc_report.drift_detected}")
 ```
 
-## 5. Hamilton DAG Drift Mode
+```{python}
+#| label: domain-classifier-roc
+#| fig-cap: "Domain classifier ROC curve — AUC > 0.7 indicates the classifier can distinguish reference from live data (drift detected)"
+#| fig-width: 6
+#| fig-height: 5
+ref_np = df_ref.drop("target").to_numpy()
+live_np = df_live.drop("target").to_numpy()
+X_combined = np.vstack([ref_np, live_np])
+y_combined = np.concatenate([np.zeros(len(ref_np)), np.ones(len(live_np))])
+
+clf = LogisticRegression(max_iter=1000, random_state=42)
+y_score = cross_val_predict(clf, X_combined, y_combined, cv=3, method="predict_proba")[:, 1]
+
+fig, ax = plt.subplots(figsize=(6, 5))
+RocCurveDisplay.from_predictions(y_combined, y_score, ax=ax, color="#4C72B0")
+ax.axvline(1 - dc_report.threshold, color="#C44E52", linestyle="--", alpha=0.7,
+           label=f"Drift threshold (TPR @ {dc_report.threshold})")
+ax.set_title(f"Domain Classifier ROC (AUC = {dc_report.auc_score:.3f})")
+ax.legend(fontsize=8)
+ax.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
+```
+
+## 5. Methods Comparison Summary
+
+```{python}
+#| label: methods-summary
+#| fig-cap: "Side-by-side comparison of all three drift detection methods"
+#| fig-width: 10
+#| fig-height: 4
+fig, axes = plt.subplots(1, 3, figsize=(10, 4))
+
+ks_status = ["DRIFT" if c.drift_detected else "OK" for c in ks_report.column_results]
+ks_colors = ["#C44E52" if c.drift_detected else "#55A868" for c in ks_report.column_results]
+axes[0].barh([c.column for c in ks_report.column_results],
+             [-np.log10(c.p_value + 1e-300) for c in ks_report.column_results],
+             color=ks_colors)
+axes[0].axvline(-np.log10(0.05), color="black", linestyle="--", linewidth=1)
+axes[0].set_xlabel("-log10(p-value)")
+axes[0].set_title("KS/Chi-squared")
+axes[0].invert_yaxis()
+
+psi_colors = [level_colors.get(l, "#888") for l in psi_levels]
+axes[1].barh(psi_features, psi_values, color=psi_colors)
+axes[1].axvline(0.1, color="black", linestyle="--", linewidth=1)
+axes[1].axvline(0.25, color="black", linestyle="--", linewidth=1)
+axes[1].set_xlabel("PSI")
+axes[1].set_title("PSI")
+axes[1].invert_yaxis()
+
+methods = ["KS/Chi-squared", "PSI", "Domain Classifier"]
+detected = [ks_report.drift_detected, psi_report.drift_detected, dc_report.drift_detected]
+mcolors = ["#C44E52" if d else "#55A868" for d in detected]
+axes[2].barh(methods, [1 if d else 0 for d in detected], color=mcolors)
+axes[2].set_xlim(0, 1.3)
+axes[2].set_xticks([0, 1])
+axes[2].set_xticklabels(["No Drift", "Drift"])
+axes[2].set_title("Drift Detected?")
+axes[2].invert_yaxis()
+for i, (m, d) in enumerate(zip(methods, detected)):
+    axes[2].text(0.5 if d else 0.5, i, "YES" if d else "NO",
+                 ha="center", va="center", fontsize=12, fontweight="bold", color="white")
+
+plt.suptitle("Drift Detection Methods Comparison", fontsize=13, y=1.02)
+plt.tight_layout()
+plt.show()
+```
+
+## 6. Hamilton DAG Drift Mode
 
 ```{python}
 #| label: dag-drift
 #| error: true
-from tabular_blueprint.pipelines.executor import PipelineExecutor
+from iter8ml.pipelines.executor import PipelineExecutor
 
 executor = PipelineExecutor()
 if executor.available:
     drift_report = executor.run_drift(df_ref, df_live, drift_method="both")
     print(drift_report)
 else:
-    print("Hamilton not installed — install with `uv sync --extra hamilton` to use DAG drift mode.")
+    print("Hamilton not installed — install with `uv sync --extra base` to use DAG drift mode.")
 ```

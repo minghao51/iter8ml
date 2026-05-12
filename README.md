@@ -20,67 +20,67 @@ uv sync --extra opinion   # Deep learning, SHAP, experiment tracking, LLM/MCP, d
 uv sync --extra docs      # Documentation tooling
 
 # Run an experiment
-uv run tabblueprint run --data path/to/data.csv --target target_column
+uv run iter8 run --data path/to/data.csv --target target_column
 ```
 
 **Option B: Ephemeral run (no install, for quick experiments)**
 
 ```bash
 # Run directly with uvx (uses the CLI entry point from git)
-uvx --from git+https://github.com/your-org/iter8ml tabblueprint run --data data.csv --target label
+uvx --from git+https://github.com/your-org/iter8ml iter8 run --data data.csv --target label
 
 # Or after publishing to PyPI:
-uvx tabular-blueprint run --data data.csv --target label
+uvx iter8ml run --data data.csv --target label
 ```
 
 **Option C: Permanent install on PATH**
 
 ```bash
 uv tool install git+https://github.com/your-org/iter8ml
-tabblueprint run --data data.csv --target label
+iter8 run --data data.csv --target label
 ```
 
 ## CLI Commands
 
-All commands below use the `uv run` prefix. Replace with `uvx tabular-blueprint` or just `tabblueprint` if using Option B or C from Quick Start.
+All commands below use the `uv run` prefix. Replace with `uvx iter8ml` or just `iter8` if using Option B or C from Quick Start.
 
 ```bash
 # Initialize workspace
-uv run tabblueprint init --data path/to/data.csv
+uv run iter8 init --data path/to/data.csv
 
 # Run experiments
-uv run tabblueprint run --data data.csv --target label
-uv run tabblueprint run --config examples/credit_risk.yaml --models catboost lightgbm
-uv run tabblueprint run --config examples/credit_risk.toml
-uv run tabblueprint run --config examples/credit_risk.json
+uv run iter8 run --data data.csv --target label
+uv run iter8 run --config examples/credit_risk.yaml --models catboost lightgbm
+uv run iter8 run --config examples/credit_risk.toml
+uv run iter8 run --config examples/credit_risk.json
 
 # Quick iteration mode (2 folds, 20% data, skip SHAP/AFE/calibration)
-uv run tabblueprint run --data data.csv --target label --quick
+uv run iter8 run --data data.csv --target label --quick
 
 # Resume a previous run (skip already-completed models)
-uv run tabblueprint run --data data.csv --target label --resume
+uv run iter8 run --data data.csv --target label --resume
 
 # Compare runs (Side-by-side config & metric diff)
-uv run tabblueprint diff exp_id_1 exp_id_2
+uv run iter8 diff exp_id_1 exp_id_2
 
 # Inspect results
-uv run tabblueprint leaderboard
-uv run tabblueprint leaderboard --top 5 --metric roc_auc
+uv run iter8 leaderboard
+uv run iter8 leaderboard --top 5 --metric roc_auc
 
 # Manage model registry
-uv run tabblueprint registry show
+uv run iter8 registry show
 
 # Hyperparameter optimization (with warm-start from history)
-uv run tabblueprint hpo --data data.csv --target label --model catboost --trials 100
+uv run iter8 hpo --data data.csv --target label --model catboost --trials 100
 
 # Detect data drift (KS-test, PSI, or Domain Classifier)
-uv run tabblueprint drift --reference train.parquet --new batch.parquet
+uv run iter8 drift --reference train.parquet --new batch.parquet
 
 # View experiment state & pipeline lineage
-uv run tabblueprint state
+uv run iter8 state
 
 # Check hardware (Auto-detected CUDA/VRAM/CPU)
-uv run tabblueprint hardware
+uv run iter8 hardware
 ```
 
 ## Key Features
@@ -111,7 +111,7 @@ The Hamilton DAG executor supports 5 pipeline modes:
 All pipeline behavior is controlled by `ExperimentConfig`. Key knobs:
 
 ```python
-from tabular_blueprint.config import ExperimentConfig
+from iter8ml.config import ExperimentConfig
 
 config = ExperimentConfig(
     name="credit_risk_v2",
@@ -155,7 +155,7 @@ Connect Claude Desktop or any MCP client to run experiments conversationally:
 uv sync --extra opinion
 
 # Start the MCP server
-uv run tabblueprint mcp
+uv run iter8 mcp
 ```
 
 Available MCP tools: `get_experiment_state`, `get_column_stats`, `run_baseline`, `run_hpo`, `get_event_log`, `registry_show`, `registry_promote`, `detect_drift`, `export_champion`.
@@ -165,9 +165,9 @@ Add to your Claude Desktop `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "tabular-blueprint": {
+    "iter8ml": {
       "command": "uv",
-      "args": ["run", "--directory", "/path/to/iter8ml", "tabblueprint", "mcp"]
+      "args": ["run", "--directory", "/path/to/iter8ml", "iter8", "mcp"]
     }
   }
 }
@@ -178,9 +178,9 @@ Or with uvx (no local clone needed):
 ```json
 {
   "mcpServers": {
-    "tabular-blueprint": {
+    "iter8ml": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/your-org/iter8ml", "--with", "tabular-blueprint[opinion]", "tabblueprint", "mcp"]
+      "args": ["--from", "git+https://github.com/your-org/iter8ml", "--with", "iter8ml[opinion]", "iter8", "mcp"]
     }
   }
 }
@@ -189,7 +189,7 @@ Or with uvx (no local clone needed):
 ## Architecture
 
 ```
-src/tabular_blueprint/
+src/iter8ml/
 ├── cli.py                # CLI entry points
 ├── config.py             # ExperimentConfig, HardwareProfile
 ├── constants.py          # Enums (TaskType, CVStrategy, ModelName, TrackerType)
@@ -263,14 +263,14 @@ uv sync --extra docs        # Documentation tooling (mkdocs, mkdocstrings, mike)
 **With `uvx` (ephemeral):**
 
 ```bash
-uvx --from git+https://github.com/your-org/iter8ml --with wandb tabblueprint run --data data.csv --target label
+uvx --from git+https://github.com/your-org/iter8ml --with wandb iter8 run --data data.csv --target label
 ```
 
 ## Running in Docker
 
 ```bash
-docker build -t tabular-blueprint .
-docker run -v $(pwd):/workspace tabular-blueprint tabblueprint run --data data.csv --target label
+docker build -t iter8ml .
+docker run -v $(pwd):/workspace iter8ml iter8 run --data data.csv --target label
 ```
 
 ## Development

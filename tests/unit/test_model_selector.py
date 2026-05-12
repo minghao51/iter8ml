@@ -2,7 +2,7 @@
 
 from unittest.mock import patch
 
-from tabular_blueprint.models.selector import ModelSelector
+from iter8ml.engine.models.selector import ModelSelector
 
 
 def test_small_dataset_no_gpu_routing():

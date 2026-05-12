@@ -2,7 +2,7 @@
 
 import pytest
 
-from tabular_blueprint.exceptions import (
+from iter8ml.exceptions import (
     DataLoadError,
     ModelFitError,
     RegistryError,

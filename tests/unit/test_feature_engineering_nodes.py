@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from tabular_blueprint.pipelines.nodes.feature_engineering import _run_embedding
+from iter8ml.engine.pipelines.nodes.features import _run_embedding
 
 
 def test_run_embedding_uses_workspace_dir(monkeypatch):
@@ -16,7 +16,7 @@ def test_run_embedding_uses_workspace_dir(monkeypatch):
             return kwargs["X"], kwargs["feature_names"]
 
     monkeypatch.setattr(
-        "tabular_blueprint.data.embedding_engine.EmbeddingEngine",
+        "iter8ml.data.embedding.EmbeddingEngine",
         DummyEngine,
     )
 

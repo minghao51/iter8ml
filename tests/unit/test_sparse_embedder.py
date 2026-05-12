@@ -4,7 +4,7 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from tabular_blueprint.models.deep.sparse_embedder import EntityEmbedding, TabularDAE  # noqa: E402
+from iter8ml.engine.models.sparse_embedder import EntityEmbedding, TabularDAE  # noqa: E402
 
 
 @pytest.fixture

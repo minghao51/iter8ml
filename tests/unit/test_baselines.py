@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from sklearn.datasets import make_classification, make_regression
 
-from tabular_blueprint.models.baselines import LinearBaseline, NaiveBaseline
+from iter8ml.engine.models.baselines import LinearBaseline, NaiveBaseline
 
 
 @pytest.fixture

@@ -6,7 +6,7 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from tabular_blueprint.data.embedding_engine import EmbeddingEngine  # noqa: E402
+from iter8ml.data.embedding import EmbeddingEngine  # noqa: E402
 
 
 @pytest.fixture

@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
-from tabular_blueprint.llm import LLMAgentConfig, TabularAgent
+from iter8ml.services.llm import LLMAgentConfig, TabularAgent
 
 
 def _mock_litellm_response(content: str = "Test LLM response") -> MagicMock:

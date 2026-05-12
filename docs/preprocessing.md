@@ -6,7 +6,7 @@ Reference for the preprocessing pipeline, target transformation, data quality, l
 
 ## Preprocessing Pipeline (Hamilton DAG Nodes)
 
-**Source:** `src/tabular_blueprint/pipelines/nodes/preprocessing.py`
+**Source:** `src/iter8ml/pipelines/nodes/preprocessing.py`
 
 The preprocessing pipeline is implemented as Hamilton DAG nodes that execute in dependency order. All operations use Polars for lazy, columnar processing.
 
@@ -76,7 +76,7 @@ This converts each categorical value to its integer representation. No one-hot e
 
 ## Target Transformation
 
-**Source:** `src/tabular_blueprint/data/feature_engine.py:57`
+**Source:** `src/iter8ml/data/feature_engine.py:57`
 
 ### Skewness Detection
 
@@ -114,7 +114,7 @@ skewness = E[(X - μ)³] / σ³
 
 ## Data Quality Audit (Label Noise)
 
-**Source:** `src/tabular_blueprint/data/quality.py`
+**Source:** `src/iter8ml/data/quality.py`
 
 ### `audit_data_quality(df, target_col)`
 
@@ -142,7 +142,7 @@ Drops rows where `quality_score < threshold`. Falls back to dropping `flagged_in
 
 ## Leakage Detection
 
-**Source:** `src/tabular_blueprint/data/leakage.py:20`
+**Source:** `src/iter8ml/data/leakage.py:20`
 
 **Function:** `detect_leakage(X, y, task, threshold, cv_folds)`
 
@@ -164,7 +164,7 @@ Drops rows where `quality_score < threshold`. Falls back to dropping `flagged_in
 
 ## Data Format Conversion
 
-**Source:** `src/tabular_blueprint/data/adapter.py:9`
+**Source:** `src/iter8ml/data/adapter.py:9`
 
 **Class:** `DataAdapter`
 

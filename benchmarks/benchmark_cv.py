@@ -10,15 +10,16 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from tabular_blueprint.config import ExperimentConfig
+from tabular_blueprint.engine.calibration import CalibratedModel
+from tabular_blueprint.engine.evaluator import Evaluator
+from tabular_blueprint.models.factory import get_model_class
+
 from benchmarks.benchmark_utils import (
     BenchResult,
     bench_fn,
     make_numpy,
 )
-from tabular_blueprint.config import ExperimentConfig
-from tabular_blueprint.engine.calibration import CalibratedModel
-from tabular_blueprint.engine.evaluator import Evaluator
-from tabular_blueprint.models.factory import get_model_class
 
 
 def bench_cv_evaluate(

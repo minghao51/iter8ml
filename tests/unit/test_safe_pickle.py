@@ -4,7 +4,7 @@ import pickle
 
 import pytest
 
-from tabular_blueprint.utils.safe_pickle import safe_load
+from iter8ml.utils.io import safe_load
 
 
 def test_safe_load_allows_whitelisted_builtin_containers():
