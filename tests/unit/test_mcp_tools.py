@@ -1,6 +1,7 @@
 """Tests for MCP server tools."""
 
 import json
+import os
 from pathlib import Path
 
 import polars as pl
@@ -19,6 +20,8 @@ from iter8ml.services.mcp import (
     run_baseline,
     run_hpo,
 )
+
+_HAS_TABPFN_TOKEN = bool(os.environ.get("TABPFN_TOKEN"))
 
 
 @pytest.fixture
@@ -71,12 +74,20 @@ def test_get_column_stats_unsupported_format(tmp_path):
         get_column_stats(bad_path)
 
 
+@pytest.mark.skipif(
+    not _HAS_TABPFN_TOKEN,
+    reason="TABPFN_TOKEN not set — TabPFN needs license in CI",
+)
 def test_run_baseline_csv(sample_csv):
     result = run_baseline(sample_csv, "target", task="classification")
     data = json.loads(result)
     assert "catboost" in data
 
 
+@pytest.mark.skipif(
+    not _HAS_TABPFN_TOKEN,
+    reason="TABPFN_TOKEN not set — TabPFN needs license in CI",
+)
 def test_run_baseline_parquet(sample_parquet):
     result = run_baseline(sample_parquet, "target", task="classification")
     data = json.loads(result)
