@@ -18,6 +18,10 @@ plugins:
             show_source: true
             show_root_heading: true
             docstring_style: google
+extra_css:
+  - stylesheets/notebooks.css
+extra_javascript:
+  - javascripts/notebooks.js
 extra:
   version:
     provider: mike
@@ -43,5 +47,5 @@ nav:
     - Quick Start: notebooks/quick-start.md
     - Model Comparison: notebooks/model-comparison.md
     - Drift Monitoring: notebooks/drift-monitoring.md
-    - HPO Optimization: notebooks/hpo-optimization.md
+    - Feature Engineering & Explainability: notebooks/feature-engineering-explainability.md
     - Methodology Benchmarks: notebooks/methodology-benchmarks.md

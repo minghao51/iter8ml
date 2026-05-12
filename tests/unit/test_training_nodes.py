@@ -1,12 +1,12 @@
 import numpy as np
 import pytest
 
-from tabular_blueprint.pipelines.nodes import (
-    model_selection,
-    model_training,
-    state_generation,
+from iter8ml.engine.pipelines.nodes.train import (
+    ModelResult,
+    _train_one,
+    models_to_run,
+    training_state,
 )
-from tabular_blueprint.pipelines.nodes.model_training import ModelResult
 
 
 class MockDataPrepResult:
@@ -19,7 +19,7 @@ class MockDataPrepResult:
 
 class TestModelSelection:
     def test_auto_returns_list(self):
-        result = model_selection.models_to_run(
+        result = models_to_run(
             data_prep_result=MockDataPrepResult(100),
             task="classification",
             vram_gb=0.0,
@@ -29,7 +29,7 @@ class TestModelSelection:
         assert len(result) > 0
 
     def test_auto_includes_baselines(self):
-        result = model_selection.models_to_run(
+        result = models_to_run(
             data_prep_result=MockDataPrepResult(100),
             task="classification",
             vram_gb=0.0,
@@ -40,7 +40,7 @@ class TestModelSelection:
         assert "linear_baseline" in result
 
     def test_auto_excludes_baselines(self):
-        result = model_selection.models_to_run(
+        result = models_to_run(
             data_prep_result=MockDataPrepResult(100),
             task="classification",
             vram_gb=0.0,
@@ -50,7 +50,7 @@ class TestModelSelection:
         assert "naive_baseline" not in result
 
     def test_explicit_model_list(self):
-        result = model_selection.models_to_run(
+        result = models_to_run(
             data_prep_result=MockDataPrepResult(100),
             task="classification",
             vram_gb=0.0,
@@ -105,7 +105,7 @@ class TestStateGeneration:
         ]
 
     def test_training_state_picks_best(self, tmp_path):
-        state = state_generation.training_state(
+        state = training_state(
             training_results=self._make_results(),
             baseline_scores={},
             metrics=["roc_auc", "f1_macro"],
@@ -133,7 +133,7 @@ class TestStateGeneration:
                 error="something broke",
             )
         )
-        state = state_generation.training_state(
+        state = training_state(
             training_results=results,
             baseline_scores={},
             metrics=["roc_auc"],
@@ -150,7 +150,7 @@ class TestStateGeneration:
             "naive_baseline": {"roc_auc": 0.5},
             "linear_baseline": {"roc_auc": 0.7},
         }
-        state = state_generation.training_state(
+        state = training_state(
             training_results=self._make_results(),
             baseline_scores=baselines,
             metrics=["roc_auc"],
@@ -163,7 +163,7 @@ class TestStateGeneration:
         assert state.results["naive_baseline"]["is_baseline"] is True
 
     def test_empty_results(self, tmp_path):
-        state = state_generation.training_state(
+        state = training_state(
             training_results=[],
             baseline_scores={},
             metrics=["roc_auc"],
@@ -202,8 +202,10 @@ class _OverrideAwareModel:
 class TestModelOverrides:
     @pytest.fixture(autouse=True)
     def _patch_evaluator(self, monkeypatch):
+        from iter8ml.engine.pipelines.nodes import train
+
         monkeypatch.setattr(
-            model_training,
+            train,
             "_evaluate_model",
             lambda *args, **kwargs: {"roc_auc": 0.9},
         )
@@ -211,12 +213,12 @@ class TestModelOverrides:
     @pytest.fixture(autouse=True)
     def _patch_model_factory(self, monkeypatch):
         monkeypatch.setattr(
-            "tabular_blueprint.models.factory.get_model_class",
+            "iter8ml.engine.models.factory.get_model_class",
             lambda _name: _OverrideAwareModel,
         )
 
     def test_training_applies_model_overrides(self, tmp_path):
-        result = model_training._train_one(
+        result = _train_one(
             name="catboost",
             X=np.random.rand(20, 4),
             y=np.random.randint(0, 2, 20),
@@ -234,7 +236,7 @@ class TestModelOverrides:
         assert result.params == {"depth": 8}
 
     def test_training_returns_explicit_error_on_invalid_override(self, tmp_path):
-        result = model_training._train_one(
+        result = _train_one(
             name="catboost",
             X=np.random.rand(20, 4),
             y=np.random.randint(0, 2, 20),

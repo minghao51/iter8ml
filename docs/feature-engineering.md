@@ -6,7 +6,7 @@ Reference for the AFE pipeline: top-K feature selection, pairwise interaction di
 
 ## Overview
 
-**Source:** `src/tabular_blueprint/data/feature_engine.py`
+**Source:** `src/iter8ml/data/feature_engine.py`
 
 The AFE pipeline runs after initial preprocessing and baseline training:
 
@@ -14,13 +14,13 @@ The AFE pipeline runs after initial preprocessing and baseline training:
 2. **Interaction Discovery** — test pairwise multiply/ratio features among top-K
 3. **Pruning** (optional) — drop features below minimum importance threshold
 
-**Orchestrator:** `src/tabular_blueprint/pipelines/nodes/feature_engineering.py` (Hamilton DAG node: `training_features__afe_enabled`)
+**Orchestrator:** `src/iter8ml/pipelines/nodes/feature_engineering.py` (Hamilton DAG node: `training_features__afe_enabled`)
 
 ---
 
 ## Permutation Importance Top-K Selection
 
-**Source:** `src/tabular_blueprint/data/feature_engine.py:127`
+**Source:** `src/iter8ml/data/feature_engine.py:127`
 
 **Function:** `extract_top_k_features(model_or_predictions, X, y, k, feature_names, task, random_seed)`
 
@@ -51,7 +51,7 @@ where `X_permuted_j_k` is the dataset with feature `j` shuffled in repeat `k`.
 
 ## Pairwise Interaction Discovery
 
-**Source:** `src/tabular_blueprint/data/feature_engine.py:156`
+**Source:** `src/iter8ml/data/feature_engine.py:156`
 
 **Function:** `discover_interactions(X, y, top_k_indices, feature_names, task, lift_threshold, cv_folds, random_seed)`
 
@@ -94,7 +94,7 @@ Only interactions with `lift > lift_threshold` are kept.
 
 ## Feature Pruning
 
-**Source:** `src/tabular_blueprint/data/feature_engine.py:258`
+**Source:** `src/iter8ml/data/feature_engine.py:258`
 
 **Function:** `prune_features(model, X, y, feature_names, min_importance, task, random_seed)`
 
@@ -117,7 +117,7 @@ Only interactions with `lift > lift_threshold` are kept.
 
 ## Full AFE Pipeline
 
-**Source:** `src/tabular_blueprint/pipelines/nodes/feature_engineering.py` (Hamilton DAG node: `training_features__afe_enabled`)
+**Source:** `src/iter8ml/pipelines/nodes/feature_engineering.py` (Hamilton DAG node: `training_features__afe_enabled`)
 
 ```
 1. Fit importance model (LightGBM/CatBoost)
@@ -127,6 +127,6 @@ Only interactions with `lift > lift_threshold` are kept.
 5. (Optional) prune_features() → drop low-importance features
 ```
 
-The pipeline is also available as Hamilton DAG nodes (`src/tabular_blueprint/pipelines/nodes/feature_engineering.py`) with config variants:
+The pipeline is also available as Hamilton DAG nodes (`src/iter8ml/pipelines/nodes/feature_engineering.py`) with config variants:
 - `training_features__default` — no AFE, pass-through
 - `training_features__afe_enabled` — runs full AFE pipeline

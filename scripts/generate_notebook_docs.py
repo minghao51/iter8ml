@@ -6,6 +6,8 @@ import re
 import sys
 from pathlib import Path
 
+import yaml
+
 NOTEBOOKS_DIR = Path("notebooks")
 DOCS_NOTEBOOKS_DIR = Path("docs/notebooks")
 HTML_DIR = DOCS_NOTEBOOKS_DIR / "html"
@@ -17,12 +19,10 @@ def parse_frontmatter(qmd_path: Path) -> dict[str, str]:
     match = re.match(r"^---\s*\n(.*?)\n---", text, re.DOTALL)
     if not match:
         return {}
-    fm = {}
-    for line in match.group(1).splitlines():
-        if ":" in line:
-            key, _, value = line.partition(":")
-            fm[key.strip()] = value.strip().strip('"').strip("'")
-    return fm
+    loaded = yaml.safe_load(match.group(1))
+    if not isinstance(loaded, dict):
+        return {}
+    return {str(k): str(v) for k, v in loaded.items()}
 
 
 def slug_from_stem(stem: str) -> str:
@@ -52,32 +52,40 @@ def generate_stub(qmd_path: Path, base_path: str) -> str:
     title = fm.get("title", qmd_path.stem)
     description = fm.get("description", "")
     html_src = f"{base_path}/notebooks/html/{qmd_path.stem}.html"
-    border = "var(--md-default-fg-color--lightest)"
+    slug = slug_from_stem(qmd_path.stem)
 
     return (
+        "---\n"
+        "hide:\n"
+        "  - navigation\n"
+        "  - toc\n"
+        "---\n"
+        "\n"
         f"# {title}\n"
-        f"\n"
+        "\n"
         f"{description}\n"
-        f"\n"
-        f'<div style="margin: 0 -0.8rem">\n'
-        f'  <iframe src="{html_src}"\n'
-        f'    style="width:100%; height:600px;\n'
-        f'      border:1px solid {border}; border-radius:4px;"\n'
-        f'    loading="lazy"></iframe>\n'
-        f"</div>\n"
-        f"\n"
-        f"## Run Locally\n"
-        f"\n"
-        f"```bash\n"
+        "\n"
+        f'<div class="iframe-container" id="iframe-wrapper-{slug}">\n'
+        '  <div class="iframe-controls">\n'
+        '    <button type="button" class="md-button notebook-expand-btn">Expand</button>\n'
+        f'    <a href="{html_src}" target="_blank" rel="noopener noreferrer" '
+        'class="md-button">Open in New Tab</a>\n'
+        "  </div>\n"
+        f'  <iframe src="{html_src}" allowfullscreen loading="lazy"></iframe>\n'
+        "</div>\n"
+        "\n"
+        "## Run Locally\n"
+        "\n"
+        "```bash\n"
         f"uv run quarto preview notebooks/{qmd_path.name}\n"
-        f"```\n"
+        "```\n"
     )
 
 
 def generate_index(entries: list[tuple[str, str, str]]) -> str:
     lines = [
         "# Notebooks\n",
-        "Interactive tutorials demonstrating the **tabular-blueprint** framework.\n",
+        "Interactive tutorials demonstrating the **iter8ml** framework.\n",
     ]
     for slug, title, description in entries:
         lines.append(f"## [{title}]({slug}.md)")

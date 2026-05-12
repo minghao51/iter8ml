@@ -1,6 +1,6 @@
 """Tests for per-model configuration and HPO search spaces."""
 
-from tabular_blueprint.models.model_configs import (
+from iter8ml.engine.models.model_configs import (
     CatBoostConfig,
     FTTransformerConfig,
     LightGBMConfig,

@@ -8,7 +8,7 @@ Reference for all model implementations, selection logic, and configuration.
 
 ### NaiveBaseline
 
-**Source:** `src/tabular_blueprint/models/baselines.py:9`
+**Source:** `src/iter8ml/models/baselines.py:9`
 
 **Description:** Predicts a single constant value for all samples — the mean for regression, the mode for classification. Used as a floor baseline to contextualize real model performance.
 
@@ -27,7 +27,7 @@ Reference for all model implementations, selection logic, and configuration.
 
 ### LinearBaseline
 
-**Source:** `src/tabular_blueprint/models/baselines.py:63`
+**Source:** `src/iter8ml/models/baselines.py:63`
 
 **Description:** Simple linear model as a stronger baseline. Uses scikit-learn's `LogisticRegression` for classification and `Ridge` regression for regression tasks.
 
@@ -44,11 +44,11 @@ Reference for all model implementations, selection logic, and configuration.
 
 ## Gradient Boosted Decision Trees (GBDTs)
 
-All GBDT models extend `BaseGBDTModel` (`src/tabular_blueprint/models/gbdt_base.py`), which provides a common interface: `fit`, `predict`, `predict_proba`, `save`, `load`.
+All GBDT models extend `BaseGBDTModel` (`src/iter8ml/models/gbdt_base.py`), which provides a common interface: `fit`, `predict`, `predict_proba`, `save`, `load`.
 
 ### CatBoost
 
-**Source:** `src/tabular_blueprint/models/conventional/catboost_model.py:10`
+**Source:** `src/iter8ml/models/conventional/catboost_model.py:10`
 
 **Description:** Yandex's CatBoost — handles categorical features natively, robust to overfitting with ordered boosting.
 
@@ -86,7 +86,7 @@ where `η` is the learning rate and `h_m` is the m-th decision tree trained on t
 
 ### LightGBM
 
-**Source:** `src/tabular_blueprint/models/conventional/lightgbm_model.py:9`
+**Source:** `src/iter8ml/models/conventional/lightgbm_model.py:9`
 
 **Description:** Microsoft's LightGBM — uses leaf-wise tree growth (best-first) and histogram-based splitting for fast training on large datasets.
 
@@ -127,7 +127,7 @@ Uses `lgb.Dataset` for efficient in-memory representation and `lgb.train` for th
 
 ### XGBoost
 
-**Source:** `src/tabular_blueprint/models/conventional/xgboost_model.py:9`
+**Source:** `src/iter8ml/models/conventional/xgboost_model.py:9`
 
 **Description:** XGBoost — uses `hist` tree method for fast approximate splitting and the native `xgb.train` + `DMatrix` API.
 
@@ -169,7 +169,7 @@ where `T` is the number of leaves, `w` are leaf weights, `γ` is `gamma` (minimu
 
 ### FT-Transformer
 
-**Source:** `src/tabular_blueprint/models/deep/ft_transformer.py:42`
+**Source:** `src/iter8ml/models/deep/ft_transformer.py:42`
 
 **Description:** Feature Tokenizer Transformer — embeds all features into a shared latent space, then processes through a standard Transformer encoder. Requires GPU with >12 GB VRAM.
 
@@ -222,7 +222,7 @@ Input → Linear(n_features, d_hidden)
 
 ### TabNet
 
-**Source:** `src/tabular_blueprint/models/deep/tabnet_model.py:18`
+**Source:** `src/iter8ml/models/deep/tabnet_model.py:18`
 
 **Description:** TabNet via `pytorch-tabular` — uses sequential attention to select features at each decision step, combining the interpretability of tree-based models with deep learning.
 
@@ -256,7 +256,7 @@ This enables instance-wise feature selection at each decision step.
 
 ### TextEncoder
 
-**Source:** `src/tabular_blueprint/models/deep/text_encoder.py:9`
+**Source:** `src/iter8ml/models/deep/text_encoder.py:9`
 
 **Description:** DeBERTa-v3 text-to-embedding encoder. Converts text columns into dense vector features via CLS token pooling from a pre-trained transformer.
 
@@ -281,7 +281,7 @@ This enables instance-wise feature selection at each decision step.
 
 ### TabPFN v2
 
-**Source:** `src/tabular_blueprint/models/tabular_foundation/tabpfn_model.py:19`
+**Source:** `src/iter8ml/models/tabular_foundation/tabpfn_model.py:19`
 
 **Description:** TabPFN v2 — a pre-trained transformer that performs in-context learning on tabular data. Treats the entire training set as context and predicts without gradient-based training.
 
@@ -315,7 +315,7 @@ where `f_θ` is a frozen transformer trained via prior data augmentation. No gra
 
 ### ModelSelector
 
-**Source:** `src/tabular_blueprint/models/selector.py:6`
+**Source:** `src/iter8ml/models/selector.py:6`
 
 **Description:** Hardware-aware and data-size-aware model routing. Selects an ordered list of models to train based on dataset size, GPU availability, and VRAM.
 
@@ -336,7 +336,7 @@ where `f_θ` is a frozen transformer trained via prior data augmentation. No gra
 
 ### `_MODEL_REGISTRY`
 
-**Source:** `src/tabular_blueprint/models/factory.py:5`
+**Source:** `src/iter8ml/models/factory.py:5`
 
 Lazy-import registry mapping model names to `(module_path, class_name)`:
 

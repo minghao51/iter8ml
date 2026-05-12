@@ -3,7 +3,7 @@
 ## Overview
 
 Tabular Blueprint is a single-node tabular ML framework with a CLI-first workflow.
-Core code lives under `src/tabular_blueprint` and follows a thin orchestration model:
+Core code lives under `src/iter8ml` and follows a thin orchestration model:
 - `cli.py` handles user entrypoints.
 - `engine/` coordinates run orchestration, evaluation, HPO, tracking, and state generation.
 - `data/` loads and prepares datasets (adapter, leakage, quality checks, feature engineering).

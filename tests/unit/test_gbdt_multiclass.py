@@ -3,8 +3,8 @@
 import numpy as np
 from sklearn.datasets import make_classification
 
-from tabular_blueprint.models.conventional.lightgbm_model import LightGBMModel
-from tabular_blueprint.models.conventional.xgboost_model import XGBoostModel
+from iter8ml.engine.models.lightgbm_model import LightGBMModel
+from iter8ml.engine.models.xgboost_model import XGBoostModel
 
 
 def _multiclass_dataset_with_noncontiguous_labels() -> tuple[np.ndarray, np.ndarray]:

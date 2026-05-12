@@ -1,15 +1,15 @@
 import polars as pl
 import pytest
 
-from tabular_blueprint.pipelines.nodes import preprocessing
-
 
 @pytest.fixture
 def dr():
     pytest.importorskip("hamilton")
     from hamilton import driver
 
-    return driver.Builder().with_modules(preprocessing).build()
+    from iter8ml.engine.pipelines.nodes import prep
+
+    return driver.Builder().with_modules(prep).build()
 
 
 def test_fill_nulls_numeric(dr):

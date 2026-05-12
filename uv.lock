@@ -1843,6 +1843,141 @@ wheels = [
 ]
 
 [[package]]
+name = "iter8ml"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "filelock" },
+    { name = "numpy" },
+    { name = "polars" },
+    { name = "psutil" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "rich" },
+    { name = "scikit-learn" },
+    { name = "typer" },
+]
+
+[package.optional-dependencies]
+agent = [
+    { name = "litellm" },
+    { name = "mcp" },
+]
+audit = [
+    { name = "cleanlab" },
+    { name = "shap" },
+]
+base = [
+    { name = "catboost" },
+    { name = "lightgbm" },
+    { name = "optuna" },
+    { name = "sf-hamilton" },
+    { name = "xgboost" },
+]
+deep = [
+    { name = "accelerate" },
+    { name = "pytorch-tabular" },
+    { name = "tabpfn" },
+    { name = "torch" },
+    { name = "transformers" },
+]
+docs = [
+    { name = "matplotlib" },
+    { name = "mike" },
+    { name = "mkdocs-material" },
+    { name = "mkdocstrings", extra = ["python"] },
+    { name = "pymdown-extensions" },
+]
+full = [
+    { name = "accelerate" },
+    { name = "catboost" },
+    { name = "cleanlab" },
+    { name = "lightgbm" },
+    { name = "litellm" },
+    { name = "matplotlib" },
+    { name = "mcp" },
+    { name = "mike" },
+    { name = "mkdocs-material" },
+    { name = "mkdocstrings", extra = ["python"] },
+    { name = "mlflow" },
+    { name = "optuna" },
+    { name = "pymdown-extensions" },
+    { name = "pytorch-tabular" },
+    { name = "sf-hamilton" },
+    { name = "shap" },
+    { name = "tabpfn" },
+    { name = "torch" },
+    { name = "transformers" },
+    { name = "wandb" },
+    { name = "xgboost" },
+]
+tracking = [
+    { name = "mlflow" },
+    { name = "wandb" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "jupyter" },
+    { name = "marimo" },
+    { name = "mypy" },
+    { name = "nbformat" },
+    { name = "pip-audit" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "accelerate", marker = "extra == 'deep'", specifier = ">=0.30" },
+    { name = "catboost", marker = "extra == 'base'", specifier = ">=1.2" },
+    { name = "cleanlab", marker = "extra == 'audit'", specifier = ">=2.6" },
+    { name = "filelock", specifier = ">=3.12" },
+    { name = "iter8ml", extras = ["base", "deep", "tracking", "agent", "audit", "docs"], marker = "extra == 'full'" },
+    { name = "lightgbm", marker = "extra == 'base'", specifier = ">=4.0" },
+    { name = "litellm", marker = "extra == 'agent'", specifier = ">=1.40" },
+    { name = "matplotlib", marker = "extra == 'docs'", specifier = ">=3.7" },
+    { name = "mcp", marker = "extra == 'agent'", specifier = ">=0.9" },
+    { name = "mike", marker = "extra == 'docs'", specifier = ">=2.0" },
+    { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.5" },
+    { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.25" },
+    { name = "mlflow", marker = "extra == 'tracking'", specifier = ">=2.13" },
+    { name = "numpy", specifier = ">=1.26" },
+    { name = "optuna", marker = "extra == 'base'", specifier = ">=3.6" },
+    { name = "polars", specifier = ">=1.0" },
+    { name = "psutil", specifier = ">=5.9" },
+    { name = "pydantic", specifier = ">=2.0" },
+    { name = "pymdown-extensions", marker = "extra == 'docs'", specifier = ">=10.0" },
+    { name = "pytorch-tabular", marker = "extra == 'deep'", specifier = ">=1.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "rich", specifier = ">=13.0" },
+    { name = "scikit-learn", specifier = ">=1.4" },
+    { name = "sf-hamilton", marker = "extra == 'base'", specifier = ">=1.70" },
+    { name = "shap", marker = "extra == 'audit'", specifier = ">=0.44" },
+    { name = "tabpfn", marker = "extra == 'deep'", specifier = ">=2.0" },
+    { name = "torch", marker = "extra == 'deep'", specifier = ">=2.3" },
+    { name = "transformers", marker = "extra == 'deep'", specifier = ">=4.40" },
+    { name = "typer", specifier = ">=0.12" },
+    { name = "wandb", marker = "extra == 'tracking'", specifier = ">=0.17" },
+    { name = "xgboost", marker = "extra == 'base'", specifier = ">=2.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "jupyter", specifier = ">=1.1.1" },
+    { name = "marimo", specifier = ">=0.23.4" },
+    { name = "mypy", specifier = ">=1.10" },
+    { name = "nbformat", specifier = ">=5.10.4" },
+    { name = "pip-audit", specifier = ">=2.7" },
+    { name = "pre-commit", specifier = ">=3.6" },
+    { name = "pytest", specifier = ">=9.0.3" },
+    { name = "pytest-cov", specifier = ">=5.0" },
+    { name = "ruff", specifier = ">=0.4" },
+]
+
+[[package]]
 name = "itsdangerous"
 version = "2.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -5817,138 +5952,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/84/62/ec181b52e12f64eac179f31d0891ccb2b3f48552de32d8992e0f5144c808/tabpfn_common_utils-0.2.19.tar.gz", hash = "sha256:d5bb515f9c7bdda555d833542ab4c41a2cc7007e3ae57b9c302ad4f4f8186558", size = 1932394 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/34/dd/4b6095777970f3f9e50144b5cfd993ad2e70a9c08fed3425d8c9e8f88784/tabpfn_common_utils-0.2.19-py3-none-any.whl", hash = "sha256:1f53f3f96ddccc99b27f80075437e7a3dd29666b6c2575ad03dc3f9ae6df9c38", size = 37295 },
-]
-
-[[package]]
-name = "tabular-blueprint"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "filelock" },
-    { name = "numpy" },
-    { name = "polars" },
-    { name = "psutil" },
-    { name = "pydantic" },
-    { name = "pyyaml" },
-    { name = "rich" },
-    { name = "scikit-learn" },
-    { name = "typer" },
-]
-
-[package.optional-dependencies]
-agent = [
-    { name = "litellm" },
-    { name = "mcp" },
-]
-audit = [
-    { name = "cleanlab" },
-    { name = "shap" },
-]
-base = [
-    { name = "catboost" },
-    { name = "lightgbm" },
-    { name = "optuna" },
-    { name = "sf-hamilton" },
-    { name = "xgboost" },
-]
-deep = [
-    { name = "accelerate" },
-    { name = "pytorch-tabular" },
-    { name = "tabpfn" },
-    { name = "torch" },
-    { name = "transformers" },
-]
-docs = [
-    { name = "mike" },
-    { name = "mkdocs-material" },
-    { name = "mkdocstrings", extra = ["python"] },
-    { name = "pymdown-extensions" },
-]
-full = [
-    { name = "accelerate" },
-    { name = "catboost" },
-    { name = "cleanlab" },
-    { name = "lightgbm" },
-    { name = "litellm" },
-    { name = "mcp" },
-    { name = "mike" },
-    { name = "mkdocs-material" },
-    { name = "mkdocstrings", extra = ["python"] },
-    { name = "mlflow" },
-    { name = "optuna" },
-    { name = "pymdown-extensions" },
-    { name = "pytorch-tabular" },
-    { name = "sf-hamilton" },
-    { name = "shap" },
-    { name = "tabpfn" },
-    { name = "torch" },
-    { name = "transformers" },
-    { name = "wandb" },
-    { name = "xgboost" },
-]
-tracking = [
-    { name = "mlflow" },
-    { name = "wandb" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "jupyter" },
-    { name = "marimo" },
-    { name = "mypy" },
-    { name = "nbformat" },
-    { name = "pip-audit" },
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "accelerate", marker = "extra == 'deep'", specifier = ">=0.30" },
-    { name = "catboost", marker = "extra == 'base'", specifier = ">=1.2" },
-    { name = "cleanlab", marker = "extra == 'audit'", specifier = ">=2.6" },
-    { name = "filelock", specifier = ">=3.12" },
-    { name = "lightgbm", marker = "extra == 'base'", specifier = ">=4.0" },
-    { name = "litellm", marker = "extra == 'agent'", specifier = ">=1.40" },
-    { name = "mcp", marker = "extra == 'agent'", specifier = ">=0.9" },
-    { name = "mike", marker = "extra == 'docs'", specifier = ">=2.0" },
-    { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.5" },
-    { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.25" },
-    { name = "mlflow", marker = "extra == 'tracking'", specifier = ">=2.13" },
-    { name = "numpy", specifier = ">=1.26" },
-    { name = "optuna", marker = "extra == 'base'", specifier = ">=3.6" },
-    { name = "polars", specifier = ">=1.0" },
-    { name = "psutil", specifier = ">=5.9" },
-    { name = "pydantic", specifier = ">=2.0" },
-    { name = "pymdown-extensions", marker = "extra == 'docs'", specifier = ">=10.0" },
-    { name = "pytorch-tabular", marker = "extra == 'deep'", specifier = ">=1.0" },
-    { name = "pyyaml", specifier = ">=6.0" },
-    { name = "rich", specifier = ">=13.0" },
-    { name = "scikit-learn", specifier = ">=1.4" },
-    { name = "sf-hamilton", marker = "extra == 'base'", specifier = ">=1.70" },
-    { name = "shap", marker = "extra == 'audit'", specifier = ">=0.44" },
-    { name = "tabpfn", marker = "extra == 'deep'", specifier = ">=2.0" },
-    { name = "tabular-blueprint", extras = ["base", "deep", "tracking", "agent", "audit", "docs"], marker = "extra == 'full'" },
-    { name = "torch", marker = "extra == 'deep'", specifier = ">=2.3" },
-    { name = "transformers", marker = "extra == 'deep'", specifier = ">=4.40" },
-    { name = "typer", specifier = ">=0.12" },
-    { name = "wandb", marker = "extra == 'tracking'", specifier = ">=0.17" },
-    { name = "xgboost", marker = "extra == 'base'", specifier = ">=2.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "jupyter", specifier = ">=1.1.1" },
-    { name = "marimo", specifier = ">=0.23.4" },
-    { name = "mypy", specifier = ">=1.10" },
-    { name = "nbformat", specifier = ">=5.10.4" },
-    { name = "pip-audit", specifier = ">=2.7" },
-    { name = "pre-commit", specifier = ">=3.6" },
-    { name = "pytest", specifier = ">=9.0.3" },
-    { name = "pytest-cov", specifier = ">=5.0" },
-    { name = "ruff", specifier = ">=0.4" },
 ]
 
 [[package]]

@@ -7,8 +7,8 @@ from unittest.mock import patch
 import pytest
 from pydantic import ValidationError
 
-from tabular_blueprint.config import DEFAULT_LLM_MODEL, ExperimentConfig
-from tabular_blueprint.constants import CVStrategy
+from iter8ml.config import DEFAULT_LLM_MODEL, ExperimentConfig
+from iter8ml.constants import CVStrategy
 
 
 def test_default_config():
@@ -60,8 +60,8 @@ def test_custom_metrics():
 def test_from_file_blocks_python_config_by_default(tmp_path: Path):
     config_path = tmp_path / "config.py"
     config_path.write_text(
-        "from tabular_blueprint.config import ExperimentConfig\n"
-        "from tabular_blueprint.constants import TaskType\n"
+        "from iter8ml.config import ExperimentConfig\n"
+        "from iter8ml.constants import TaskType\n"
         "config = ExperimentConfig("
         "name='test', task=TaskType.CLASSIFICATION, target_col='target', data_path='x.csv')\n"
     )
@@ -73,8 +73,8 @@ def test_from_file_blocks_python_config_by_default(tmp_path: Path):
 def test_from_file_allows_python_config_with_opt_in(tmp_path: Path):
     config_path = tmp_path / "config.py"
     config_path.write_text(
-        "from tabular_blueprint.config import ExperimentConfig\n"
-        "from tabular_blueprint.constants import TaskType\n"
+        "from iter8ml.config import ExperimentConfig\n"
+        "from iter8ml.constants import TaskType\n"
         "config = ExperimentConfig("
         "name='test', task=TaskType.CLASSIFICATION, target_col='target', data_path='x.csv')\n"
     )
@@ -96,7 +96,7 @@ def test_llm_model_default_without_env():
 
 
 def test_llm_model_env_var_override():
-    with patch.dict(os.environ, {"TABBLUEPRINT_LLM_MODEL": "gpt-4o"}):
+    with patch.dict(os.environ, {"ITER8ML_LLM_MODEL": "gpt-4o"}):
         config = ExperimentConfig(
             name="test",
             task="classification",
@@ -107,7 +107,7 @@ def test_llm_model_env_var_override():
 
 
 def test_llm_model_explicit_value_overrides_env():
-    with patch.dict(os.environ, {"TABBLUEPRINT_LLM_MODEL": "gpt-4o"}):
+    with patch.dict(os.environ, {"ITER8ML_LLM_MODEL": "gpt-4o"}):
         config = ExperimentConfig(
             name="test",
             task="classification",

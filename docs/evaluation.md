@@ -6,7 +6,7 @@ Reference for cross-validation strategies, evaluation metrics, lift computation,
 
 ## Cross-Validation Strategies
 
-**Source:** `src/tabular_blueprint/engine/evaluator.py:34`
+**Source:** `src/iter8ml/engine/evaluator.py:34`
 
 **Function:** `get_cv_split(strategy, n_splits)`
 
@@ -22,7 +22,7 @@ Reference for cross-validation strategies, evaluation metrics, lift computation,
 
 ## Evaluation Pipeline
 
-**Source:** `src/tabular_blueprint/engine/evaluator.py:46`
+**Source:** `src/iter8ml/engine/evaluator.py:46`
 
 **Class:** `Evaluator`
 
@@ -39,7 +39,7 @@ For probability-based metrics (`roc_auc`, `log_loss`), `predict_proba()` is call
 
 ## Metrics Registry
 
-**Source:** `src/tabular_blueprint/engine/evaluator.py:19`
+**Source:** `src/iter8ml/engine/evaluator.py:19`
 
 ### Classification Metrics
 
@@ -64,7 +64,7 @@ For probability-based metrics (`roc_auc`, `log_loss`), `predict_proba()` is call
 
 ## Lift Computation
 
-**Source:** `src/tabular_blueprint/engine/evaluator.py:144`
+**Source:** `src/iter8ml/engine/evaluator.py:144`
 
 **Method:** `Evaluator.compute_lift(model_scores, baseline_scores, metric_name)`
 
@@ -86,7 +86,7 @@ Returns a fraction (e.g., `0.15` = 15% lift). Returns `0.0` if baseline is zero.
 
 ## Probability Calibration
 
-**Source:** `src/tabular_blueprint/engine/calibration.py:19`
+**Source:** `src/iter8ml/engine/calibration.py:19`
 
 **Class:** `CalibratedModel`
 

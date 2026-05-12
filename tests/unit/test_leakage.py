@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from sklearn.datasets import make_classification, make_regression
 
-from tabular_blueprint.data.leakage import LeakageReport, detect_leakage
+from iter8ml.data.leakage import LeakageReport, detect_leakage
 
 
 @pytest.fixture

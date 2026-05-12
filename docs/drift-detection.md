@@ -6,7 +6,7 @@ Reference for the three drift detection methods: univariate statistical tests (K
 
 ## 1. Univariate Statistical Tests (KS / Chi-squared)
 
-**Source:** `src/tabular_blueprint/monitoring/drift.py:22`
+**Source:** `src/iter8ml/monitoring/drift.py:22`
 
 **Class:** `DriftDetector`
 
@@ -70,7 +70,7 @@ Global `drift_detected` is `True` if any column shows drift.
 
 ## 2. Population Stability Index (PSI)
 
-**Source:** `src/tabular_blueprint/monitoring/psi_drift.py:28`
+**Source:** `src/iter8ml/monitoring/psi_drift.py:28`
 
 **Class:** `PSIDriftDetector`
 
@@ -115,7 +115,7 @@ Only numeric columns are tested.
 
 ## 3. Domain Classifier (Multivariate)
 
-**Source:** `src/tabular_blueprint/monitoring/domain_classifier.py:23`
+**Source:** `src/iter8ml/monitoring/domain_classifier.py:23`
 
 **Class:** `DomainClassifierDriftDetector`
 
@@ -161,7 +161,7 @@ Only numeric columns are used.
 
 ## Drift Pipeline Integration
 
-**Source:** `src/tabular_blueprint/pipelines/nodes/drift_detection.py:22`
+**Source:** `src/iter8ml/pipelines/nodes/drift_detection.py:22`
 
 Available as Hamilton DAG config variants:
 
@@ -171,4 +171,4 @@ Available as Hamilton DAG config variants:
 | `drift_report__domain` | Domain classifier drift |
 | `drift_report__both` | Runs both PSI and domain classifier, merges reports |
 
-**Orchestrator:** The drift detection pipeline is available via `PipelineExecutor.run_drift()` (`src/tabular_blueprint/pipelines/executor.py:208`) or directly via the monitoring classes (`DriftDetector`, `PSIDriftDetector`, `DomainClassifierDriftDetector`).
+**Orchestrator:** The drift detection pipeline is available via `PipelineExecutor.run_drift()` (`src/iter8ml/pipelines/executor.py:208`) or directly via the monitoring classes (`DriftDetector`, `PSIDriftDetector`, `DomainClassifierDriftDetector`).

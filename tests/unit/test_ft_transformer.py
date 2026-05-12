@@ -26,8 +26,8 @@ def sample_data():
 
 def _model_types():
     """Resolve model classes lazily to support optional dependencies."""
-    from tabular_blueprint.models.deep.ft_transformer import FTTransformerModel
-    from tabular_blueprint.models.model_configs import FTTransformerConfig
+    from iter8ml.engine.models.ft_transformer import FTTransformerModel
+    from iter8ml.engine.models.model_configs import FTTransformerConfig
 
     return FTTransformerModel, FTTransformerConfig
 

@@ -6,7 +6,7 @@ Reference for data ingestion from various sources and data hashing.
 
 ## Supported Formats
 
-**Source:** `src/tabular_blueprint/data/loaders.py`
+**Source:** `src/iter8ml/data/loaders.py`
 
 All loading functions return a **Polars DataFrame**.
 

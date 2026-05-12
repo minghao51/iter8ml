@@ -5,9 +5,9 @@ from types import SimpleNamespace
 
 import polars as pl
 
-from tabular_blueprint.config import ExperimentConfig
-from tabular_blueprint.constants import TaskType
-from tabular_blueprint.engine.trainer import Trainer
+from iter8ml.config import ExperimentConfig
+from iter8ml.constants import TaskType
+from iter8ml.engine.trainer import Trainer
 
 
 def test_trainer_init(tmp_path):
@@ -26,7 +26,7 @@ def test_trainer_init(tmp_path):
 def test_omp_threads_configurable(monkeypatch):
     import os
 
-    from tabular_blueprint.config import HardwareProfile
+    from iter8ml.config import HardwareProfile
 
     thread_count = HardwareProfile.configure_omp_threads()
     assert os.environ.get("OMP_NUM_THREADS") == str(thread_count)
@@ -51,7 +51,7 @@ def test_trainer_resume_passes_completed_models_to_pipeline(tmp_path, monkeypatc
         return SimpleNamespace(results={})
 
     monkeypatch.setattr(
-        "tabular_blueprint.pipelines.executor.PipelineExecutor.run_training",
+        "iter8ml.engine.pipelines.executor.PipelineExecutor.run_training",
         _fake_run_training,
     )
 

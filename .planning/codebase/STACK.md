@@ -6,9 +6,9 @@
 - **Build system**: setuptools + wheel
 
 ## Project
-- **Name**: `tabular-blueprint` v0.1.0
-- **Entry point**: `tabblueprint` → `tabular_blueprint.cli:app` (typer CLI)
-- **Source layout**: `src/tabular_blueprint/` (configured in `[tool.setuptools.packages.find] where = ["src"]`)
+- **Name**: `iter8ml` v0.1.0
+- **Entry point**: `iter8` → `iter8ml.cli:app` (typer CLI)
+- **Source layout**: `src/iter8ml/` (configured in `[tool.setuptools.packages.find] where = ["src"]`)
 
 ## Core Dependencies (`dependencies` in pyproject.toml)
 | Package | Version | Import path | Role |

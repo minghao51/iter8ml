@@ -5,7 +5,7 @@
 ```
 iter8ml/
 ├── src/
-│   └── tabular_blueprint/          # Main package (src layout)
+│   └── iter8ml/          # Main package (src layout)
 ├── tests/
 │   ├── conftest.py
 │   ├── unit/                       # Fast, isolated tests
@@ -36,7 +36,7 @@ iter8ml/
 └── uv.lock
 ```
 
-## Source Code: `src/tabular_blueprint/`
+## Source Code: `src/iter8ml/`
 
 ### Top-Level Modules
 

@@ -2,8 +2,6 @@ import numpy as np
 import polars as pl
 import pytest
 
-from tabular_blueprint.pipelines.nodes import data_preparation, preprocessing
-
 
 @pytest.fixture
 def sample_df():
@@ -22,7 +20,9 @@ def dr():
     pytest.importorskip("hamilton")
     from hamilton import driver
 
-    return driver.Builder().with_modules(preprocessing, data_preparation).build()
+    from iter8ml.engine.pipelines.nodes import prep
+
+    return driver.Builder().with_modules(prep).build()
 
 
 BASE_INPUTS = {

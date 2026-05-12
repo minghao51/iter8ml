@@ -7,9 +7,9 @@ from pathlib import Path
 import polars as pl
 from sklearn.datasets import make_classification, make_regression
 
-from tabular_blueprint.config import ExperimentConfig
-from tabular_blueprint.engine.tracker import JSONLTracker
-from tabular_blueprint.engine.trainer import Trainer
+from iter8ml.config import ExperimentConfig
+from iter8ml.engine.tracker import JSONLTracker
+from iter8ml.engine.trainer import Trainer
 
 
 def test_full_pipeline_catboost_classification():

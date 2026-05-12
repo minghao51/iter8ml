@@ -2245,7 +2245,7 @@ vertical-align: -.125em;
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.datasets <span class="im">import</span> make_classification</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.data.adapter <span class="im">import</span> DataAdapter</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.data.adapter <span class="im">import</span> DataAdapter</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>X_raw, y_raw <span class="op">=</span> make_classification(</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    n_samples<span class="op">=</span><span class="dv">3000</span>, n_features<span class="op">=</span><span class="dv">25</span>, n_informative<span class="op">=</span><span class="dv">12</span>, random_state<span class="op">=</span><span class="dv">42</span></span>
@@ -2266,8 +2266,8 @@ vertical-align: -.125em;
 <div id="configure-evaluator" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.config <span class="im">import</span> ExperimentConfig</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.engine.evaluator <span class="im">import</span> Evaluator</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.config <span class="im">import</span> ExperimentConfig</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.engine.evaluator <span class="im">import</span> Evaluator</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>eval_config <span class="op">=</span> ExperimentConfig(</span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">&quot;compare&quot;</span>,</span>
@@ -2291,7 +2291,7 @@ vertical-align: -.125em;
 <div id="cell-evaluate-all-models" class="cell" data-cache="true" data-execution_count="3">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.models.factory <span class="im">import</span> get_model_class</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.models.factory <span class="im">import</span> get_model_class</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>models_to_compare <span class="op">=</span> [<span class="st">&quot;catboost&quot;</span>, <span class="st">&quot;lightgbm&quot;</span>, <span class="st">&quot;xgboost&quot;</span>, <span class="st">&quot;naive_baseline&quot;</span>, <span class="st">&quot;linear_baseline&quot;</span>]</span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>scores <span class="op">=</span> {}</span>
@@ -2361,10 +2361,10 @@ vertical-align: -.125em;
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.datasets <span class="im">import</span> make_regression</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.data.adapter <span class="im">import</span> DataAdapter <span class="im">as</span> DA2</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.engine.evaluator <span class="im">import</span> Evaluator <span class="im">as</span> Eval2</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.config <span class="im">import</span> ExperimentConfig <span class="im">as</span> Cfg2</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.models.factory <span class="im">import</span> get_model_class <span class="im">as</span> GMC2</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.data.adapter <span class="im">import</span> DataAdapter <span class="im">as</span> DA2</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.engine.evaluator <span class="im">import</span> Evaluator <span class="im">as</span> Eval2</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.config <span class="im">import</span> ExperimentConfig <span class="im">as</span> Cfg2</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.models.factory <span class="im">import</span> get_model_class <span class="im">as</span> GMC2</span>
 <span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>X_reg_raw, y_reg_raw <span class="op">=</span> make_regression(</span>
 <span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    n_samples<span class="op">=</span><span class="dv">2000</span>, n_features<span class="op">=</span><span class="dv">15</span>, noise<span class="op">=</span><span class="dv">10</span>, random_state<span class="op">=</span><span class="dv">42</span></span>
@@ -2888,7 +2888,7 @@ vertical-align: -.125em;
 <span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
 <span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
 <span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.datasets <span class="im">import</span> make_classification</span>
-<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.data.adapter <span class="im">import</span> DataAdapter</span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.data.adapter <span class="im">import</span> DataAdapter</span>
 <span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>X_raw, y_raw <span class="op">=</span> make_classification(</span>
 <span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>    n_samples<span class="op">=</span><span class="dv">3000</span>, n_features<span class="op">=</span><span class="dv">25</span>, n_informative<span class="op">=</span><span class="dv">12</span>, random_state<span class="op">=</span><span class="dv">42</span></span>
@@ -2904,8 +2904,8 @@ vertical-align: -.125em;
 <span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
 <span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: configure-evaluator</span></span>
-<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.config <span class="im">import</span> ExperimentConfig</span>
-<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.engine.evaluator <span class="im">import</span> Evaluator</span>
+<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.config <span class="im">import</span> ExperimentConfig</span>
+<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.engine.evaluator <span class="im">import</span> Evaluator</span>
 <span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a>eval_config <span class="op">=</span> ExperimentConfig(</span>
 <span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">&quot;compare&quot;</span>,</span>
@@ -2925,7 +2925,7 @@ vertical-align: -.125em;
 <span id="cb11-63"><a href="#cb11-63" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
 <span id="cb11-64"><a href="#cb11-64" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: evaluate-all-models</span></span>
 <span id="cb11-65"><a href="#cb11-65" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
-<span id="cb11-66"><a href="#cb11-66" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.models.factory <span class="im">import</span> get_model_class</span>
+<span id="cb11-66"><a href="#cb11-66" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.models.factory <span class="im">import</span> get_model_class</span>
 <span id="cb11-67"><a href="#cb11-67" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-68"><a href="#cb11-68" aria-hidden="true" tabindex="-1"></a>models_to_compare <span class="op">=</span> [<span class="st">&quot;catboost&quot;</span>, <span class="st">&quot;lightgbm&quot;</span>, <span class="st">&quot;xgboost&quot;</span>, <span class="st">&quot;naive_baseline&quot;</span>, <span class="st">&quot;linear_baseline&quot;</span>]</span>
 <span id="cb11-69"><a href="#cb11-69" aria-hidden="true" tabindex="-1"></a>scores <span class="op">=</span> {}</span>
@@ -2961,10 +2961,10 @@ vertical-align: -.125em;
 <span id="cb11-103"><a href="#cb11-103" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: regression-comparison</span></span>
 <span id="cb11-104"><a href="#cb11-104" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
 <span id="cb11-105"><a href="#cb11-105" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.datasets <span class="im">import</span> make_regression</span>
-<span id="cb11-106"><a href="#cb11-106" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.data.adapter <span class="im">import</span> DataAdapter <span class="im">as</span> DA2</span>
-<span id="cb11-107"><a href="#cb11-107" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.engine.evaluator <span class="im">import</span> Evaluator <span class="im">as</span> Eval2</span>
-<span id="cb11-108"><a href="#cb11-108" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.config <span class="im">import</span> ExperimentConfig <span class="im">as</span> Cfg2</span>
-<span id="cb11-109"><a href="#cb11-109" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tabular_blueprint.models.factory <span class="im">import</span> get_model_class <span class="im">as</span> GMC2</span>
+<span id="cb11-106"><a href="#cb11-106" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.data.adapter <span class="im">import</span> DataAdapter <span class="im">as</span> DA2</span>
+<span id="cb11-107"><a href="#cb11-107" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.engine.evaluator <span class="im">import</span> Evaluator <span class="im">as</span> Eval2</span>
+<span id="cb11-108"><a href="#cb11-108" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.config <span class="im">import</span> ExperimentConfig <span class="im">as</span> Cfg2</span>
+<span id="cb11-109"><a href="#cb11-109" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.models.factory <span class="im">import</span> get_model_class <span class="im">as</span> GMC2</span>
 <span id="cb11-110"><a href="#cb11-110" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-111"><a href="#cb11-111" aria-hidden="true" tabindex="-1"></a>X_reg_raw, y_reg_raw <span class="op">=</span> make_regression(</span>
 <span id="cb11-112"><a href="#cb11-112" aria-hidden="true" tabindex="-1"></a>    n_samples<span class="op">=</span><span class="dv">2000</span>, n_features<span class="op">=</span><span class="dv">15</span>, noise<span class="op">=</span><span class="dv">10</span>, random_state<span class="op">=</span><span class="dv">42</span></span>

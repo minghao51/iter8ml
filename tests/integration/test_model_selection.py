@@ -8,10 +8,10 @@ import polars as pl
 import pytest
 from sklearn.datasets import make_classification
 
-from tabular_blueprint.config import ExperimentConfig
-from tabular_blueprint.engine.tracker import JSONLTracker
-from tabular_blueprint.engine.trainer import Trainer
-from tabular_blueprint.models.selector import ModelSelector
+from iter8ml.config import ExperimentConfig
+from iter8ml.engine.models.selector import ModelSelector
+from iter8ml.engine.tracker import JSONLTracker
+from iter8ml.engine.trainer import Trainer
 
 
 @pytest.fixture

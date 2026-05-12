@@ -1,7 +1,7 @@
 import polars as pl
 import pytest
 
-from tabular_blueprint.pipelines.executor import PipelineExecutor, PipelineMode
+from iter8ml.engine.pipelines.executor import PipelineExecutor, PipelineMode
 
 
 @pytest.fixture
@@ -71,7 +71,7 @@ class TestPipelineExecutor:
 
 class TestPipelineExecutorFallback:
     def test_fallback_without_hamilton(self, monkeypatch):
-        import tabular_blueprint.pipelines.executor as executor_mod
+        import iter8ml.engine.pipelines.executor as executor_mod
 
         def mock_import():
             return None
@@ -81,7 +81,7 @@ class TestPipelineExecutorFallback:
         assert executor.available is False
 
     def test_run_preprocessing_fallback_returns_original(self, monkeypatch, sample_df):
-        import tabular_blueprint.pipelines.executor as executor_mod
+        import iter8ml.engine.pipelines.executor as executor_mod
 
         monkeypatch.setattr(executor_mod, "_try_import_hamilton", lambda: None)
         executor = PipelineExecutor()
@@ -89,7 +89,7 @@ class TestPipelineExecutorFallback:
         assert result.equals(sample_df)
 
     def test_execute_fallback_returns_empty(self, monkeypatch, sample_df):
-        import tabular_blueprint.pipelines.executor as executor_mod
+        import iter8ml.engine.pipelines.executor as executor_mod
 
         monkeypatch.setattr(executor_mod, "_try_import_hamilton", lambda: None)
         executor = PipelineExecutor()
@@ -97,9 +97,34 @@ class TestPipelineExecutorFallback:
         assert result == {}
 
     def test_mermaid_fallback(self, monkeypatch):
-        import tabular_blueprint.pipelines.executor as executor_mod
+        import iter8ml.engine.pipelines.executor as executor_mod
 
         monkeypatch.setattr(executor_mod, "_try_import_hamilton", lambda: None)
         executor = PipelineExecutor()
         graph = executor.get_mermaid_graph()
         assert "Raw Data" in graph
+
+
+def test_direct_fields_sync_with_config():
+    """Ensure _DIRECT_FIELDS doesn't drift from ExperimentConfig fields."""
+    from iter8ml.config import _FLAT_DELEGATES, ExperimentConfig
+    from iter8ml.engine.pipelines.executor import _DIRECT_FIELDS
+
+    direct = set(_DIRECT_FIELDS)
+    field_names = set(ExperimentConfig.model_fields.keys())
+    delegate_names = set(_FLAT_DELEGATES.keys())
+    resolvable = field_names | delegate_names
+
+    missing = direct - resolvable
+    assert not missing, f"_DIRECT_FIELDS references non-existent fields: {missing}"
+
+    for field in direct:
+        try:
+            config = ExperimentConfig(
+                name="test", task="classification", target_col="t", data_path="d.csv"
+            )
+            getattr(config, field)
+        except AttributeError as e:
+            raise AssertionError(
+                f"_DIRECT_FIELDS entry '{field}' not accessible on ExperimentConfig: {e}"
+            ) from e

@@ -19,7 +19,7 @@ jobs:
             **/pyproject.toml
             **/uv.lock
       - uses: quarto-dev/quarto-action/setup@v2
-      - run: uv sync --group dev --extra docs
+      - run: uv sync --frozen --group dev --extra base --extra docs
       - name: Render notebooks
         run: uv run quarto render notebooks/
       - name: Generate notebook stubs

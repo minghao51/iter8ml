@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from sklearn.datasets import make_classification
 
-from tabular_blueprint.engine.calibration import CalibratedModel
+from iter8ml.engine.calibration import CalibratedModel
 
 
 class TestCalibratedModel:

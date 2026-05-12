@@ -3,7 +3,7 @@ requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tabular-blueprint"
+name = "iter8ml"
 version = "0.1.0"
 description = "A high-velocity iteration framework for tabular ML"
 requires-python = ">=3.11"
@@ -50,13 +50,14 @@ audit = [
     "cleanlab>=2.6",
 ]
 docs = [
+    "matplotlib>=3.7",
     "mkdocs-material>=9.5",
     "mkdocstrings[python]>=0.25",
     "mike>=2.0",
     "pymdown-extensions>=10.0",
 ]
 full = [
-    "tabular-blueprint[base,deep,tracking,agent,audit,docs]",
+    "iter8ml[base,deep,tracking,agent,audit,docs]",
 ]
 
 [dependency-groups]
@@ -73,7 +74,7 @@ dev = [
 ]
 
 [project.scripts]
-tabblueprint = "tabular_blueprint.cli:app"
+iter8 = "iter8ml.cli.main:app"
 
 [tool.ruff]
 line-length = 100
@@ -104,7 +105,7 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = [
-    "matplotlib.*", "sklearn.*", "scipy.*", "psutil.*", "pandas.*",
+    "matplotlib.*", "sklearn.*", "scipy.*", "psutil.*", "pandas.*", "yaml.*",
 ]
 ignore_missing_imports = true
 
@@ -113,7 +114,8 @@ select = ["E", "F", "I", "UP", "B", "SIM", "C4", "PT", "RUF"]
 fixable = ["ALL"]
 
 [tool.ruff.lint.per-file-ignores]
-"src/tabular_blueprint/cli.py" = ["B008"]
+"src/iter8ml/cli/**/*.py" = ["B008"]
+"src/iter8ml/cli.py" = ["F401"]
 "notebooks/*" = ["E402", "I001", "B018", "E501", "RUF001", "F841"]
 
 [tool.pytest.ini_options]
@@ -134,4 +136,4 @@ markers = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-tabular_blueprint = ["py.typed"]
+iter8ml = ["py.typed"]

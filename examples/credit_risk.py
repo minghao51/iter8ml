@@ -9,8 +9,8 @@ Usage:
         --model catboost --trials 100
 """
 
-from tabular_blueprint.config import ExperimentConfig
-from tabular_blueprint.constants import CVStrategy, TaskType, TrackerType
+from iter8ml.config import ExperimentConfig
+from iter8ml.constants import CVStrategy, TaskType, TrackerType
 
 config = ExperimentConfig(
     name="credit_risk_v2",
@@ -19,10 +19,7 @@ config = ExperimentConfig(
     data_path="data/credit_risk_v2.parquet",
     cv_folds=5,
     cv_strategy=CVStrategy.STRATIFIED,
-    run_hpo=False,
-    hpo_n_trials=100,
     models="auto",
     metrics=["roc_auc", "f1_macro", "log_loss"],
     tracker=TrackerType.JSONL,
-    run_quality_audit=True,
 )

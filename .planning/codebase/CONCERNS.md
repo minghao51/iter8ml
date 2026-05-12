@@ -6,16 +6,16 @@
 
 | File | Lines | Issue |
 |------|-------|-------|
-| `src/tabular_blueprint/cli.py` | 477 | The `drift` command has 5+ duplicate code paths for PSI/KS/Domain methods; the `diff` command embeds a rich table builder inline; the `hpo` command has extensive result-formatting logic |
-| `src/tabular_blueprint/engine/model_trainer.py` | 367 | `_train_sequential` and `_train_concurrent` share ~80% duplicated champion-update logic (lines 144-155 vs 200-213) |
-| `src/tabular_blueprint/engine/trainer.py` | 334 | `__init__` accepts 5+ configuration flags for `DataPreparationService`/`FeatureEngineer`/`EmbeddingEngine`/`DriftChecker`/`ExplainabilityService` — these could be composed externally |
-| `src/tabular_blueprint/data/feature_engine.py` | 318 | `discover_interactions` (line 156) has O(n²) complexity over `top_k_indices`; the function mixes candidate generation, evaluation, and result formatting |
+| `src/iter8ml/cli.py` | 477 | The `drift` command has 5+ duplicate code paths for PSI/KS/Domain methods; the `diff` command embeds a rich table builder inline; the `hpo` command has extensive result-formatting logic |
+| `src/iter8ml/engine/model_trainer.py` | 367 | `_train_sequential` and `_train_concurrent` share ~80% duplicated champion-update logic (lines 144-155 vs 200-213) |
+| `src/iter8ml/engine/trainer.py` | 334 | `__init__` accepts 5+ configuration flags for `DataPreparationService`/`FeatureEngineer`/`EmbeddingEngine`/`DriftChecker`/`ExplainabilityService` — these could be composed externally |
+| `src/iter8ml/data/feature_engine.py` | 318 | `discover_interactions` (line 156) has O(n²) complexity over `top_k_indices`; the function mixes candidate generation, evaluation, and result formatting |
 | `tests/unit/test_cli.py` | 342 | CLI tests are integration-level (mock file I/O, real data loading) — slow and fragile |
 
 ### 2. TODOs / FIXMEs / NOTES
 
 Only one found:
-- **NOTE**: `src/tabular_blueprint/services/registry_service.py:192` — Caller MUST hold file lock before calling `update_if_better`. This is an unchecked precondition; a future refactor should make lock acquisition internal.
+- **NOTE**: `src/iter8ml/services/registry_service.py:192` — Caller MUST hold file lock before calling `update_if_better`. This is an unchecked precondition; a future refactor should make lock acquisition internal.
 
 ### 3. Duplicated Logic
 
@@ -25,7 +25,7 @@ Only one found:
 
 ### 4. Hamilton Config Branching Conflict
 
-`src/tabular_blueprint/pipelines/nodes/feature_engineering.py:157-201`:
+`src/iter8ml/pipelines/nodes/feature_engineering.py:157-201`:
 - `training_features__default` fires when `afe_enabled != True`
 - `training_features__afe_enabled` fires when `afe_enabled == True`
 - `training_features__embedding_enabled` fires when `embedding_enabled == True`
@@ -34,11 +34,11 @@ If a config sets `afe_enabled=False, embedding_enabled=True`, both `__default` a
 
 ### 5. Deprecated `HamiltonExecutor`
 
-`src/tabular_blueprint/pipelines/hamilton_executor.py:13` — Emits `DeprecationWarning` but is still importable and used. Should be removed in next major version. No test coverage.
+`src/iter8ml/pipelines/hamilton_executor.py:13` — Emits `DeprecationWarning` but is still importable and used. Should be removed in next major version. No test coverage.
 
 ### 6. Thread-Based Concurrent Training
 
-`src/tabular_blueprint/engine/model_trainer.py:177`: Uses `ThreadPoolExecutor` for CPU-bound model training (GBDTs, neural nets). The GIL prevents true parallelism. Should use `ProcessPoolExecutor` or `joblib.Parallel` for CPU-bound model fitting.
+`src/iter8ml/engine/model_trainer.py:177`: Uses `ThreadPoolExecutor` for CPU-bound model training (GBDTs, neural nets). The GIL prevents true parallelism. Should use `ProcessPoolExecutor` or `joblib.Parallel` for CPU-bound model fitting.
 
 ---
 
@@ -46,21 +46,21 @@ If a config sets `afe_enabled=False, embedding_enabled=True`, both `__default` a
 
 ### 1. Safe Unpickler — Adequate but Permissive
 
-`src/tabular_blueprint/utils/safe_pickle.py:36-48` — `RestrictedUnpickler` uses **prefix-based** whitelisting (e.g., `"sklearn."` allows any class under the sklearn package). This is reasonable for an ML library but is broader than class-level allowlisting. Consider:
+`src/iter8ml/utils/safe_pickle.py:36-48` — `RestrictedUnpickler` uses **prefix-based** whitelisting (e.g., `"sklearn."` allows any class under the sklearn package). This is reasonable for an ML library but is broader than class-level allowlisting. Consider:
 - Adding subprocess-level classes (e.g., `sklearn.externals.joblib`) to watch for supply-chain attacks
 - Adding a deny-list override for known-dangerous modules like `os`, `subprocess`, `builtins.exec`
 
 ### 2. Dynamic Import in Factory — Safe by Registry
 
-`src/tabular_blueprint/models/factory.py:39` — `importlib.import_module` is safe because it resolves from a hardcoded `_MODEL_REGISTRY` dict. This is a good pattern.
+`src/iter8ml/models/factory.py:39` — `importlib.import_module` is safe because it resolves from a hardcoded `_MODEL_REGISTRY` dict. This is a good pattern.
 
 ### 3. Dynamic Import in Export Service — Allowlisted
 
-`src/tabular_blueprint/services/export_service.py:62` — Uses class-level allowlisting (line 51-56) from metadata. Good pattern.
+`src/iter8ml/services/export_service.py:62` — Uses class-level allowlisting (line 51-56) from metadata. Good pattern.
 
 ### 4. Python Config Loading — Gated
 
-`src/tabular_blueprint/config.py:105-119` — `.py` config loading requires `--allow-unsafe-config` flag. Appropriate.
+`src/iter8ml/config.py:105-119` — `.py` config loading requires `--allow-unsafe-config` flag. Appropriate.
 
 ### 5. No Secrets in Source Code
 
@@ -103,11 +103,11 @@ Many modules use `try: ... except ImportError:` to handle missing optional deps 
 
 | Module | Lines |
 |--------|-------|
-| `tabular_blueprint.engine.hpo` | 262 |
-| `tabular_blueprint.engine.hpo_warmstart` | 207 |
-| `tabular_blueprint.engine.hpo_importance` | 149 |
-| `tabular_blueprint.pipelines.nodes.*` | ~500+ |
-| `tabular_blueprint.engine.trainer` | 334 |
+| `iter8ml.engine.hpo` | 262 |
+| `iter8ml.engine.hpo_warmstart` | 207 |
+| `iter8ml.engine.hpo_importance` | 149 |
+| `iter8ml.pipelines.nodes.*` | ~500+ |
+| `iter8ml.engine.trainer` | 334 |
 
 ~1,450 lines of type-checked source are excluded from mypy verification.
 

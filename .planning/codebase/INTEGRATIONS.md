@@ -4,22 +4,22 @@
 
 Three backends, selected via `config.tracker` (enum `TrackerType`):
 
-### 1. JSONL (default) — `tabular_blueprint.utils.jsonl`
+### 1. JSONL (default) — `iter8ml.utils.jsonl`
 - **File**: `workspace/experiments.jsonl`
-- **Import path**: `tabular_blueprint.utils.jsonl` → `load_events()`, `iter_events()`
-- **Tracker class**: `tabular_blueprint.engine.tracker.JSONLTracker`
+- **Import path**: `iter8ml.utils.jsonl` → `load_events()`, `iter_events()`
+- **Tracker class**: `iter8ml.engine.tracker.JSONLTracker`
 - **Features**: log rotation (100 MB threshold, 5 backups), thread-safe via `threading.Lock`
 - **Events**: metrics, params, artifacts, structured event dicts with `run_id` and `timestamp`
 
 ### 2. W&B — optional `[wandb]` extra
-- **Import path**: `wandb` (lazy inside `tabular_blueprint.engine.tracker.WandbTracker`)
-- **Tracker class**: `tabular_blueprint.engine.tracker.WandbTracker`
+- **Import path**: `wandb` (lazy inside `iter8ml.engine.tracker.WandbTracker`)
+- **Tracker class**: `iter8ml.engine.tracker.WandbTracker`
 - **Capabilities**: `wandb.init()`, `wandb.log()`, `wandb.Artifact`, `run.config.update()`
-- **Config**: `project="tabular-blueprint"` (overridable via kwargs)
+- **Config**: `project="iter8ml"` (overridable via kwargs)
 
 ### 3. MLflow — optional `[mlflow]` extra
-- **Import path**: `mlflow` (lazy inside `tabular_blueprint.engine.tracker.MLflowTracker`)
-- **Tracker class**: `tabular_blueprint.engine.tracker.MLflowTracker`
+- **Import path**: `mlflow` (lazy inside `iter8ml.engine.tracker.MLflowTracker`)
+- **Tracker class**: `iter8ml.engine.tracker.MLflowTracker`
 - **Capabilities**: `mlflow.log_metrics()`, `mlflow.log_params()`, `mlflow.log_artifact()`, `mlflow.log_dict()`
 - **Config**: configurable `tracking_uri` + `experiment_name`
 - **docker-compose**: ships `ghcr.io/mlflow/mlflow:v2.13.0` sidecar on port 5000
@@ -27,7 +27,7 @@ Three backends, selected via `config.tracker` (enum `TrackerType`):
 ## Model Registry
 
 - **File**: `workspace/registry.json`
-- **Service**: `tabular_blueprint.services.registry_service.RegistryService`
+- **Service**: `iter8ml.services.registry_service.RegistryService`
 - **Concurrency**: cross-process file locking via `filelock.FileLock` → `workspace/registry.lock`
 - **Atomic writes**: temp file + `os.replace()` for crash safety
 - **Schema per key**: `{model, run_id, score, metric_name, artifact_path, registered_at}`
@@ -41,11 +41,11 @@ Three backends, selected via `config.tracker` (enum `TrackerType`):
 | Model registry | `workspace/registry.json` | JSON (dict) | Champion model tracking per task |
 | Artifacts | `workspace/artifacts/` | Binary (joblib/onnx/cbm) | Serialized model files |
 | Export packages | `workspace/exports/<key>/` | Directory | Portable prediction packages |
-| Preprocessing cache | `.tabblueprint/` | JSON + pickle | Skipped preprocessing steps |
+| Preprocessing cache | `.iter8/` | JSON + pickle | Skipped preprocessing steps |
 
 ## Data Ingestion
 
-`tabular_blueprint.data.loaders` — all return Polars DataFrames:
+`iter8ml.data.loaders` — all return Polars DataFrames:
 
 | Function | Source | Format |
 |---|---|---|
@@ -57,7 +57,7 @@ Three backends, selected via `config.tracker` (enum `TrackerType`):
 ## LLM Integration
 
 - **Optional**: `[llm]` extra → `litellm>=1.40`, `mcp>=0.9`
-- **Agent**: `tabular_blueprint.llm.TabularAgent`
+- **Agent**: `iter8ml.llm.TabularAgent`
 - **LLM proxy**: `litellm.completion()` — provider-agnostic (OpenAI, Anthropic, etc.)
 - **Default model**: `claude-sonnet-4-20250514`
 - **Capabilities**: SHAP explanation, performance commentary, feature summary
@@ -65,9 +65,9 @@ Three backends, selected via `config.tracker` (enum `TrackerType`):
 
 ## MCP Server (Model Context Protocol)
 
-- **File**: `tabular_blueprint.mcp.tools`
+- **File**: `iter8ml.mcp.tools`
 - **Framework**: `mcp.server.fastmcp.FastMCP` (from `[llm]` extra)
-- **Server name**: `"tabular-blueprint"`
+- **Server name**: `"iter8ml"`
 - **Exposed tools** (10 total):
   - `get_experiment_state()` — current_state.md with leaderboard + resource status
   - `get_column_stats(data_path)` — Polars `describe()` output
@@ -81,7 +81,7 @@ Three backends, selected via `config.tracker` (enum `TrackerType`):
 
 ## Model Export
 
-- **Service**: `tabular_blueprint.services.export_service.ExportService`
+- **Service**: `iter8ml.services.export_service.ExportService`
 - **Output**: portable directory containing:
   - `model.artifact` — serialized model binary
   - `predictor.py` — standalone predictor class with `predict()` / `predict_proba()`
@@ -93,14 +93,14 @@ Three backends, selected via `config.tracker` (enum `TrackerType`):
 
 | Method | Import path | Test |
 |---|---|---|
-| KS/Chi2 | `tabular_blueprint.monitoring.drift.DriftDetector` | Per-column statistical tests |
-| PSI | `tabular_blueprint.monitoring.psi_drift.PSIDriftDetector` | Population Stability Index |
-| Domain Classifier | `tabular_blueprint.monitoring.domain_classifier.DomainClassifierDriftDetector` | Classifier AUC |
-| Hamilton DAG | `tabular_blueprint.pipelines.executor.PipelineExecutor` | Orchestrated drift pipeline |
+| KS/Chi2 | `iter8ml.monitoring.drift.DriftDetector` | Per-column statistical tests |
+| PSI | `iter8ml.monitoring.psi_drift.PSIDriftDetector` | Population Stability Index |
+| Domain Classifier | `iter8ml.monitoring.domain_classifier.DomainClassifierDriftDetector` | Classifier AUC |
+| Hamilton DAG | `iter8ml.pipelines.executor.PipelineExecutor` | Orchestrated drift pipeline |
 
 ## Orchestration
 
-- **Hamilton DAG**: `sf-hamilton>=1.70` in `tabular_blueprint.pipelines` — `Driver.Builder().with_modules(module).build()`
+- **Hamilton DAG**: `sf-hamilton>=1.70` in `iter8ml.pipelines` — `Driver.Builder().with_modules(module).build()`
   - Nodes: preprocessing, feature engineering, state generation
   - Drift pipeline: PSI + domain classifier as Hamilton nodes
 

@@ -3,7 +3,7 @@
 import numpy as np
 import polars as pl
 
-from tabular_blueprint.data.adapter import DataAdapter
+from iter8ml.data.adapter import DataAdapter
 
 
 def test_numpy_conversion():

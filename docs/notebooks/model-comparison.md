@@ -1,11 +1,19 @@
+---
+hide:
+  - navigation
+  - toc
+---
+
 # Model Comparison & Evaluation
 
-Compare multiple models side-by-side using the Evaluator API with custom cross-validation strategies and per-fold metric breakdowns.
+Compare multiple models side-by-side using the Evaluator API with custom cross-validation strategies, per-fold metric breakdowns, lift analysis, and calibration.
 
-<div style="margin: 0 -0.8rem">
-  <iframe src="/iter8ml/notebooks/html/02_model_comparison.html"
-    style="width:100%; height:600px; border:1px solid var(--md-default-fg-color--lightest); border-radius:4px;"
-    loading="lazy"></iframe>
+<div class="iframe-container" id="iframe-wrapper-model-comparison">
+  <div class="iframe-controls">
+    <button type="button" class="md-button notebook-expand-btn">Expand</button>
+    <a href="/iter8ml/notebooks/html/02_model_comparison.html" target="_blank" rel="noopener noreferrer" class="md-button">Open in New Tab</a>
+  </div>
+  <iframe src="/iter8ml/notebooks/html/02_model_comparison.html" allowfullscreen loading="lazy"></iframe>
 </div>
 
 ## Run Locally

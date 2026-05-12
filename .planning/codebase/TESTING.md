@@ -32,8 +32,8 @@ tests/
     └── test_smoke.py        # @pytest.mark.smoke
 ```
 
-- Mirrors `src/tabular_blueprint/` structure but flattened (no subdirectory nesting)
-- `pythonpath = ["src"]` enables `import tabular_blueprint` directly
+- Mirrors `src/iter8ml/` structure but flattened (no subdirectory nesting)
+- `pythonpath = ["src"]` enables `import iter8ml` directly
 - `--import-mode=importlib` avoids conftest namespace conflicts
 
 ## Marker/Tag Usage
@@ -81,7 +81,7 @@ Defined in `pyproject.toml:122-130`:
 ```python
 """Docstring describing what's being tested."""
 import pytest
-from tabular_blueprint.module import thing
+from iter8ml.module import thing
 
 def test_scenario_description():
     result = thing(args)
@@ -98,7 +98,7 @@ def test_error_condition():
 ### CLI tests
 ```python
 from typer.testing import CliRunner
-from tabular_blueprint.cli import app
+from iter8ml.cli import app
 
 runner = CliRunner()
 

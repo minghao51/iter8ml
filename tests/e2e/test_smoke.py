@@ -4,9 +4,9 @@ import polars as pl
 import pytest
 from sklearn.datasets import make_classification
 
-from tabular_blueprint.config import ExperimentConfig
-from tabular_blueprint.constants import CVStrategy, TaskType, TrackerType
-from tabular_blueprint.engine.trainer import Trainer
+from iter8ml.config import ExperimentConfig
+from iter8ml.constants import CVStrategy, TaskType, TrackerType
+from iter8ml.engine.trainer import Trainer
 
 
 @pytest.mark.smoke

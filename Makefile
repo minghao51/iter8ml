@@ -1,4 +1,4 @@
-.PHONY: notebooks notebooks-staged docs
+.PHONY: notebooks notebooks-staged docs check-legacy-namespace
 
 notebooks:
 	uv run quarto render notebooks/
@@ -13,3 +13,6 @@ notebooks-staged:
 docs: notebooks
 	uv run python scripts/generate_notebook_docs.py
 	uv run mkdocs build
+
+check-legacy-namespace:
+	uv run python scripts/check_legacy_namespace.py

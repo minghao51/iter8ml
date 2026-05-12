@@ -1,11 +1,19 @@
+---
+hide:
+  - navigation
+  - toc
+---
+
 # Drift Detection & Monitoring
 
 Compare three drift detection methods — KS/Chi-squared, PSI, and Domain Classifier — on synthetic data with engineered distribution shift.
 
-<div style="margin: 0 -0.8rem">
-  <iframe src="/iter8ml/notebooks/html/03_drift_monitoring.html"
-    style="width:100%; height:600px; border:1px solid var(--md-default-fg-color--lightest); border-radius:4px;"
-    loading="lazy"></iframe>
+<div class="iframe-container" id="iframe-wrapper-drift-monitoring">
+  <div class="iframe-controls">
+    <button type="button" class="md-button notebook-expand-btn">Expand</button>
+    <a href="/iter8ml/notebooks/html/03_drift_monitoring.html" target="_blank" rel="noopener noreferrer" class="md-button">Open in New Tab</a>
+  </div>
+  <iframe src="/iter8ml/notebooks/html/03_drift_monitoring.html" allowfullscreen loading="lazy"></iframe>
 </div>
 
 ## Run Locally

@@ -2,7 +2,7 @@
 
 import pytest
 
-from tabular_blueprint.models.factory import get_model_class, validate_model_name
+from iter8ml.engine.models.factory import get_model_class, validate_model_name
 
 
 def test_get_model_class_known_model():
