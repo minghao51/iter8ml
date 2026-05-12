@@ -91,7 +91,7 @@ class JSONLTracker:
 class WandbTracker:
     """Optional [wandb] extra. Mirrors all events to W&B run."""
 
-    def __init__(self, project: str = "iter8ml", **kwargs: object):
+    def __init__(self, project: str = "iter8ml", **kwargs: Any):
         try:
             import wandb
 

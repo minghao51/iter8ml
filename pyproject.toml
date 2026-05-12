@@ -20,32 +20,29 @@ dependencies = [
     "filelock>=3.12",
     "pyyaml>=6.0",
     "psutil>=5.9",
+    "litellm[train]>=1.83.10",
+    "mlflow[train]>=3.11.1",
+    "cryptography[train]>=46.0.7",
+    "gitpython[train]>=3.1.50",
+    "python-multipart[train]>=0.0.27",
 ]
 
 [project.optional-dependencies]
-base = [
+train = [
     "catboost>=1.2",
     "lightgbm>=4.0",
     "xgboost>=2.0",
     "optuna>=3.6",
     "sf-hamilton>=1.70",
-]
-deep = [
     "torch>=2.3",
     "accelerate>=0.30",
     "transformers>=4.40",
     "tabpfn>=2.0",
     "pytorch-tabular>=1.0",
-]
-tracking = [
     "wandb>=0.17",
     "mlflow>=2.13",
-]
-agent = [
     "mcp>=0.9",
     "litellm>=1.40",
-]
-audit = [
     "shap>=0.44",
     "cleanlab>=2.6",
 ]
@@ -57,7 +54,7 @@ docs = [
     "pymdown-extensions>=10.0",
 ]
 full = [
-    "iter8ml[base,deep,tracking,agent,audit,docs]",
+    "iter8ml[train,docs]",
 ]
 
 [dependency-groups]
