@@ -1,17 +1,29 @@
 """Integration tests for TabPFN and model selection routing."""
 
 import json
-import os
 from unittest.mock import patch
 
 import polars as pl
 import pytest
 from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
 
 from iter8ml.config import ExperimentConfig
 from iter8ml.engine.models.selector import ModelSelector
+from iter8ml.engine.models.tabpfn_model import TabPFNModel
 from iter8ml.engine.tracker import JSONLTracker
 from iter8ml.engine.trainer import Trainer
+
+
+@pytest.fixture(autouse=True)
+def _mock_tabpfn():
+    """Mock TabPFNModel._build_model to avoid requiring TABPFN_TOKEN."""
+    with patch.object(
+        TabPFNModel,
+        "_build_model",
+        lambda self: LogisticRegression(max_iter=1000),
+    ):
+        yield
 
 
 @pytest.fixture
@@ -30,11 +42,6 @@ def tiny_classification_data():
     return df.with_columns(target=pl.Series(y))
 
 
-@pytest.mark.network
-@pytest.mark.skipif(
-    os.getenv("TABPFN_TOKEN") is None,
-    reason="TabPFN requires TABPFN_TOKEN",
-)
 def test_tabpfn_runs_on_small_data(small_classification_data, tmp_path):
     """TabPFN should run and produce results on small datasets."""
     config = ExperimentConfig(
@@ -56,11 +63,6 @@ def test_tabpfn_runs_on_small_data(small_classification_data, tmp_path):
     assert 0.0 < results["tabpfn"]["cv_scores"]["roc_auc"] <= 1.0
 
 
-@pytest.mark.network
-@pytest.mark.skipif(
-    os.getenv("TABPFN_TOKEN") is None,
-    reason="TabPFN requires TABPFN_TOKEN",
-)
 def test_tabpfn_data_size_guardrail(tiny_classification_data, tmp_path):
     """TabPFN should handle small data correctly."""
     config = ExperimentConfig(
