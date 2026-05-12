@@ -71,6 +71,9 @@ dev = [
     "marimo>=0.23.4",
     "jupyter>=1.1.1",
     "nbformat>=5.10.4",
+    "jupyter-server>=2.18.0",
+    "mako>=1.3.12",
+    "urllib3>=2.7.0",
 ]
 
 [project.scripts]
