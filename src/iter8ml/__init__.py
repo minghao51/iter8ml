@@ -1,1 +1,51 @@
 """iter8ml — a high-velocity iteration framework for tabular ML."""
+
+from importlib.metadata import version as _version
+
+try:
+    __version__ = _version("iter8ml")
+except Exception:
+    __version__ = "0.0.0"
+
+from iter8ml.config import ExperimentConfig, HardwareProfile
+from iter8ml.constants import CVStrategy, EmbeddingMethod, FeatureStrategy, TaskType, TrackerType
+from iter8ml.data.loader import load_data
+from iter8ml.engine.evaluator import Evaluator
+from iter8ml.engine.models.factory import available_model_names, get_model_class
+from iter8ml.engine.models.selector import ModelSelector
+from iter8ml.engine.tracker import JSONLTracker, Tracker
+from iter8ml.engine.trainer import Trainer
+from iter8ml.exceptions import DataLoadError, ModelFitError, RegistryError, TabularBlueprintError
+from iter8ml.services.export import ExportService
+from iter8ml.services.registry import PromotionResult, RegistryService
+from iter8ml.services.reporting import ReportService
+from iter8ml.session import ExperimentSession
+from iter8ml.workspace import Workspace
+
+__all__ = [
+    "CVStrategy",
+    "DataLoadError",
+    "EmbeddingMethod",
+    "Evaluator",
+    "ExperimentConfig",
+    "ExperimentSession",
+    "ExportService",
+    "FeatureStrategy",
+    "HardwareProfile",
+    "JSONLTracker",
+    "ModelFitError",
+    "ModelSelector",
+    "PromotionResult",
+    "RegistryError",
+    "RegistryService",
+    "ReportService",
+    "TabularBlueprintError",
+    "TaskType",
+    "Tracker",
+    "TrackerType",
+    "Trainer",
+    "Workspace",
+    "available_model_names",
+    "get_model_class",
+    "load_data",
+]
