@@ -35,7 +35,7 @@ X_raw, y_raw = make_classification(
 feature_names = [f"feat_{i}" for i in range(X_raw.shape[1])]
 df = pl.DataFrame({f"feat_{i}": X_raw[:, i] for i in range(X_raw.shape[1])})
 df = df.with_columns(target=pl.Series(y_raw))
-adapter = DataAdapter(target_format="numpy")
+adapter = DataAdapter()
 X, y = adapter.transform(df, "target")
 print(f"X: {X.shape}, y: {y.shape}")
 ```
@@ -47,7 +47,7 @@ print(f"X: {X.shape}, y: {y.shape}")
 #| fig-cap: "Target distribution before and after transformation (skewed regression target)"
 #| fig-width: 10
 #| fig-height: 4
-from iter8ml.data.feature_engine import detect_target_skewness, transform_target
+from iter8ml.data.features import detect_target_skewness, transform_target
 
 np.random.seed(42)
 y_skewed = np.exp(np.random.randn(3000))
@@ -77,8 +77,8 @@ print(f"Method: {transform_result.method}  |  Applied: {transform_result.applied
 ```{python}
 #| label: top-k-selection
 #| cache: true
-from iter8ml.models.factory import get_model_class
-from iter8ml.data.feature_engine import extract_top_k_features
+from iter8ml.engine.models.factory import get_model_class
+from iter8ml.data.features import extract_top_k_features
 
 model_cls = get_model_class("lightgbm")
 model = model_cls(task="classification")
@@ -96,8 +96,10 @@ print(f"Top-10 feature indices: {top_k_indices}")
 #| fig-width: 8
 #| fig-height: 5
 from sklearn.inspection import permutation_importance
+from iter8ml.data.features import _to_sklearn_estimator
 
-perm_result = permutation_importance(model, X, y, n_repeats=10, random_state=42, scoring="roc_auc")
+sk_model = _to_sklearn_estimator(model, "classification")
+perm_result = permutation_importance(sk_model, X, y, n_repeats=10, random_state=42, scoring="roc_auc")
 sorted_idx = perm_result.importances_mean.argsort()[::-1][:10]
 
 fig, ax = plt.subplots(figsize=(8, 5))
@@ -117,7 +119,7 @@ plt.show()
 ```{python}
 #| label: interaction-discovery
 #| cache: true
-from iter8ml.data.feature_engine import discover_interactions
+from iter8ml.data.features import discover_interactions
 
 X_aug, interaction_result = discover_interactions(
     X, y, top_k_indices[:5], feature_names=feature_names, task="classification"
@@ -158,10 +160,15 @@ plt.show()
 ```{python}
 #| label: feature-pruning
 #| cache: true
-from iter8ml.data.feature_engine import prune_features
+from iter8ml.data.features import prune_features
+
+X_full = np.hstack([X, X_aug])
+full_feature_names = feature_names + interaction_result.new_feature_names
+prune_model = model_cls(task="classification")
+prune_model.fit(X_full, y)
 
 X_pruned, pruning_result = prune_features(
-    model, X_aug, y, feature_names=feature_names + interaction_result.new_feature_names,
+    prune_model, X_full, y, feature_names=full_feature_names,
     task="classification"
 )
 print(f"Original features: {pruning_result.n_original}  |  "
@@ -228,7 +235,7 @@ plt.show()
 ```{python}
 #| label: shap-setup
 #| cache: true
-from iter8ml.monitoring.explainability import Explainer
+from iter8ml.analysis.explainability import Explainer
 
 explainer = Explainer(model, feature_names=feature_names)
 shap_result = explainer.explain(X[:500], run_id="notebook_nb04", max_display=15, generate_plots=False)
@@ -245,7 +252,7 @@ for f in shap_result.top_features[:10]:
 #| fig-height: 6
 import shap
 
-shap_explainer = shap.TreeExplainer(model.model)
+shap_explainer = shap.TreeExplainer(model._model)
 shap_values = shap_explainer(X[:500])
 
 plt.figure(figsize=(10, 6))
@@ -302,7 +309,7 @@ print("HPO configured — 3-fold CV with ROC AUC")
 ```{python}
 #| label: hpo-run
 #| cache: true
-from iter8ml.models.factory import get_model_class as GMC
+from iter8ml.engine.models.factory import get_model_class as GMC
 
 model_cls = GMC("catboost")
 hpo_result = optimize_model(

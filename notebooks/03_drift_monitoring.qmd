@@ -72,7 +72,7 @@ plt.show()
 ```{python}
 #| label: ks-drift
 #| cache: true
-from iter8ml.monitoring.drift import DriftDetector
+from iter8ml.analysis.drift import DriftDetector
 
 ks_detector = DriftDetector(df_ref, alpha=0.05)
 ks_report = ks_detector.detect(df_live)
@@ -106,7 +106,7 @@ plt.show()
 ```{python}
 #| label: psi-drift
 #| cache: true
-from iter8ml.monitoring.psi_drift import PSIDriftDetector
+from iter8ml.analysis.psi import PSIDriftDetector
 
 psi_detector = PSIDriftDetector(df_ref, n_bins=10)
 psi_report = psi_detector.detect(df_live)
@@ -146,7 +146,7 @@ plt.show()
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import RocCurveDisplay
 from sklearn.model_selection import cross_val_predict
-from iter8ml.monitoring.domain_classifier import DomainClassifierDriftDetector
+from iter8ml.analysis.domain_classifier import DomainClassifierDriftDetector
 
 dc_detector = DomainClassifierDriftDetector(df_ref, threshold=0.7, random_seed=42)
 dc_report = dc_detector.detect(df_live)
@@ -227,7 +227,7 @@ plt.show()
 ```{python}
 #| label: dag-drift
 #| error: true
-from iter8ml.pipelines.executor import PipelineExecutor
+from iter8ml.engine.pipelines.executor import PipelineExecutor
 
 executor = PipelineExecutor()
 if executor.available:

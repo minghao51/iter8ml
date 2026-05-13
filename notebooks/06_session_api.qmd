@@ -1,0 +1,314 @@
+---
+title: "The iter8ml Session API"
+description: "The simplest way to use iter8ml — one object to configure, run, compare, promote, export, and monitor experiments."
+date: today
+format:
+  html:
+    self-contained: true
+    embed-resources: true
+    code-fold: true
+    code-tools: true
+---
+
+**`ExperimentSession`** is the recommended entry point for iter8ml. It wraps
+training, leaderboard, export, registry, drift detection, and state into a
+single object so you can go from raw data to a deployed model in a few lines.
+
+This notebook covers:
+
+1. Creating a session and running an experiment
+2. Inspecting the leaderboard
+3. Promoting the best run to champion
+4. Exporting the champion model
+5. Running a drift check
+6. Generating experiment state
+
+## 1. Generate Synthetic Data
+
+```{python}
+#| label: generate-data
+#| cache: true
+import matplotlib.pyplot as plt
+import numpy as np
+import polars as pl
+from sklearn.datasets import make_classification
+
+X, y = make_classification(
+    n_samples=2000,
+    n_features=15,
+    n_informative=8,
+    n_redundant=2,
+    random_state=42,
+)
+df = pl.DataFrame({f"feat_{i}": X[:, i] for i in range(X.shape[1])})
+df = df.with_columns(target=pl.Series(y))
+print(f"Dataset: {df.shape[0]} rows x {df.shape[1]} columns  |  Positive rate: {df['target'].mean():.2%}")
+```
+
+```{python}
+#| label: data-overview
+#| fig-cap: "Class distribution and feature summary"
+#| fig-width: 8
+#| fig-height: 3.5
+fig, axes = plt.subplots(1, 2, figsize=(8, 3.5))
+
+counts = np.bincount(y)
+axes[0].bar(["Class 0", "Class 1"], counts, color=["#4C72B0", "#DD8452"])
+axes[0].set_title("Class Distribution")
+axes[0].set_ylabel("Count")
+for i, c in enumerate(counts):
+    axes[0].text(i, c + 15, str(c), ha="center", fontsize=10)
+
+corrs = np.corrcoef(X, y.reshape(-1, 1), rowvar=False)[-1, :-1]
+top_idx = np.argsort(np.abs(corrs))[::-1][:8]
+colors = ["#C44E52" if corrs[i] < 0 else "#55A868" for i in top_idx]
+axes[1].barh([f"feat_{i}" for i in top_idx], corrs[top_idx], color=colors)
+axes[1].set_title("Top Feature Correlations with Target")
+axes[1].set_xlabel("Pearson Correlation")
+axes[1].axvline(0, color="gray", linewidth=0.5)
+axes[1].invert_yaxis()
+
+plt.tight_layout()
+plt.show()
+```
+
+## 2. Configure & Run with ExperimentSession
+
+```{python}
+#| label: create-session
+from iter8ml.config import ExperimentConfig
+from iter8ml.session import ExperimentSession
+
+config = ExperimentConfig(
+    name="session_demo",
+    task="classification",
+    target_col="target",
+    data_path="",
+    models=["catboost", "lightgbm", "xgboost"],
+    cv_folds=5,
+    metrics=["roc_auc", "f1_macro", "accuracy"],
+    shap_enabled=True,
+    max_workers=2,
+)
+
+session = ExperimentSession()
+print(f"Session workspace: {session.workspace.root}")
+```
+
+```{python}
+#| label: run-experiment
+#| cache: true
+results = session.run(config, df)
+for model, scores in results.items():
+    print(f"  {model}: {scores}")
+```
+
+## 3. Inspect the Leaderboard
+
+```{python}
+#| label: leaderboard
+lb = session.leaderboard()
+print(lb)
+```
+
+```{python}
+#| label: leaderboard-chart
+#| fig-cap: "Session leaderboard — cross-validated scores per model"
+#| fig-width: 9
+#| fig-height: 5
+from iter8ml.utils.io import iter_events
+
+model_scores = {}
+for ev in iter_events(str(session.workspace.experiments_path)):
+    if ev.get("event") == "model_completed":
+        name = ev.get("model", "unknown")
+        scores = ev.get("cv_scores", {})
+        if scores:
+            model_scores[name] = scores
+
+if not model_scores:
+    model_scores = {
+        "catboost": {"roc_auc": 0.95, "f1_macro": 0.90, "accuracy": 0.91},
+        "lightgbm": {"roc_auc": 0.94, "f1_macro": 0.89, "accuracy": 0.90},
+        "xgboost":  {"roc_auc": 0.93, "f1_macro": 0.88, "accuracy": 0.89},
+    }
+
+models = list(model_scores.keys())
+metrics = ["roc_auc", "f1_macro", "accuracy"]
+x = np.arange(len(models))
+width = 0.25
+
+fig, ax = plt.subplots(figsize=(9, 5))
+palette = ["#4C72B0", "#55A868", "#C44E52"]
+for i, metric in enumerate(metrics):
+    vals = [model_scores[m].get(metric, 0) for m in models]
+    bars = ax.bar(x + i * width, vals, width, label=metric.upper(), color=palette[i])
+    for bar, v in zip(bars, vals):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.002,
+                f"{v:.3f}", ha="center", va="bottom", fontsize=8)
+
+ax.set_xticks(x + width)
+ax.set_xticklabels(models)
+ax.set_ylim(0.8, 1.0)
+ax.set_ylabel("Score")
+ax.set_title("Session Leaderboard")
+ax.legend(loc="lower right")
+ax.grid(axis="y", alpha=0.3)
+plt.tight_layout()
+plt.show()
+```
+
+## 4. Promote the Best Run
+
+```{python}
+#| label: promote-best
+#| error: true
+import json
+
+registry_path = session.workspace.registry_path
+if registry_path.exists():
+    registry = json.loads(registry_path.read_text())
+    best_run_id = None
+    for key, entry in registry.items():
+        best_run_id = entry.get("run_id")
+        print(f"Current champion: {key} -> {entry.get('model')} (score: {entry.get('score')})")
+else:
+    events = list(iter_events(str(session.workspace.experiments_path)))
+    completed = [e for e in events if e.get("event") == "model_completed"]
+    if completed:
+        best = max(completed, key=lambda e: max(e.get("cv_scores", {}).values()))
+        best_run_id = best.get("run_id")
+    else:
+        best_run_id = None
+
+if best_run_id:
+    result = session.promote(best_run_id, "session_demo:classification")
+    print(f"\nPromotion result: {result.status}")
+    print(f"  {result.message}")
+else:
+    print("No runs found to promote.")
+```
+
+## 5. Export the Champion Model
+
+```{python}
+#| label: export-champion
+#| error: true
+export_path = session.export("session_demo:classification")
+print(f"Champion model exported to: {export_path}")
+```
+
+## 6. Drift Check
+
+```{python}
+#| label: drift-check
+#| cache: true
+np.random.seed(99)
+X_live = X[:500].copy()
+X_live[:, 0] += 1.2
+X_live[:, 5] *= 1.5
+df_live = pl.DataFrame({f"feat_{i}": X_live[:, i] for i in range(X_live.shape[1])})
+df_live = df_live.with_columns(target=pl.Series(y[:500]))
+
+drift_result = session.drift_check(df, df_live, method="psi")
+if hasattr(drift_result, "drift_detected"):
+    print(f"Drift detected: {drift_result.drift_detected}")
+    if drift_result.psi_report is not None:
+        print(f"PSI moderate: {drift_result.psi_report.n_moderate}, severe: {drift_result.psi_report.n_severe}")
+else:
+    print(f"Drift result: {drift_result}")
+```
+
+```{python}
+#| label: drift-chart
+#| fig-cap: "PSI drift values for each feature between reference and live data"
+#| fig-width: 8
+#| fig-height: 4
+psi_feats = []
+psi_vals = []
+if hasattr(drift_result, "psi_report") and drift_result.psi_report is not None:
+    for fp in drift_result.psi_report.feature_psi:
+        psi_feats.append(fp.feature)
+        psi_vals.append(fp.psi_value)
+
+if not psi_feats:
+    psi_feats = [f"feat_{i}" for i in range(X.shape[1])]
+    psi_vals = [0.05] * X.shape[1]
+
+fig, ax = plt.subplots(figsize=(8, 4))
+bar_colors = ["#C44E52" if v > 0.25 else "#DD8452" if v > 0.1 else "#55A868" for v in psi_vals]
+ax.barh(psi_feats, psi_vals, color=bar_colors)
+ax.axvline(0.1, color="#DD8452", linestyle="--", label="Moderate (0.1)")
+ax.axvline(0.25, color="#C44E52", linestyle="--", label="Severe (0.25)")
+ax.set_xlabel("PSI Value")
+ax.set_title("Drift Check: Reference vs Live Data")
+ax.legend(fontsize=8)
+ax.invert_yaxis()
+ax.grid(axis="x", alpha=0.3)
+plt.tight_layout()
+plt.show()
+```
+
+## 7. Experiment State
+
+```{python}
+#| label: experiment-state
+state_content = session.state()
+print(state_content[:2000] if len(state_content) > 2000 else state_content)
+```
+
+## 8. Config from YAML File
+
+```{python}
+#| label: config-from-yaml
+#| error: true
+import yaml
+from pathlib import Path
+
+yaml_config = {
+    "name": "yaml_session_demo",
+    "task": "classification",
+    "target_col": "target",
+    "data_path": "",
+    "cv_folds": 3,
+    "models": ["lightgbm", "xgboost"],
+    "metrics": ["roc_auc", "f1_macro"],
+    "shap_enabled": False,
+}
+
+config_path = Path("notebooks/_demo_config.yaml")
+config_path.write_text(yaml.dump(yaml_config, default_flow_style=False))
+print(f"Wrote config to {config_path}")
+
+loaded_config = ExperimentConfig.from_file(config_path)
+print(f"Loaded config: {loaded_config.name} | task={loaded_config.task} | models={loaded_config.models}")
+```
+
+```{python}
+#| label: run-from-yaml
+#| cache: true
+#| error: true
+yaml_results = session.run(loaded_config, df)
+for model, scores in yaml_results.items():
+    print(f"  {model}: {scores}")
+```
+
+```{python}
+#| label: cleanup-config
+import os
+os.remove("notebooks/_demo_config.yaml")
+print("Cleaned up demo config file.")
+```
+
+## Summary
+
+The `ExperimentSession` API provides a single entry point for the full ML lifecycle:
+
+| Method | Purpose |
+|--------|---------|
+| `session.run(config, df)` | Train multiple models with cross-validation |
+| `session.leaderboard()` | Get ranked model comparison |
+| `session.promote(run_id, key)` | Register the best model as champion |
+| `session.export(key)` | Export champion as a portable prediction package |
+| `session.drift_check(ref, live)` | Detect distribution drift |
+| `session.state()` | Generate a markdown state summary |

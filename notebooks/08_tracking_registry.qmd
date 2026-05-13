@@ -1,0 +1,327 @@
+---
+title: "Tracking, Registry & State"
+description: "Explore experiment tracking with JSONL/W&B/MLflow, the model registry with promote workflows, and automated state generation."
+date: today
+format:
+  html:
+    self-contained: true
+    embed-resources: true
+    code-fold: true
+    code-tools: true
+---
+
+iter8ml tracks every experiment, maintains a model registry for champion
+promotion, and generates state summaries. This notebook covers:
+
+1. **Tracking** — JSONLTracker (default), plus W&B and MLflow adapters
+2. **Registry** — Promote best runs, compare against champions
+3. **State** — Automated state summaries with optional LLM commentary
+4. **Lifecycle** — The full run → compare → promote → export → monitor loop
+
+## 1. Generate Data & Run First Experiment
+
+```{python}
+#| label: setup
+#| cache: true
+import matplotlib.pyplot as plt
+import numpy as np
+import polars as pl
+from sklearn.datasets import make_classification
+
+X, y = make_classification(
+    n_samples=2000, n_features=15, n_informative=8, random_state=42
+)
+df = pl.DataFrame({f"feat_{i}": X[:, i] for i in range(X.shape[1])})
+df = df.with_columns(target=pl.Series(y))
+print(f"Dataset: {df.shape}")
+```
+
+```{python}
+#| label: run-with-tracker
+#| cache: true
+from iter8ml.config import ExperimentConfig
+from iter8ml.engine.tracker import JSONLTracker
+from iter8ml.session import ExperimentSession
+from iter8ml.workspace import Workspace
+
+ws = Workspace(root="notebooks/_tracking_ws").init()
+tracker = JSONLTracker(log_path=str(ws.experiments_path))
+
+config = ExperimentConfig(
+    name="tracking_demo",
+    task="classification",
+    target_col="target",
+    data_path="",
+    models=["lightgbm", "xgboost"],
+    cv_folds=3,
+    metrics=["roc_auc", "f1_macro"],
+    shap_enabled=False,
+)
+
+session = ExperimentSession(workspace=ws, tracker=tracker)
+results = session.run(config, df)
+for model, scores in results.items():
+    print(f"  {model}: {scores}")
+```
+
+## 2. JSONLTracker — Default Tracking
+
+```{python}
+#| label: inspect-tracker
+from iter8ml.utils.io import load_events
+
+events = load_events(str(ws.experiments_path))
+event_types = {}
+for ev in events:
+    etype = ev.get("event", "unknown")
+    event_types[etype] = event_types.get(etype, 0) + 1
+
+print(f"Total events: {len(events)}")
+print("Event breakdown:")
+for etype, count in sorted(event_types.items()):
+    print(f"  {etype}: {count}")
+```
+
+```{python}
+#| label: tracker-manual-usage
+tracker.log_metrics({"custom_metric": 0.95, "iteration": 1})
+tracker.log_params({"learning_rate": 0.1, "max_depth": 6})
+tracker.log_artifact("workspace/model.joblib")
+tracker.finish()
+print("Logged custom metrics, params, and artifact to tracker.")
+```
+
+## 3. Tracker Adapters
+
+### WandbTracker
+
+```{python}
+#| label: wandb-tracker
+#| error: true
+print("# WandbTracker")
+print("from iter8ml.engine.tracker import WandbTracker")
+print("tracker = WandbTracker(project='my-project')")
+print("# All session.run() events are mirrored to W&B")
+print("")
+print("# Install: uv add wandb")
+print("# Set: export WANDB_API_KEY=your-key")
+```
+
+### MLflowTracker
+
+```{python}
+#| label: mlflow-tracker
+#| error: true
+print("# MLflowTracker")
+print("from iter8ml.engine.tracker import MLflowTracker")
+print("tracker = MLflowTracker(tracking_uri='http://localhost:5000', experiment_name='iter8ml')")
+print("# All session.run() events are logged to MLflow")
+print("")
+print("# Install: uv add mlflow")
+print("# Start: mlflow server --host 0.0.0.0 --port 5000")
+```
+
+```{python}
+#| label: tracker-comparison
+#| fig-cap: "Tracker feature comparison"
+#| fig-width: 8
+#| fig-height: 3.5
+trackers = ["JSONLTracker", "WandbTracker", "MLflowTracker"]
+features = {
+    "Metrics": [1, 1, 1],
+    "Params": [1, 1, 1],
+    "Artifacts": [1, 1, 1],
+    "Events": [1, 1, 0.5],
+    "Rotation": [1, 0, 0],
+    "Offline": [1, 0.5, 0.5],
+    "Dashboard": [0, 1, 1],
+}
+
+fig, ax = plt.subplots(figsize=(8, 3.5))
+x = np.arange(len(features))
+width = 0.25
+colors = ["#4C72B0", "#55A868", "#DD8452"]
+
+for i, (tracker, color) in enumerate(zip(trackers, colors)):
+    vals = [features[f][i] for f in features]
+    ax.barh(x + i * width, vals, width, label=tracker, color=color)
+
+ax.set_yticks(x + width)
+ax.set_yticklabels(features.keys())
+ax.set_xlim(0, 1.3)
+ax.set_title("Tracker Feature Comparison")
+ax.legend(fontsize=8, loc="lower right")
+ax.grid(axis="x", alpha=0.3)
+plt.tight_layout()
+plt.show()
+```
+
+## 4. Model Registry
+
+```{python}
+#| label: registry
+from iter8ml.services.registry import RegistryService
+
+registry = RegistryService(workspace=ws)
+all_entries = registry.get_all()
+print(f"Registry entries: {len(all_entries)}")
+for key, entry in all_entries.items():
+    print(f"  {key}: model={entry.get('model')}, score={entry.get('score')}")
+```
+
+### Promote a specific run
+
+```{python}
+#| label: promote-run
+#| error: true
+from iter8ml.utils.io import iter_events
+
+run_ids = set()
+for ev in iter_events(str(ws.experiments_path)):
+    if ev.get("event") == "experiment_started" and ev.get("run_id"):
+        run_ids.add(ev["run_id"])
+
+if run_ids:
+    target_run = sorted(run_ids)[-1]
+    result = session.promote(target_run, "tracking_demo:classification")
+    print(f"Promotion: {result.status}")
+    print(f"  Message: {result.message}")
+    if result.selected_model:
+        print(f"  Model: {result.selected_model}")
+        print(f"  Score: {result.selected_score:.4f} ({result.selected_metric})")
+else:
+    print("No runs found.")
+```
+
+### update_if_better — Conditional promotion
+
+```{python}
+#| label: update-if-better
+updated = registry.update_if_better(
+    key="tracking_demo:classification",
+    model_name="lightgbm",
+    run_id="manual_run_001",
+    score=0.85,
+    artifact_path="workspace/model.joblib",
+    metric_name="roc_auc",
+)
+print(f"Updated (score 0.85 beats existing?): {updated}")
+
+updated2 = registry.update_if_better(
+    key="tracking_demo:classification",
+    model_name="xgboost",
+    run_id="manual_run_002",
+    score=0.50,
+    artifact_path="workspace/model.joblib",
+    metric_name="roc_auc",
+)
+print(f"Updated (score 0.50 beats existing?): {updated2}")
+```
+
+## 5. Experiment State
+
+```{python}
+#| label: state-generation
+from iter8ml.engine.state_observer import StateObserver
+
+observer = StateObserver(workspace=ws)
+state_md = observer.generate()
+
+lines = state_md.split("\n")
+print(f"State document: {len(lines)} lines, {len(state_md)} characters")
+print("\n--- First 40 lines ---")
+print("\n".join(lines[:40]))
+```
+
+```{python}
+#| label: state-files
+print("Generated files:")
+print(f"  State:       {ws.state_path} ({ws.state_path.stat().st_size if ws.state_path.exists() else 0} bytes)")
+print(f"  Leaderboard: {ws.leaderboard_path} ({ws.leaderboard_path.stat().st_size if ws.leaderboard_path.exists() else 0} bytes)")
+print(f"  Registry:    {ws.registry_path} ({ws.registry_path.stat().st_size if ws.registry_path.exists() else 0} bytes)")
+```
+
+## 6. The Iterative ML Lifecycle
+
+```{python}
+#| label: lifecycle-chart
+#| fig-cap: "The iter8ml experiment lifecycle: run → compare → promote → export → monitor"
+#| fig-width: 10
+#| fig-height: 4
+fig, ax = plt.subplots(figsize=(10, 4))
+
+steps = ["Run\nExperiment", "Compare\nModels", "Promote\nChampion", "Export\nModel", "Monitor\nDrift"]
+colors_lc = ["#4C72B0", "#55A868", "#DD8452", "#C44E52", "#8172B3"]
+
+for i, (step, color) in enumerate(zip(steps, colors_lc)):
+    ax.add_patch(plt.Circle((i, 0), 0.4, color=color, alpha=0.85))
+    ax.text(i, 0, step, ha="center", va="center", fontsize=9, color="white", fontweight="bold")
+    if i < len(steps) - 1:
+        ax.annotate("", xy=(i + 0.45, 0), xytext=(i + 0.55, 0),
+                     arrowprops=dict(arrowstyle="->", color="#AAAAAA", lw=2))
+
+ax.set_xlim(-0.7, len(steps) - 0.3)
+ax.set_ylim(-1, 1)
+ax.set_aspect("equal")
+ax.axis("off")
+ax.set_title("The iter8ml Experiment Lifecycle", fontsize=13, pad=15)
+plt.tight_layout()
+plt.show()
+```
+
+### Full lifecycle demo
+
+```{python}
+#| label: full-lifecycle
+#| cache: true
+#| error: true
+lifecycle_config = ExperimentConfig(
+    name="lifecycle",
+    task="classification",
+    target_col="target",
+    data_path="",
+    models=["lightgbm"],
+    cv_folds=3,
+    metrics=["roc_auc"],
+    shap_enabled=False,
+)
+
+ws2 = Workspace(root="notebooks/_lifecycle_ws").init()
+session2 = ExperimentSession(workspace=ws2)
+
+results2 = session2.run(lifecycle_config, df)
+lb2 = session2.leaderboard()
+print("Leaderboard:")
+print(lb2)
+
+if len(lb2) > 0:
+    best_run_id = lb2.row(0, named=True)["run_id"]
+    promo = session2.promote(best_run_id, "lifecycle:classification")
+    print(f"\nPromoted: {promo.status} — {promo.message}")
+
+    export_path = session2.export("lifecycle:classification")
+    print(f"Exported: {export_path}")
+```
+
+## 7. Cleanup
+
+```{python}
+#| label: cleanup
+import shutil
+from pathlib import Path
+for d in ["notebooks/_tracking_ws", "notebooks/_lifecycle_ws"]:
+    if Path(d).exists():
+        shutil.rmtree(d)
+        print(f"Cleaned up {d}")
+```
+
+## Summary
+
+| Component | Class/Module | Purpose |
+|-----------|-------------|---------|
+| **JSONLTracker** | `iter8ml.engine.tracker` | Default structured event logging with rotation |
+| **WandbTracker** | `iter8ml.engine.tracker` | Mirror events to Weights & Biases |
+| **MLflowTracker** | `iter8ml.engine.tracker` | Log to MLflow tracking server |
+| **RegistryService** | `iter8ml.services.registry` | Thread-safe champion model registry |
+| **StateObserver** | `iter8ml.engine.state_observer` | Generate markdown state summaries |
+| **ExperimentSession** | `iter8ml.session` | Ties all components together |

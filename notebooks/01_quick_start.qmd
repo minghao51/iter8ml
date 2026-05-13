@@ -72,6 +72,9 @@ plt.show()
 ```{python}
 #| label: configure-experiment
 from iter8ml.config import ExperimentConfig
+from iter8ml.workspace import Workspace
+
+workspace = Workspace(root="notebooks/workspace").init()
 
 config = ExperimentConfig(
     name="quickstart_demo",
@@ -92,7 +95,7 @@ config
 #| cache: true
 from iter8ml.engine.trainer import Trainer
 
-trainer = Trainer(config)
+trainer = Trainer(config, workspace)
 results = trainer.run(df)
 results
 ```
@@ -101,9 +104,9 @@ results
 
 ```{python}
 #| label: inspect-leaderboard
-from iter8ml.services.report_service import ReportService
+from iter8ml.services.reporting import ReportService
 
-report_svc = ReportService()
+report_svc = ReportService(workspace)
 console_output = report_svc.format_leaderboard_console(limit=10)
 print(console_output)
 ```
@@ -122,7 +125,7 @@ events_file = workspace / "experiments.jsonl"
 
 model_scores = {}
 if events_file.exists():
-    from iter8ml.utils.jsonl import iter_events
+    from iter8ml.utils.io import iter_events
 
     for ev in iter_events(str(events_file)):
         if ev.get("event") == "model_complete":
@@ -167,9 +170,9 @@ plt.show()
 ```{python}
 #| label: export-champion
 #| error: true
-from iter8ml.services.export_service import ExportService
+from iter8ml.services.export import ExportService
 
-exporter = ExportService()
+exporter = ExportService(workspace)
 export_path = exporter.export(
     key="quickstart_demo:classification",
     target_col="target",

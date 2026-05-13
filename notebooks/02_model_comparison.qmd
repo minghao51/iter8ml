@@ -30,7 +30,7 @@ X_raw, y_raw = make_classification(
 )
 df_cls = pl.DataFrame({f"col_{i}": X_raw[:, i] for i in range(X_raw.shape[1])})
 df_cls = df_cls.with_columns(label=pl.Series(y_raw))
-adapter = DataAdapter(target_format="numpy")
+adapter = DataAdapter()
 X, y = adapter.transform(df_cls, "label")
 print(f"X shape: {X.shape}, y shape: {y.shape}, positive rate: {y.mean():.2%}")
 ```
@@ -60,7 +60,7 @@ print(f"Task: {evaluator.task}  |  Folds: {evaluator.cv_folds}  |  Strategy: {ev
 ```{python}
 #| label: evaluate-all-models
 #| cache: true
-from iter8ml.models.factory import get_model_class
+from iter8ml.engine.models.factory import get_model_class
 
 models_to_compare = ["catboost", "lightgbm", "xgboost", "naive_baseline", "linear_baseline"]
 scores = {}
@@ -158,10 +158,9 @@ plt.show()
 #| fig-cap: "Reliability diagram comparing raw vs calibrated probabilities (Platt scaling)"
 #| fig-width: 10
 #| fig-height: 4
-from sklearn.calibration import calibration_curve
+from sklearn.calibration import CalibratedClassifierCV, calibration_curve
 from sklearn.model_selection import StratifiedKFold
-from iter8ml.models.factory import get_model_class as GMC
-from iter8ml.engine.calibration import CalibratedModel
+from lightgbm import LGBMClassifier
 
 skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 raw_proba = np.zeros(len(y))
@@ -171,15 +170,17 @@ for train_idx, val_idx in skf.split(X, y):
     X_tr, X_val = X[train_idx], X[val_idx]
     y_tr, y_val = y[train_idx], y[val_idx]
 
-    base = GMC("lightgbm")(task="classification")
-    cal_model = CalibratedModel(base, method="platt", cv_folds=3)
-    cal_model.fit(X_tr, y_tr)
+    raw_clf = LGBMClassifier(verbose=-1, random_state=42)
+    raw_clf.fit(X_tr, y_tr)
 
-    raw_model = GMC("lightgbm")(task="classification")
-    raw_model.fit(X_tr, y_tr)
+    cal_clf = CalibratedClassifierCV(
+        estimator=LGBMClassifier(verbose=-1, random_state=42),
+        method="sigmoid", cv=3,
+    )
+    cal_clf.fit(X_tr, y_tr)
 
-    raw_proba[val_idx] = raw_model.predict_proba(X_val)[:, 1]
-    cal_proba[val_idx] = cal_model.predict_proba(X_val)[:, 1]
+    raw_proba[val_idx] = raw_clf.predict_proba(X_val)[:, 1]
+    cal_proba[val_idx] = cal_clf.predict_proba(X_val)[:, 1]
 
 fig, axes = plt.subplots(1, 2, figsize=(10, 4))
 
@@ -214,7 +215,7 @@ from sklearn.datasets import make_regression
 from iter8ml.data.adapter import DataAdapter as DA2
 from iter8ml.engine.evaluator import Evaluator as Eval2
 from iter8ml.config import ExperimentConfig as Cfg2
-from iter8ml.models.factory import get_model_class as GMC2
+from iter8ml.engine.models.factory import get_model_class as GMC2
 
 X_reg_raw, y_reg_raw = make_regression(
     n_samples=2000, n_features=15, noise=10, random_state=42
@@ -225,7 +226,7 @@ import polars as pl2
 df_reg = pl2.DataFrame({f"x_{i}": X_reg_raw[:, i] for i in range(X_reg_raw.shape[1])})
 df_reg = df_reg.with_columns(target=pl2.Series(y_reg_raw))
 
-reg_adapter = DA2(target_format="numpy")
+reg_adapter = DA2()
 X_r, y_r = reg_adapter.transform(df_reg, "target")
 
 reg_config = Cfg2(

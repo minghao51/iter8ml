@@ -1,0 +1,279 @@
+---
+title: "CLI Cookbook"
+description: "Practical examples for every iter8ml CLI command — init, run, leaderboard, hpo, drift, export, state, and hardware."
+date: today
+format:
+  html:
+    self-contained: true
+    embed-resources: true
+    code-fold: true
+    code-tools: true
+---
+
+iter8ml ships a full CLI under the `iter8` command. This notebook demonstrates
+each command with real execution using synthetic data.
+
+## 1. Prepare Synthetic Data
+
+```{python}
+#| label: prepare-data
+#| cache: true
+import numpy as np
+import polars as pl
+from pathlib import Path
+from sklearn.datasets import make_classification
+
+X, y = make_classification(
+    n_samples=1500,
+    n_features=12,
+    n_informative=6,
+    random_state=42,
+)
+df = pl.DataFrame({f"col_{i}": X[:, i] for i in range(X.shape[1])})
+df = df.with_columns(target=pl.Series(y))
+
+data_dir = Path("notebooks/_cli_data")
+data_dir.mkdir(exist_ok=True)
+df.write_csv(data_dir / "train.csv")
+print(f"Training data: {df.shape} saved to {data_dir / 'train.csv'}")
+
+np.random.seed(99)
+X_ref = X[:600]
+X_new = X_ref.copy()
+X_new[:, 0] += 1.0
+X_new[:, 4] *= 1.6
+df_ref = pl.DataFrame({f"col_{i}": X_ref[:, i] for i in range(X_ref.shape[1])})
+df_ref = df_ref.with_columns(target=pl.Series(y[:600]))
+df_new = pl.DataFrame({f"col_{i}": X_new[:, i] for i in range(X_new.shape[1])})
+df_new = df_new.with_columns(target=pl.Series(y[:600]))
+df_ref.write_csv(data_dir / "reference.csv")
+df_new.write_csv(data_dir / "live.csv")
+print(f"Drift data: reference.csv ({df_ref.shape}), live.csv ({df_new.shape})")
+```
+
+## 2. `iter8 init` — Initialize Workspace
+
+```{python}
+#| label: cli-init
+import subprocess
+
+result = subprocess.run(
+    ["uv", "run", "iter8", "init", "--force-reset-registry"],
+    capture_output=True, text=True,
+)
+print(result.stdout)
+if result.stderr:
+    print(result.stderr)
+```
+
+## 3. `iter8 hardware` — Show Hardware Profile
+
+```{python}
+#| label: cli-hardware
+result = subprocess.run(
+    ["uv", "run", "iter8", "hardware"],
+    capture_output=True, text=True,
+)
+print(result.stdout)
+```
+
+## 4. `iter8 run` — Run an Experiment
+
+### Quick mode (fast iteration)
+
+```{python}
+#| label: cli-run-quick
+#| cache: true
+result = subprocess.run(
+    [
+        "uv", "run", "iter8", "run",
+        "--data", str(data_dir / "train.csv"),
+        "--target", "target",
+        "--task", "classification",
+        "--models", "lightgbm",
+        "--models", "xgboost",
+        "--quick",
+    ],
+    capture_output=True, text=True,
+    timeout=300,
+)
+print(result.stdout[-2000:] if len(result.stdout) > 2000 else result.stdout)
+if result.returncode != 0 and result.stderr:
+    print("STDERR:", result.stderr[-1000:])
+```
+
+### Full run with config file
+
+```{python}
+#| label: cli-config-file
+import yaml
+
+config_yaml = {
+    "name": "cli_cookbook",
+    "task": "classification",
+    "target_col": "target",
+    "data_path": str(data_dir / "train.csv"),
+    "cv_folds": 3,
+    "models": ["catboost", "lightgbm"],
+    "metrics": ["roc_auc", "f1_macro", "accuracy"],
+    "shap_enabled": False,
+}
+config_path = data_dir / "config.yaml"
+config_path.write_text(yaml.dump(config_yaml, default_flow_style=False))
+print(f"Config written to {config_path}")
+```
+
+```{python}
+#| label: cli-run-config
+#| cache: true
+result = subprocess.run(
+    ["uv", "run", "iter8", "run", "--config", str(config_path)],
+    capture_output=True, text=True,
+    timeout=300,
+)
+print(result.stdout[-2000:] if len(result.stdout) > 2000 else result.stdout)
+if result.returncode != 0 and result.stderr:
+    print("STDERR:", result.stderr[-1000:])
+```
+
+## 5. `iter8 leaderboard` — View Results
+
+```{python}
+#| label: cli-leaderboard
+result = subprocess.run(
+    ["uv", "run", "iter8", "leaderboard", "--top", "5"],
+    capture_output=True, text=True,
+)
+print(result.stdout)
+```
+
+```{python}
+#| label: leaderboard-viz
+#| fig-cap: "CLI experiment results — cross-validated metrics"
+#| fig-width: 8
+#| fig-height: 4
+from iter8ml.workspace import Workspace
+from iter8ml.utils.io import iter_events
+import matplotlib.pyplot as plt
+
+ws = Workspace()
+model_scores = {}
+for ev in iter_events(str(ws.experiments_path)):
+    if ev.get("event") == "model_completed":
+        name = ev.get("model", "unknown")
+        scores = ev.get("cv_scores", {})
+        if scores:
+            model_scores[name] = scores
+
+if model_scores:
+    models = list(model_scores.keys())
+    metrics = ["roc_auc", "f1_macro", "accuracy"]
+    x = np.arange(len(models))
+    width = 0.25
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    palette = ["#4C72B0", "#55A868", "#C44E52"]
+    for i, metric in enumerate(metrics):
+        vals = [model_scores[m].get(metric, 0) for m in models]
+        ax.bar(x + i * width, vals, width, label=metric.upper(), color=palette[i])
+
+    ax.set_xticks(x + width)
+    ax.set_xticklabels(models)
+    ax.set_ylabel("Score")
+    ax.set_title("CLI Experiment Results")
+    ax.legend(fontsize=8)
+    ax.grid(axis="y", alpha=0.3)
+    plt.tight_layout()
+    plt.show()
+else:
+    print("No model results found in workspace.")
+```
+
+## 6. `iter8 hpo` — Hyperparameter Optimization
+
+```{python}
+#| label: cli-hpo
+#| cache: true
+result = subprocess.run(
+    [
+        "uv", "run", "iter8", "hpo",
+        "--data", str(data_dir / "train.csv"),
+        "--target", "target",
+        "--model", "lightgbm",
+        "--task", "classification",
+        "--trials", "5",
+    ],
+    capture_output=True, text=True,
+    timeout=300,
+)
+print(result.stdout[-2000:] if len(result.stdout) > 2000 else result.stdout)
+if result.returncode != 0 and result.stderr:
+    print("STDERR:", result.stderr[-1000:])
+```
+
+## 7. `iter8 drift` — Detect Distribution Drift
+
+```{python}
+#| label: cli-drift
+#| cache: true
+result = subprocess.run(
+    [
+        "uv", "run", "iter8", "drift",
+        "--reference", str(data_dir / "reference.csv"),
+        "--new", str(data_dir / "live.csv"),
+        "--method", "ks",
+    ],
+    capture_output=True, text=True,
+    timeout=120,
+)
+print(result.stdout[-2000:] if len(result.stdout) > 2000 else result.stdout)
+```
+
+## 8. `iter8 export` — Export Champion Model
+
+```{python}
+#| label: cli-export
+#| error: true
+result = subprocess.run(
+    ["uv", "run", "iter8", "export", "cli_cookbook:classification"],
+    capture_output=True, text=True,
+    timeout=60,
+)
+print(result.stdout)
+if result.returncode != 0 and result.stderr:
+    print("STDERR:", result.stderr[-500:])
+```
+
+## 9. `iter8 state` — Experiment State Summary
+
+```{python}
+#| label: cli-state
+result = subprocess.run(
+    ["uv", "run", "iter8", "state"],
+    capture_output=True, text=True,
+)
+print(result.stdout[:2000] if len(result.stdout) > 2000 else result.stdout)
+```
+
+## 10. Cleanup
+
+```{python}
+#| label: cleanup
+import shutil
+if data_dir.exists():
+    shutil.rmtree(data_dir)
+    print("Cleaned up temporary CLI data.")
+```
+
+## Command Reference
+
+| Command | Key Flags | Purpose |
+|---------|-----------|---------|
+| `iter8 init` | `--force-reset-registry` | Initialize workspace |
+| `iter8 hardware` | — | Show detected hardware profile |
+| `iter8 run` | `--config`, `--data`, `--target`, `--task`, `--models`, `--quick`, `--resume` | Run an experiment |
+| `iter8 leaderboard` | `--top`, `--metric` | View ranked results |
+| `iter8 hpo` | `--data`, `--target`, `--model`, `--task`, `--trials` | Hyperparameter optimization |
+| `iter8 drift` | `--reference`, `--new`, `--method` (ks/psi/domain/both) | Detect distribution drift |
+| `iter8 export` | `<key>`, `--output`, `--target` | Export champion model |
+| `iter8 state` | — | Generate experiment state summary |
