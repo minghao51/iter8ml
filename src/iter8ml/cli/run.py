@@ -7,15 +7,17 @@ import typer
 from iter8ml.config import ExperimentConfig
 from iter8ml.constants import from_task_type
 from iter8ml.data.loader import load_data
-from iter8ml.engine.trainer import Trainer
+from iter8ml.session import ExperimentSession
 from iter8ml.utils.io import load_events
 
 from .main import app
 
 
 def _find_last_run_id(config: ExperimentConfig) -> str | None:
-    log_path = config.workspace_dir / "experiments.jsonl"
-    events = load_events(log_path)
+    from iter8ml.workspace import Workspace
+
+    ws = Workspace()
+    events = load_events(ws.experiments_path)
     run_ids = [
         e.get("run_id")
         for e in events
@@ -92,11 +94,8 @@ def run(
     typer.echo(f"Loaded {len(df)} rows, {len(df.columns)} columns")
     typer.echo(f"Task: {experiment_config.task}, Target: {experiment_config.target_col}")
 
-    trainer = Trainer(
-        experiment_config,
-        resume_run_id=None if not resume else _find_last_run_id(experiment_config),
-    )
-    results = trainer.run(df)
+    session = ExperimentSession()
+    results = session.run(experiment_config, df)
 
     typer.echo("\nResults:")
     for model, scores in results.items():

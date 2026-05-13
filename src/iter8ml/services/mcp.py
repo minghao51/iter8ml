@@ -1,7 +1,6 @@
 """MCP Server: exposes atomic tools for LLM agents."""
 
 import json
-from pathlib import Path
 from typing import Any
 
 from iter8ml.config import ExperimentConfig
@@ -12,6 +11,7 @@ from iter8ml.engine.state_observer import StateObserver
 from iter8ml.engine.trainer import Trainer
 from iter8ml.services.registry import RegistryService
 from iter8ml.utils.io import load_events
+from iter8ml.workspace import Workspace
 
 _TOOLS: list[Any] = []
 
@@ -38,10 +38,20 @@ def __getattr__(name: str) -> Any:
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
+_WORKSPACE: Workspace | None = None
+
+
+def _get_workspace() -> Workspace:
+    global _WORKSPACE
+    if _WORKSPACE is None:
+        _WORKSPACE = Workspace()
+    return _WORKSPACE
+
+
 @_tool
 def get_experiment_state() -> str:
     """Returns current_state.md content with leaderboard and resource status."""
-    observer = StateObserver()
+    observer = StateObserver(workspace=_get_workspace())
     return observer.generate()
 
 
@@ -73,7 +83,7 @@ def run_baseline(data_path: str, target_col: str, task: str = "classification") 
         models=["tabpfn", "catboost"],
     )
 
-    trainer = Trainer(config)
+    trainer = Trainer(config, workspace=_get_workspace())
     results = trainer.run(df)
     return json.dumps(results, indent=2)
 
@@ -93,7 +103,8 @@ def run_hpo(
 
     from iter8ml.engine.tracker import JSONLTracker
 
-    tracker = JSONLTracker(log_path="workspace/experiments.jsonl")
+    ws = _get_workspace()
+    tracker = JSONLTracker(log_path=str(ws.experiments_path))
 
     model_cls = get_model_class(model)
     result = optimize_model(
@@ -105,7 +116,7 @@ def run_hpo(
         n_trials=trials,
         search_space=search_space,
         task=task,
-        log_path="workspace/experiments.jsonl",
+        log_path=str(ws.experiments_path),
         tracker=tracker,
     )
 
@@ -115,7 +126,7 @@ def run_hpo(
 @_tool
 def get_event_log(n: int = 10) -> str:
     """Returns last N JSONL events."""
-    log_path = Path("workspace/experiments.jsonl")
+    log_path = _get_workspace().experiments_path
     if not log_path.exists():
         return "No events found."
 
@@ -126,7 +137,7 @@ def get_event_log(n: int = 10) -> str:
 @_tool
 def registry_show() -> str:
     """Returns current registry.json content."""
-    registry = RegistryService("workspace/registry.json")
+    registry = RegistryService(workspace=_get_workspace())
     data = registry.get_all()
     if not data:
         return "Registry is empty."
@@ -136,11 +147,11 @@ def registry_show() -> str:
 @_tool
 def registry_promote(run_id: str, key: str) -> str:
     """Promotes a run_id to champion in the registry."""
-    log_path = Path("workspace/experiments.jsonl")
+    log_path = _get_workspace().experiments_path
     if not log_path.exists():
         return "No events found to locate run."
 
-    registry = RegistryService("workspace/registry.json")
+    registry = RegistryService(workspace=_get_workspace())
     result = registry.promote_run(run_id=run_id, key=key, log_path=log_path)
     return result.model_dump_json(indent=2)
 
@@ -164,7 +175,7 @@ def export_champion(key: str, target_col: str = "") -> str:
     """Export the champion model for a registry key as a portable package."""
     from iter8ml.services.export import ExportService
 
-    service = ExportService()
+    service = ExportService(workspace=_get_workspace())
     try:
         export_path = service.export(key, target_col=target_col or None)
         return json.dumps(

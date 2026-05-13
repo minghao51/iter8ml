@@ -118,7 +118,6 @@ class ExperimentConfig(BaseModel):
 
     # --- Tracking & Output ---
     tracker: TrackerType = TrackerType.JSONL
-    workspace_dir: Path = Field(default_factory=lambda: Path("workspace"))
     feature_strategy: FeatureStrategy = FeatureStrategy.NONE
 
     # --- Advanced ---
@@ -265,10 +264,6 @@ class ExperimentConfig(BaseModel):
     def serialize_enum(self, value: Any) -> str:
         if isinstance(value, TaskType | CVStrategy | TrackerType):
             return value.value  # type: ignore[no-any-return]
-        return str(value)
-
-    @field_serializer("workspace_dir", when_used="json")
-    def serialize_path(self, value: Path) -> str:
         return str(value)
 
 

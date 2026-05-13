@@ -4,6 +4,8 @@ from typing import Any
 
 import numpy as np
 
+from iter8ml.workspace import Workspace
+
 try:
     from hamilton.function_modifiers import config
 
@@ -107,7 +109,7 @@ def _run_embedding(
     task: str,
     random_seed: int,
     run_id: str,
-    workspace_dir: str,
+    workspace: Workspace,
     embedding_method: str = "entity",
     embedding_dim: int = 16,
     embedding_max_categories: int = 50,
@@ -122,7 +124,7 @@ def _run_embedding(
 
     engine = EmbeddingEngine(
         task=task,
-        workspace_dir=workspace_dir,
+        workspace=workspace,
         embedding_method=embedding_method,
         embedding_dim=embedding_dim,
         embedding_max_categories=embedding_max_categories,
@@ -180,7 +182,7 @@ if _HAS_HAMILTON:
         task: str,
         random_seed: int,
         run_id: str,
-        workspace_dir: str,
+        workspace: Workspace,
         embedding_method: str = "entity",
         embedding_dim: int = 16,
         embedding_max_categories: int = 50,
@@ -196,7 +198,7 @@ if _HAS_HAMILTON:
             task,
             random_seed,
             run_id,
-            workspace_dir,
+            workspace,
             embedding_method,
             embedding_dim,
             embedding_max_categories,

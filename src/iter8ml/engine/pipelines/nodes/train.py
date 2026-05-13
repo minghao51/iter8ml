@@ -8,6 +8,7 @@ import numpy as np
 
 from iter8ml.services.registry import RegistryService
 from iter8ml.services.reporting import metric_sort_value, metric_value_is_better
+from iter8ml.workspace import Workspace
 
 
 @dataclass
@@ -155,7 +156,7 @@ def _train_one(
     cv_strategy: str,
     metrics: list[str],
     calibration: str,
-    workspace_dir: str,
+    workspace: Workspace,
     run_id: str,
     baseline_scores: dict[str, dict[str, float]],
     model_overrides: dict[str, dict[str, Any]] | None = None,
@@ -185,7 +186,7 @@ def _train_one(
             model = CalibratedModel(model, method=calibration)  # type: ignore[arg-type]
         model.fit(X, y)
 
-        artifact_path = f"{workspace_dir}/artifacts/{name}_{run_id}"
+        artifact_path = str(workspace.artifacts_dir / f"{name}_{run_id}")
         model.save(artifact_path)
         duration = time.time() - start
 
@@ -230,7 +231,7 @@ def training_results(
     cv_strategy: str,
     metrics: list[str],
     calibration: str,
-    workspace_dir: str,
+    workspace: Workspace,
     run_id: str,
     model_overrides: dict[str, dict[str, Any]] | None = None,
 ) -> list[ModelResult]:
@@ -250,7 +251,7 @@ def training_results(
                 cv_strategy,
                 metrics,
                 calibration,
-                workspace_dir,
+                workspace,
                 run_id,
                 baseline_scores,
                 model_overrides=model_overrides,
@@ -269,7 +270,7 @@ def training_state(
     run_id: str,
     experiment_name: str,
     task: str,
-    workspace_dir: str,
+    workspace: Workspace,
 ) -> TrainingState:
     results: dict[str, Any] = {}
     leaderboard: list[dict[str, Any]] = []
@@ -309,7 +310,7 @@ def training_state(
         results[bl_name] = {"cv_scores": bl_scores, "is_baseline": True}
 
     if best_model and primary_metric:
-        registry = RegistryService(f"{workspace_dir}/registry.json")
+        registry = RegistryService(workspace)
         artifact = results.get(best_model, {}).get("artifact_path", "")
         registry.update_if_better(
             f"{experiment_name}:{task}",

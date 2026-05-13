@@ -9,6 +9,7 @@ from rich.table import Table
 from iter8ml.data.loader import load_data
 from iter8ml.services.reporting import ReportService
 from iter8ml.utils.io import load_events
+from iter8ml.workspace import Workspace
 
 from .main import app
 
@@ -98,7 +99,8 @@ def leaderboard(
     metric: str = typer.Option(None, "--metric", help="Sort by this metric"),
 ) -> None:
     """Show experiment leaderboard."""
-    report = ReportService().format_leaderboard_console(metric=metric, limit=top)
+    ws = Workspace()
+    report = ReportService(workspace=ws).format_leaderboard_console(metric=metric, limit=top)
     typer.echo(report)
 
 
@@ -107,7 +109,8 @@ def state() -> None:
     """Generate and display current experiment state."""
     from iter8ml.engine.state_observer import StateObserver
 
-    observer = StateObserver()
+    ws = Workspace()
+    observer = StateObserver(workspace=ws)
     content = observer.generate()
     typer.echo(content)
 
@@ -116,10 +119,12 @@ def state() -> None:
 def diff(
     id1: str = typer.Argument(..., help="First run ID"),
     id2: str = typer.Argument(..., help="Second run ID"),
-    log_path: str = typer.Option("workspace/experiments.jsonl", "--log", help="Path to JSONL log"),
+    log_path: str | None = typer.Option(None, "--log", help="Path to JSONL log"),
 ) -> None:
     """Side-by-side comparison of two experiment runs."""
     console = Console()
+    if log_path is None:
+        log_path = str(Workspace().experiments_path)
     events = load_events(log_path)
 
     run1_events = [e for e in events if e.get("run_id") == id1]

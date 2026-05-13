@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import polars as pl
+
+if TYPE_CHECKING:
+    from iter8ml.workspace import Workspace
 
 
 def detect_high_cardinality_columns(
@@ -117,7 +119,7 @@ class EmbeddingEngine:
     def __init__(
         self,
         task: str,
-        workspace_dir: str | Path,
+        workspace: Workspace,
         embedding_method: str = "entity",
         embedding_dim: int = 16,
         embedding_max_categories: int = 50,
@@ -130,7 +132,7 @@ class EmbeddingEngine:
         random_seed: int = 42,
     ):
         self._task = task
-        self._workspace_dir = Path(workspace_dir)
+        self._workspace_dir = workspace.root
         self._embedding_method = embedding_method
         self._embedding_dim = embedding_dim
         self._embedding_max_categories = embedding_max_categories
@@ -229,8 +231,8 @@ class EmbeddingEngine:
         model.to(device)
 
         sorted_cols = sorted(codes.keys())
-        cat_tensors = [torch.from_numpy(codes[c]).long().to(device) for c in sorted_cols]
-        y_tensor = torch.from_numpy(y).float().to(device)
+        cat_tensors = [torch.tensor(codes[c], dtype=torch.long).to(device) for c in sorted_cols]
+        y_tensor = torch.tensor(y, dtype=torch.float).to(device)
         if task == "classification":
             y_tensor = y_tensor.long()
 
@@ -283,7 +285,7 @@ class EmbeddingEngine:
         model.to(device)
 
         sorted_cols = sorted(codes.keys())
-        cat_tensors = [torch.from_numpy(codes[c]).long().to(device) for c in sorted_cols]
+        cat_tensors = [torch.tensor(codes[c], dtype=torch.long).to(device) for c in sorted_cols]
 
         dataset = torch_data.TensorDataset(*cat_tensors)
         loader = torch_data.DataLoader(dataset, batch_size=256, shuffle=True)
@@ -324,7 +326,8 @@ class EmbeddingEngine:
             for start in range(0, n_rows, batch_size):
                 end = min(start + batch_size, n_rows)
                 cat_dict = {
-                    c: torch.from_numpy(codes[c][start:end]).long().to(device) for c in sorted_cols
+                    c: torch.tensor(codes[c][start:end], dtype=torch.long).to(device)
+                    for c in sorted_cols
                 }
                 if method == "entity":
                     emb = model.get_embeddings(cat_dict)

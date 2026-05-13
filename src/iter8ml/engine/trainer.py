@@ -1,15 +1,21 @@
 """Trainer: slim orchestrator that ties config + data + model into a run."""
 
+from __future__ import annotations
+
+import logging
 import time
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import polars as pl
 
 from iter8ml.config import ExperimentConfig, HardwareProfile
 from iter8ml.engine.pipelines.executor import PipelineExecutor, PipelineMode
 from iter8ml.engine.tracker import JSONLTracker, Tracker
+
+if TYPE_CHECKING:
+    from iter8ml.workspace import Workspace
 
 
 class Trainer:
@@ -18,6 +24,7 @@ class Trainer:
     def __init__(
         self,
         config: ExperimentConfig,
+        workspace: Workspace,
         tracker: Tracker | None = None,
         run_leakage_audit: bool = True,
         resume_run_id: str | None = None,
@@ -25,24 +32,23 @@ class Trainer:
         """Initialize trainer with experiment config and optional resume support."""
         HardwareProfile.configure_omp_threads()
         self.config = config
+        self.workspace = workspace
         self.resume_run_id = resume_run_id
         self._completed_models: set[str] = set()
         if resume_run_id:
             self._completed_models = _load_completed_models(
-                config.workspace_dir / "experiments.jsonl", resume_run_id
+                workspace.experiments_path, resume_run_id
             )
             if self._completed_models:
-                import typer
-
-                typer.echo(
-                    f"[resume] Skipping completed models: "
-                    f"{', '.join(sorted(self._completed_models))}"
+                logging.getLogger(__name__).info(
+                    "[resume] Skipping completed models: %s",
+                    ", ".join(sorted(self._completed_models)),
                 )
         _tracker: Tracker
         if tracker is not None:
             _tracker = tracker
         else:
-            _tracker = JSONLTracker(log_path=str(self.config.workspace_dir / "experiments.jsonl"))
+            _tracker = JSONLTracker(log_path=str(workspace.experiments_path))
         self.tracker = _tracker
         self.hardware = HardwareProfile.detect()
         self.run_leakage_audit = run_leakage_audit
@@ -68,6 +74,7 @@ class Trainer:
             vram_gb=self.hardware.vram_gb,
             run_leakage_audit=self.run_leakage_audit,
             completed_models=self._completed_models,
+            workspace=self.workspace,
         )
 
         if state is not None:
@@ -108,10 +115,7 @@ class Trainer:
         from iter8ml.engine.state_observer import StateObserver
 
         observer = StateObserver(
-            log_path=str(self.config.workspace_dir / "experiments.jsonl"),
-            registry_path=str(self.config.workspace_dir / "registry.json"),
-            output_path=str(self.config.workspace_dir / "current_state.md"),
-            leaderboard_path=str(self.config.workspace_dir / "leaderboard.md"),
+            workspace=self.workspace,
             llm_enabled=self.config.llm_enabled,
             llm_model=self.config.llm_model,
         )

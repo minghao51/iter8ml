@@ -1,10 +1,9 @@
 """CLI app assembly — init and hardware commands."""
 
-from pathlib import Path
-
 import typer
 
 from iter8ml.config import HardwareProfile
+from iter8ml.workspace import Workspace
 
 app = typer.Typer(name="iter8", help="A high-velocity iteration framework for tabular ML")
 
@@ -19,15 +18,10 @@ def init(
     ),
 ) -> None:
     """Initialize workspace and optionally load data."""
-    workspace = Path("workspace")
-    workspace.mkdir(exist_ok=True)
-    (workspace / "artifacts").mkdir(exist_ok=True)
-    (workspace / "experiments.jsonl").touch(exist_ok=True)
-
-    registry_path = workspace / "registry.json"
-    if force_reset_registry or not registry_path.exists():
-        registry_path.write_text("{}")
-
+    workspace = Workspace()
+    workspace.init()
+    if force_reset_registry:
+        workspace.registry_path.write_text("{}")
     typer.echo("Workspace initialized.")
     if data:
         typer.echo(f"Data path set to: {data}")

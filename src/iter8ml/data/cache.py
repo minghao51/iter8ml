@@ -2,13 +2,13 @@
 
 import hashlib
 import json
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
 
 if TYPE_CHECKING:
     from iter8ml.config import ExperimentConfig
+    from iter8ml.workspace import Workspace
 
 _CACHE_DIR = ".iter8ml/cache"
 
@@ -21,8 +21,8 @@ def _cache_key(data_hash: str, config: "ExperimentConfig") -> str:
 
 
 class PreprocessingCache:
-    def __init__(self, workspace_dir: Path) -> None:
-        self.cache_dir = workspace_dir / _CACHE_DIR
+    def __init__(self, workspace: "Workspace") -> None:
+        self.cache_dir = workspace.root / _CACHE_DIR
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def load(

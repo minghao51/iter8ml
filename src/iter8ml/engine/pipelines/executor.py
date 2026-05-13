@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING, Any
 
 import polars as pl
 
+from iter8ml.workspace import Workspace
+
 if TYPE_CHECKING:
     from iter8ml.config import ExperimentConfig
 
@@ -84,6 +86,7 @@ def _config_to_inputs(
     vram_gb: float,
     run_leakage_audit: bool,
     completed_models: set[str] | None = None,
+    workspace: Workspace | None = None,
 ) -> dict[str, Any]:
     inputs: dict[str, Any] = {
         "df": df,
@@ -94,7 +97,7 @@ def _config_to_inputs(
         "config_models": config.models,
         "experiment_name": config.name,
         "cv_strategy": config.cv_strategy.value,
-        "workspace_dir": str(config.workspace_dir),
+        "workspace": workspace or Workspace(),
         "embedding_method": config.embedding_method.value,
         "completed_models": sorted(completed_models or set()),
     }
@@ -161,6 +164,7 @@ class PipelineExecutor:
         vram_gb: float = 0.0,
         run_leakage_audit: bool = True,
         completed_models: set[str] | None = None,
+        workspace: Workspace | None = None,
     ) -> Any:
         if self._driver_mod is None:
             return None
@@ -183,6 +187,7 @@ class PipelineExecutor:
             vram_gb,
             run_leakage_audit,
             completed_models=completed_models,
+            workspace=workspace,
         )
         result = dr.execute(["training_state"], inputs=inputs)
         return result.get("training_state")

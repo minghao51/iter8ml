@@ -4,7 +4,10 @@ import json
 import threading
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
+
+if TYPE_CHECKING:
+    from iter8ml.workspace import Workspace
 
 
 class Tracker(Protocol):
@@ -35,6 +38,10 @@ class JSONLTracker:
         self.backup_count = backup_count
         self.current_run_id: str | None = None
         self._lock = threading.Lock()
+
+    @classmethod
+    def from_workspace(cls, workspace: "Workspace", **kwargs: Any) -> "JSONLTracker":
+        return cls(log_path=str(workspace.experiments_path), **kwargs)
 
     def _should_rotate(self) -> bool:
         """Check if the log file exceeds the size limit."""

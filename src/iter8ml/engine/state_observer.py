@@ -1,9 +1,14 @@
 """StateObserver: generates LLM-readable experiment state summaries."""
 
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from iter8ml.services.reporting import ExperimentReport, ReportService
+
+if TYPE_CHECKING:
+    from iter8ml.workspace import Workspace
 
 
 class StateObserver:
@@ -11,23 +16,17 @@ class StateObserver:
 
     def __init__(
         self,
-        log_path: str = "workspace/experiments.jsonl",
-        registry_path: str = "workspace/registry.json",
-        output_path: str = "workspace/current_state.md",
-        leaderboard_path: str | None = None,
+        workspace: Workspace,
         llm_enabled: bool = False,
         llm_model: str | None = None,
         llm_api_key_env: str = "",
         llm_api_base: str | None = None,
     ):
-        self.log_path = Path(log_path)
-        self.registry_path = Path(registry_path)
-        self.output_path = Path(output_path)
-        self.leaderboard_path = (
-            Path(leaderboard_path)
-            if leaderboard_path is not None
-            else self.output_path.with_name("leaderboard.md")
-        )
+        self.workspace = workspace
+        self.log_path = workspace.experiments_path
+        self.registry_path = workspace.registry_path
+        self.output_path = workspace.state_path
+        self.leaderboard_path = workspace.leaderboard_path
         self._llm_enabled = llm_enabled
         self._llm_model = llm_model if llm_model is not None else self._default_llm_model()
         self._llm_api_key_env = llm_api_key_env
@@ -43,10 +42,7 @@ class StateObserver:
 
     def generate(self) -> str:
         """Read experiment state and render current_state.md and leaderboard.md."""
-        self._report_svc = ReportService(
-            log_path=self.log_path,
-            registry_path=self.registry_path,
-        )
+        self._report_svc = ReportService(workspace=self.workspace)
         report = self._report_svc.build_report()
 
         if not report.latest_run:

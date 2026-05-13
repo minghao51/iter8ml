@@ -1,12 +1,16 @@
 """Structured experiment reporting utilities."""
 
+from __future__ import annotations
+
 import json
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
 from iter8ml.utils.io import iter_events
+
+if TYPE_CHECKING:
+    from iter8ml.workspace import Workspace
 
 LOWER_IS_BETTER_METRICS = {"rmse", "mae", "mse", "log_loss", "loss", "error"}
 
@@ -78,13 +82,10 @@ def resolve_primary_score(
 class ReportService:
     """Builds structured experiment summaries from logs and registry state."""
 
-    def __init__(
-        self,
-        log_path: str | Path = "workspace/experiments.jsonl",
-        registry_path: str | Path = "workspace/registry.json",
-    ):
-        self.log_path = Path(log_path)
-        self.registry_path = Path(registry_path)
+    def __init__(self, workspace: Workspace):
+        self.workspace = workspace
+        self.log_path = workspace.experiments_path
+        self.registry_path = workspace.registry_path
 
     def build_report(self, metric: str | None = None, limit: int | None = None) -> ExperimentReport:
         """Load events and registry and return a canonical report."""

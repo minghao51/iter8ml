@@ -1,9 +1,8 @@
 """Export and registry commands."""
 
-import json
-from pathlib import Path
-
 import typer
+
+from iter8ml.session import ExperimentSession
 
 from .main import app
 
@@ -15,11 +14,9 @@ def export(
     target: str | None = typer.Option(None, "--target", "-t", help="Target column name"),
 ) -> None:
     """Export champion model as a portable prediction package."""
-    from iter8ml.services.export import ExportService
-
-    service = ExportService()
+    session = ExperimentSession()
     try:
-        export_path = service.export(key, output_dir=output, target_col=target)
+        export_path = session.export(key, output_dir=output)
         typer.echo(f"Exported to: {export_path}")
         typer.echo("  Model artifact: model.artifact")
         typer.echo("  Preprocessing:  pipelines/preprocessing.py")
@@ -35,13 +32,14 @@ def export(
 @app.command()
 def registry(action: str = typer.Argument("show", help="show or promote")) -> None:
     """Show or manage model registry."""
-    registry_path = Path("workspace/registry.json")
-    if not registry_path.exists():
+    ws = ExperimentSession().workspace
+
+    import json
+
+    data = json.loads(ws.registry_path.read_text()) if ws.registry_path.exists() else {}
+    if not data:
         typer.echo("Registry is empty.")
         return
-
-    with open(registry_path) as f:
-        data = json.load(f)
 
     if action == "show":
         typer.echo("\n# Model Registry\n")

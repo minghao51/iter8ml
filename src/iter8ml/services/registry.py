@@ -1,18 +1,23 @@
 """Unified model registry service with cross-platform file locking."""
 
+from __future__ import annotations
+
 import contextlib
 import json
 import os
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from filelock import FileLock
 from pydantic import BaseModel
 
 from iter8ml.services.reporting import metric_value_is_better, resolve_primary_score
 from iter8ml.utils.io import iter_events
+
+if TYPE_CHECKING:
+    from iter8ml.workspace import Workspace
 
 
 class PromotionResult(BaseModel):
@@ -39,9 +44,10 @@ class RegistryService:
       must be called from within a lock context.
     """
 
-    def __init__(self, registry_path: str | Path):
-        self.registry_path = Path(registry_path)
-        self.lock_path = str(self.registry_path.with_suffix(".lock"))
+    def __init__(self, workspace: Workspace):
+        self.workspace = workspace
+        self.registry_path = workspace.registry_path
+        self.lock_path = str(workspace.registry_path.with_suffix(".lock"))
 
     def _acquire_lock(self) -> FileLock:
         return FileLock(self.lock_path)

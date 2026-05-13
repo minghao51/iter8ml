@@ -1,8 +1,8 @@
-"""Shared model class factory."""
+"""Shared model class factory with plugin discovery."""
 
 import importlib
 
-_MODEL_REGISTRY = {
+_BUILT_IN_REGISTRY: dict[str, tuple[str, str]] = {
     "catboost": ("iter8ml.engine.models.catboost_model", "CatBoostModel"),
     "lightgbm": ("iter8ml.engine.models.lightgbm_model", "LightGBMModel"),
     "xgboost": ("iter8ml.engine.models.xgboost_model", "XGBoostModel"),
@@ -12,7 +12,27 @@ _MODEL_REGISTRY = {
     "naive_baseline": ("iter8ml.engine.models.baselines", "NaiveBaseline"),
     "linear_baseline": ("iter8ml.engine.models.baselines", "LinearBaseline"),
 }
+
 _MODEL_CLASS_CACHE: dict[str, type] = {}
+
+
+def _discover_models() -> dict[str, tuple[str, str]]:
+    """Merge built-in registry with externally registered plugins."""
+    registry = dict(_BUILT_IN_REGISTRY)
+    from importlib.metadata import entry_points
+
+    try:
+        for ep in entry_points(group="iter8ml.models"):
+            if ep.name not in registry:
+                module, attr = ep.value.rsplit(":", 1)
+                registry[ep.name] = (module, attr)
+    except (TypeError, ImportError):
+        pass
+
+    return registry
+
+
+_MODEL_REGISTRY = _discover_models()
 
 
 def available_model_names() -> list[str]:

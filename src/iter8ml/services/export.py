@@ -1,11 +1,16 @@
 """Export champion models as portable prediction packages."""
 
+from __future__ import annotations
+
 import json
 import shutil
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from iter8ml.services.registry import RegistryService
+
+if TYPE_CHECKING:
+    from iter8ml.workspace import Workspace
 
 PREDICTOR_TEMPLATE = '''\
 """Auto-generated predictor for {model_name}.
@@ -127,9 +132,9 @@ if __name__ == "__main__":
 class ExportService:
     """Package champion models for portable inference."""
 
-    def __init__(self, workspace_dir: str | Path = "workspace"):
-        self.workspace_dir = Path(workspace_dir)
-        self.registry = RegistryService(str(self.workspace_dir / "registry.json"))
+    def __init__(self, workspace: Workspace):
+        self.workspace = workspace
+        self.registry = RegistryService(workspace)
 
     def export(
         self,
@@ -156,7 +161,7 @@ class ExportService:
 
         if output_dir is None:
             safe_key = key.replace(":", "_").replace("/", "_")
-            output_dir = self.workspace_dir / "exports" / safe_key
+            output_dir = self.workspace.exports_dir / safe_key
         export_path = Path(output_dir)
         export_path.mkdir(parents=True, exist_ok=True)
 
