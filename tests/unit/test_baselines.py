@@ -83,3 +83,83 @@ class TestLinearBaseline:
     def test_model_name(self):
         model = LinearBaseline()
         assert model.model_name == "LinearBaseline"
+
+    def test_predict_proba_regression(self, regression_data):
+        X, y = regression_data
+        model = LinearBaseline(task="regression")
+        model.fit(X, y)
+        assert model.predict_proba(X) is None
+
+    def test_predict_without_fit(self):
+        model = LinearBaseline()
+        with pytest.raises(ValueError, match="not fitted"):
+            model.predict(np.array([[1.0]]))
+
+
+class TestNaiveBaselineSaveLoad:
+    def test_save_load_classification(self, classification_data, tmp_path):
+        X, y = classification_data
+        model = NaiveBaseline(task="classification")
+        model.fit(X, y)
+        path = str(tmp_path / "naive")
+        model.save(path)
+        loaded = NaiveBaseline()
+        loaded.load(path)
+        assert loaded.model_name == "NaiveBaseline"
+        preds = loaded.predict(X)
+        assert np.array_equal(preds, model.predict(X))
+
+    def test_save_load_regression(self, regression_data, tmp_path):
+        X, y = regression_data
+        model = NaiveBaseline(task="regression")
+        model.fit(X, y)
+        path = str(tmp_path / "naive")
+        model.save(path)
+        loaded = NaiveBaseline()
+        loaded.load(path)
+        preds = loaded.predict(X)
+        assert np.allclose(preds, np.mean(y))
+
+    def test_predict_without_fit(self):
+        model = NaiveBaseline()
+        with pytest.raises(ValueError, match="not fitted"):
+            model.predict(np.array([[1.0]]))
+
+    def test_predict_proba_fallback(self):
+        model = NaiveBaseline(task="classification")
+        model._value = 0
+        model._classes = [0, 1]
+        proba = model.predict_proba(np.array([[1.0], [2.0]]))
+        assert proba is not None
+        assert proba.shape == (2, 2)
+        assert np.allclose(proba[:, 0], 1.0)
+
+
+class TestLinearBaselineSaveLoad:
+    def test_save_load_classification(self, classification_data, tmp_path):
+        X, y = classification_data
+        model = LinearBaseline(task="classification")
+        model.fit(X, y)
+        path = str(tmp_path / "linear")
+        model.save(path)
+        loaded = LinearBaseline()
+        loaded.load(path)
+        assert loaded.model_name == "LinearBaseline"
+        preds = loaded.predict(X)
+        assert preds.shape == (X.shape[0],)
+
+    def test_save_load_regression(self, regression_data, tmp_path):
+        X, y = regression_data
+        model = LinearBaseline(task="regression")
+        model.fit(X, y)
+        path = str(tmp_path / "linear")
+        model.save(path)
+        loaded = LinearBaseline()
+        loaded.load(path)
+        preds = loaded.predict(X)
+        assert preds.shape == (X.shape[0],)
+
+    def test_predict_without_fit(self):
+        model = LinearBaseline()
+        with pytest.raises(ValueError, match="not fitted"):
+            model.predict(np.array([[1.0]]))

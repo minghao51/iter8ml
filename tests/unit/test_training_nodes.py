@@ -7,6 +7,7 @@ from iter8ml.engine.pipelines.nodes.train import (
     models_to_run,
     training_state,
 )
+from iter8ml.workspace import Workspace
 
 
 class MockDataPrepResult:
@@ -112,7 +113,7 @@ class TestStateGeneration:
             run_id="test_run",
             experiment_name="exp",
             task="classification",
-            workspace_dir=str(tmp_path),
+            workspace=Workspace(root=tmp_path),
         )
         assert state.best_model == "model_b"
         assert state.best_score == 0.90
@@ -140,7 +141,7 @@ class TestStateGeneration:
             run_id="test_run",
             experiment_name="exp",
             task="classification",
-            workspace_dir=str(tmp_path),
+            workspace=Workspace(root=tmp_path),
         )
         assert "fail_model" in state.results
         assert "error" in state.results["fail_model"]
@@ -157,7 +158,7 @@ class TestStateGeneration:
             run_id="test_run",
             experiment_name="exp",
             task="classification",
-            workspace_dir=str(tmp_path),
+            workspace=Workspace(root=tmp_path),
         )
         assert "naive_baseline" in state.results
         assert state.results["naive_baseline"]["is_baseline"] is True
@@ -170,7 +171,7 @@ class TestStateGeneration:
             run_id="test_run",
             experiment_name="exp",
             task="classification",
-            workspace_dir=str(tmp_path),
+            workspace=Workspace(root=tmp_path),
         )
         assert state.best_model is None
         assert state.best_score is None
@@ -227,7 +228,7 @@ class TestModelOverrides:
             cv_strategy="stratified",
             metrics=["roc_auc"],
             calibration="none",
-            workspace_dir=str(tmp_path),
+            workspace=Workspace(root=tmp_path),
             run_id="override_ok",
             baseline_scores={},
             model_overrides={"catboost": {"depth": 8}},
@@ -245,7 +246,7 @@ class TestModelOverrides:
             cv_strategy="stratified",
             metrics=["roc_auc"],
             calibration="none",
-            workspace_dir=str(tmp_path),
+            workspace=Workspace(root=tmp_path),
             run_id="override_bad",
             baseline_scores={},
             model_overrides={"catboost": {"bad_key": 8}},

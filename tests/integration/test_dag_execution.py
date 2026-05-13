@@ -7,6 +7,7 @@ from sklearn.datasets import make_classification
 from iter8ml.config import ExperimentConfig
 from iter8ml.engine.pipelines.executor import PipelineExecutor, PipelineMode
 from iter8ml.engine.tracker import JSONLTracker
+from iter8ml.workspace import Workspace
 
 pytestmark = [
     pytest.mark.integration,
@@ -31,7 +32,6 @@ def config(tmp_path):
         task="classification",
         target_col="target",
         data_path="",
-        workspace_dir=tmp_path,
         cv_folds=3,
         metrics=["roc_auc", "f1_macro"],
         models=["catboost"],
@@ -40,7 +40,7 @@ def config(tmp_path):
 
 
 class TestDAGExecution:
-    def test_run_training_returns_training_state(self, config, classification_data):
+    def test_run_training_returns_training_state(self, config, classification_data, tmp_path):
         executor = PipelineExecutor(mode=PipelineMode.TRAINING)
         state = executor.run_training(
             config=config,
@@ -48,6 +48,7 @@ class TestDAGExecution:
             run_id="test_dag_001",
             vram_gb=0.0,
             run_leakage_audit=False,
+            workspace=Workspace(root=tmp_path),
         )
 
         assert state is not None
@@ -55,7 +56,7 @@ class TestDAGExecution:
         assert hasattr(state, "best_model")
         assert hasattr(state, "best_score")
 
-    def test_run_training_produces_model_results(self, config, classification_data):
+    def test_run_training_produces_model_results(self, config, classification_data, tmp_path):
         executor = PipelineExecutor(mode=PipelineMode.TRAINING)
         state = executor.run_training(
             config=config,
@@ -63,6 +64,7 @@ class TestDAGExecution:
             run_id="test_dag_002",
             vram_gb=0.0,
             run_leakage_audit=False,
+            workspace=Workspace(root=tmp_path),
         )
 
         assert "catboost" in state.results
@@ -82,12 +84,13 @@ class TestDAGExecution:
             run_id="test_dag_003",
             vram_gb=0.0,
             run_leakage_audit=False,
+            workspace=Workspace(root=tmp_path),
         )
 
         assert state is not None
         assert tmp_path.exists()
 
-    def test_run_training_best_model_is_selected(self, config, classification_data):
+    def test_run_training_best_model_is_selected(self, config, classification_data, tmp_path):
         multi_config = config.model_copy(update={"models": ["catboost", "lightgbm"]})
         executor = PipelineExecutor(mode=PipelineMode.TRAINING)
         state = executor.run_training(
@@ -96,6 +99,7 @@ class TestDAGExecution:
             run_id="test_dag_004",
             vram_gb=0.0,
             run_leakage_audit=False,
+            workspace=Workspace(root=tmp_path),
         )
 
         assert state.best_model is not None
@@ -103,7 +107,7 @@ class TestDAGExecution:
         assert state.best_score > 0.5
         assert len(state.leaderboard) >= 1
 
-    def test_leaderboard_sorted_by_score(self, config, classification_data):
+    def test_leaderboard_sorted_by_score(self, config, classification_data, tmp_path):
         multi_config = config.model_copy(update={"models": ["catboost", "lightgbm", "xgboost"]})
         executor = PipelineExecutor(mode=PipelineMode.TRAINING)
         state = executor.run_training(
@@ -112,6 +116,7 @@ class TestDAGExecution:
             run_id="test_dag_005",
             vram_gb=0.0,
             run_leakage_audit=False,
+            workspace=Workspace(root=tmp_path),
         )
 
         scores = [entry["score"] for entry in state.leaderboard]

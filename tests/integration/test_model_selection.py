@@ -13,6 +13,7 @@ from iter8ml.engine.models.selector import ModelSelector
 from iter8ml.engine.models.tabpfn_model import TabPFNModel
 from iter8ml.engine.tracker import JSONLTracker
 from iter8ml.engine.trainer import Trainer
+from iter8ml.workspace import Workspace
 
 
 @pytest.fixture(autouse=True)
@@ -49,13 +50,12 @@ def test_tabpfn_runs_on_small_data(small_classification_data, tmp_path):
         task="classification",
         target_col="target",
         data_path="",
-        workspace_dir=tmp_path,
         models=["tabpfn"],
         cv_folds=3,
         metrics=["roc_auc", "accuracy"],
     )
     tracker = JSONLTracker(str(tmp_path / "experiments.jsonl"))
-    trainer = Trainer(config, tracker=tracker)
+    trainer = Trainer(config, workspace=Workspace(root=tmp_path), tracker=tracker)
     results = trainer.run(small_classification_data)
 
     assert "tabpfn" in results
@@ -70,13 +70,12 @@ def test_tabpfn_data_size_guardrail(tiny_classification_data, tmp_path):
         task="classification",
         target_col="target",
         data_path="",
-        workspace_dir=tmp_path,
         models=["tabpfn"],
         cv_folds=3,
         metrics=["roc_auc"],
     )
     tracker = JSONLTracker(str(tmp_path / "experiments.jsonl"))
-    trainer = Trainer(config, tracker=tracker)
+    trainer = Trainer(config, workspace=Workspace(root=tmp_path), tracker=tracker)
     results = trainer.run(tiny_classification_data)
 
     assert "tabpfn" in results
@@ -116,13 +115,12 @@ def test_auto_model_selection_produces_results(small_classification_data, tmp_pa
         task="classification",
         target_col="target",
         data_path="",
-        workspace_dir=tmp_path,
         models=["catboost", "lightgbm"],
         cv_folds=3,
         metrics=["roc_auc"],
     )
     tracker = JSONLTracker(str(tmp_path / "experiments.jsonl"))
-    trainer = Trainer(config, tracker=tracker)
+    trainer = Trainer(config, workspace=Workspace(root=tmp_path), tracker=tracker)
     results = trainer.run(small_classification_data)
 
     assert len(results) >= 1
@@ -138,13 +136,12 @@ def test_jsonl_event_logged_for_model_completion(small_classification_data, tmp_
         task="classification",
         target_col="target",
         data_path="",
-        workspace_dir=tmp_path,
         models=["catboost"],
         cv_folds=3,
         metrics=["roc_auc"],
     )
     tracker = JSONLTracker(str(tmp_path / "experiments.jsonl"))
-    trainer = Trainer(config, tracker=tracker)
+    trainer = Trainer(config, workspace=Workspace(root=tmp_path), tracker=tracker)
     trainer.run(small_classification_data)
 
     events = []

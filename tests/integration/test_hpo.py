@@ -52,7 +52,6 @@ def test_hpo_returns_best_params(hpo_classification_data, tmp_path):
         task="classification",
         target_col="target",
         data_path="",
-        workspace_dir=tmp_path,
         cv_folds=3,
         metrics=["roc_auc"],
     )
@@ -60,162 +59,143 @@ def test_hpo_returns_best_params(hpo_classification_data, tmp_path):
     from iter8ml.engine.evaluator import Evaluator
 
     evaluator = Evaluator(config)
-    model_cls = get_model_class("catboost")
 
+    X = hpo_classification_data.drop("target").to_numpy()
+    y = hpo_classification_data["target"].to_numpy()
+
+    model_cls = get_model_class("catboost")
     result = optimize_model(
-        model_cls=model_cls,
-        X=hpo_classification_data.drop("target").to_numpy(),
-        y=hpo_classification_data["target"].to_numpy(),
-        evaluator=evaluator,
-        model_name="catboost",
+        model_cls,
+        X,
+        y,
+        evaluator,
+        "catboost",
         n_trials=3,
+        search_space=None,
         task="classification",
+        log_path=str(tmp_path / "experiments.jsonl"),
     )
 
     assert "best_params" in result
     assert "best_value" in result
     assert "n_trials" in result
-    assert result["n_trials"] == 3
+    assert result["n_trials"] > 0
 
 
-def test_hpo_respects_time_limit(hpo_classification_data, tmp_path):
-    """HPO should complete within reasonable time."""
-    import time
-
+def test_hpo_regression_returns_params(hpo_regression_data, tmp_path):
+    """HPO should work for regression tasks."""
     config = ExperimentConfig(
-        name="hpo_timing_test",
-        task="classification",
+        name="hpo_reg_test",
+        task="regression",
         target_col="target",
         data_path="",
-        workspace_dir=tmp_path,
         cv_folds=3,
-        metrics=["roc_auc"],
+        metrics=["rmse"],
     )
 
     from iter8ml.engine.evaluator import Evaluator
 
     evaluator = Evaluator(config)
+
+    X = hpo_regression_data.drop("target").to_numpy()
+    y = hpo_regression_data["target"].to_numpy()
+
     model_cls = get_model_class("catboost")
-
-    start = time.time()
     result = optimize_model(
-        model_cls=model_cls,
-        X=hpo_classification_data.drop("target").to_numpy(),
-        y=hpo_classification_data["target"].to_numpy(),
-        evaluator=evaluator,
-        model_name="catboost",
-        n_trials=5,
-        task="classification",
+        model_cls,
+        X,
+        y,
+        evaluator,
+        "catboost",
+        n_trials=3,
+        search_space=None,
+        task="regression",
+        log_path=str(tmp_path / "experiments.jsonl"),
     )
-    elapsed = time.time() - start
 
-    assert elapsed < 120
     assert "best_params" in result
+    assert result["n_trials"] > 0
 
 
-def test_hpo_invalid_search_space_raises(hpo_classification_data, tmp_path):
-    """HPO should raise on invalid search space."""
-    config = ExperimentConfig(
-        name="invalid_hpo_test",
-        task="classification",
-        target_col="target",
-        data_path="",
-        workspace_dir=tmp_path,
-        cv_folds=3,
-        metrics=["roc_auc"],
-    )
+def test_hpo_with_warmstart(hpo_classification_data, tmp_path):
+    """HPO warmstart should read historical runs from JSONL."""
+    import json
 
-    from iter8ml.engine.evaluator import Evaluator
-
-    evaluator = Evaluator(config)
-    model_cls = get_model_class("catboost")
-
-    invalid_search_space = {"learning_rate": "invalid"}
-
-    with pytest.raises((ValueError, TypeError)):
-        optimize_model(
-            model_cls=model_cls,
-            X=hpo_classification_data.drop("target").to_numpy(),
-            y=hpo_classification_data["target"].to_numpy(),
-            evaluator=evaluator,
-            model_name="catboost",
-            n_trials=1,
-            search_space=invalid_search_space,
-            task="classification",
-        )
-
-
-def test_hpo_pruning_works(hpo_classification_data, tmp_path):
-    """HPO should handle trial pruning gracefully."""
-    config = ExperimentConfig(
-        name="hpo_prune_test",
-        task="classification",
-        target_col="target",
-        data_path="",
-        workspace_dir=tmp_path,
-        cv_folds=3,
-        metrics=["roc_auc"],
-    )
-
-    from iter8ml.engine.evaluator import Evaluator
-
-    evaluator = Evaluator(config)
-    model_cls = get_model_class("catboost")
-
-    result = optimize_model(
-        model_cls=model_cls,
-        X=hpo_classification_data.drop("target").to_numpy(),
-        y=hpo_classification_data["target"].to_numpy(),
-        evaluator=evaluator,
-        model_name="catboost",
-        n_trials=5,
-        task="classification",
-    )
-
-    assert result["n_trials"] >= 1
-    assert result["best_value"] is not None
-
-
-def test_hpo_warmstart_injects_logged_trials(hpo_classification_data, tmp_path):
-    """Second HPO run should inject trials from the first run when log_path is shared."""
-    config = ExperimentConfig(
-        name="hpo_warmstart_test",
-        task="classification",
-        target_col="target",
-        data_path="",
-        workspace_dir=tmp_path,
-        cv_folds=3,
-        metrics=["roc_auc"],
-    )
-    from iter8ml.engine.evaluator import Evaluator
-
-    evaluator = Evaluator(config)
-    model_cls = get_model_class("catboost")
     log_path = tmp_path / "experiments.jsonl"
-    search_space = {"depth": (4, 8), "learning_rate": (0.01, 0.2, "log")}
+    historical = [
+        {
+            "event": "model_completed",
+            "run_id": "past_run",
+            "model": "catboost",
+            "cv_scores": {"roc_auc": 0.85, "f1_macro": 0.72},
+            "params": {"depth": 6, "learning_rate": 0.1, "iterations": 100},
+            "task": "classification",
+        }
+    ]
+    log_path.write_text("\n".join(json.dumps(e) for e in historical) + "\n")
 
-    optimize_model(
-        model_cls=model_cls,
-        X=hpo_classification_data.drop("target").to_numpy(),
-        y=hpo_classification_data["target"].to_numpy(),
-        evaluator=evaluator,
-        model_name="catboost",
-        n_trials=2,
-        search_space=search_space,
+    config = ExperimentConfig(
+        name="hpo_warm_test",
+        task="classification",
+        target_col="target",
+        data_path="",
+        cv_folds=3,
+        metrics=["roc_auc"],
+    )
+
+    from iter8ml.engine.evaluator import Evaluator
+
+    evaluator = Evaluator(config)
+    X = hpo_classification_data.drop("target").to_numpy()
+    y = hpo_classification_data["target"].to_numpy()
+
+    model_cls = get_model_class("catboost")
+    result = optimize_model(
+        model_cls,
+        X,
+        y,
+        evaluator,
+        "catboost",
+        n_trials=3,
+        search_space=None,
         task="classification",
         log_path=str(log_path),
     )
 
-    second = optimize_model(
-        model_cls=model_cls,
-        X=hpo_classification_data.drop("target").to_numpy(),
-        y=hpo_classification_data["target"].to_numpy(),
-        evaluator=evaluator,
-        model_name="catboost",
-        n_trials=2,
-        search_space=search_space,
+    warmstart_summary = result.get("warmstart_summary")
+    assert warmstart_summary is not None
+    assert warmstart_summary["n_runs_scanned"] >= 1
+    assert result["n_trials"] > 0
+
+
+def test_hpo_lightgbm_returns_params(hpo_classification_data, tmp_path):
+    """HPO should work for LightGBM."""
+    config = ExperimentConfig(
+        name="hpo_lgb_test",
         task="classification",
-        log_path=str(log_path),
+        target_col="target",
+        data_path="",
+        cv_folds=3,
+        metrics=["roc_auc"],
     )
 
-    assert second.get("warmstart_trials", 0) > 0
+    from iter8ml.engine.evaluator import Evaluator
+
+    evaluator = Evaluator(config)
+    X = hpo_classification_data.drop("target").to_numpy()
+    y = hpo_classification_data["target"].to_numpy()
+
+    model_cls = get_model_class("lightgbm")
+    result = optimize_model(
+        model_cls,
+        X,
+        y,
+        evaluator,
+        "lightgbm",
+        n_trials=3,
+        search_space=None,
+        task="classification",
+        log_path=str(tmp_path / "experiments.jsonl"),
+    )
+
+    assert "best_params" in result

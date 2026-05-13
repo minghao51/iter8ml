@@ -325,7 +325,6 @@ def test_hpo_command(sample_csv):
 
 def test_hpo_unknown_model_exits_gracefully(tmp_path, monkeypatch):
     """Test that unknown model name produces clear error."""
-    # Create a dummy data file
     data_file = tmp_path / "test.csv"
     data_file.write_text("a,b,target\n1,2,0\n3,4,1")
 
@@ -344,3 +343,143 @@ def test_hpo_unknown_model_exits_gracefully(tmp_path, monkeypatch):
 
     assert result.exit_code == 1
     assert "Unknown model" in result.stdout
+
+
+# --- Export & Registry ---
+
+
+def test_registry_show_empty(tmp_path):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        orig = os.getcwd()
+        os.chdir(tmpdir)
+        try:
+            result = runner.invoke(app, ["init"])
+            assert result.exit_code == 0
+            result = runner.invoke(app, ["registry", "show"])
+            assert result.exit_code == 0
+            assert "Registry is empty" in result.stdout
+        finally:
+            os.chdir(orig)
+
+
+def test_registry_show_with_data(tmp_path):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        orig = os.getcwd()
+        os.chdir(tmpdir)
+        try:
+            runner.invoke(app, ["init"])
+            ws_path = Path(tmpdir) / "workspace"
+            registry_path = ws_path / "registry.json"
+            registry_path.write_text(
+                '{"best": {"model": "CatBoost", "run_id": "exp_1",'
+                ' "score": 0.85, "registered_at": "2026-01-01T00:00:00Z"}}'
+            )
+            result = runner.invoke(app, ["registry", "show"])
+            assert result.exit_code == 0
+            assert "CatBoost" in result.stdout
+            assert "exp_1" in result.stdout
+        finally:
+            os.chdir(orig)
+
+
+def test_registry_unknown_action(tmp_path):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        orig = os.getcwd()
+        os.chdir(tmpdir)
+        try:
+            runner.invoke(app, ["init"])
+            ws_path = Path(tmpdir) / "workspace"
+            registry_path = ws_path / "registry.json"
+            registry_path.write_text(
+                '{"best": {"model": "CatBoost", "run_id": "exp_1", "score": 0.85}}'
+            )
+            result = runner.invoke(app, ["registry", "invalid_action"])
+            assert "Unknown action" in result.stdout
+        finally:
+            os.chdir(orig)
+
+
+def test_export_missing_key(tmp_path):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        orig = os.getcwd()
+        os.chdir(tmpdir)
+        try:
+            runner.invoke(app, ["init"])
+            result = runner.invoke(app, ["export", "nonexistent:key"])
+            assert result.exit_code == 1
+            assert "Error" in result.stdout
+        finally:
+            os.chdir(orig)
+
+
+def test_state_with_events(tmp_path):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        orig = os.getcwd()
+        os.chdir(tmpdir)
+        try:
+            result = runner.invoke(app, ["init"])
+            assert result.exit_code == 0
+
+            ws_path = Path(tmpdir) / "workspace"
+            exp_path = ws_path / "experiments.jsonl"
+            event = (
+                '{"event": "model_completed", "model": "CatBoost", "task": "classification",'
+                ' "dataset": "test", "n_rows": 100, "n_features": 5,'
+                ' "cv_scores": {"roc_auc": 0.85}, "duration_seconds": 3.0,'
+                ' "hardware": {"device": "cpu", "vram_used_gb": 0.0},'
+                ' "timestamp": "2026-01-01T00:00:00Z"}\n'
+            )
+            exp_path.write_text(event)
+
+            result = runner.invoke(app, ["state"])
+            assert result.exit_code == 0
+            assert "CatBoost" in result.stdout
+            assert "roc_auc" in result.stdout
+        finally:
+            os.chdir(orig)
+
+
+def test_diff_command(tmp_path):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        orig = os.getcwd()
+        os.chdir(tmpdir)
+        try:
+            runner.invoke(app, ["init"])
+            ws_path = Path(tmpdir) / "workspace"
+            exp_path = ws_path / "experiments.jsonl"
+            events = (
+                '{"event": "experiment_started", "run_id": "run_a", '
+                '"config": {"task": "classification", "models": "auto",'
+                ' "cv_folds": 5, "metrics": ["roc_auc"]}}\n'
+                '{"event": "model_completed", "run_id": "run_a",'
+                ' "model": "CatBoost",'
+                ' "cv_scores": {"roc_auc": 0.85}, "duration_seconds": 3.0}\n'
+                '{"event": "experiment_started", "run_id": "run_b", '
+                '"config": {"task": "classification", "models": "auto",'
+                ' "cv_folds": 5, "metrics": ["roc_auc"]}}\n'
+                '{"event": "model_completed", "run_id": "run_b",'
+                ' "model": "CatBoost",'
+                ' "cv_scores": {"roc_auc": 0.90}, "duration_seconds": 2.5}\n'
+            )
+            exp_path.write_text(events)
+
+            result = runner.invoke(app, ["diff", "run_a", "run_b"])
+            assert result.exit_code == 0
+            assert "Experiment Diff" in result.stdout
+            assert "run_a" in result.stdout
+            assert "run_b" in result.stdout
+        finally:
+            os.chdir(orig)
+
+
+def test_diff_missing_run(tmp_path):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        orig = os.getcwd()
+        os.chdir(tmpdir)
+        try:
+            runner.invoke(app, ["init"])
+            result = runner.invoke(app, ["diff", "nonexistent", "other"])
+            assert result.exit_code == 1
+            assert "Run ID not found" in result.stdout
+        finally:
+            os.chdir(orig)

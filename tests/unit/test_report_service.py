@@ -3,16 +3,14 @@
 import json
 
 from iter8ml.services.reporting import ReportService
+from iter8ml.workspace import Workspace
 
 
 def test_build_report_empty(tmp_path):
-    log_path = tmp_path / "experiments.jsonl"
-    log_path.touch()
+    ws = Workspace(root=tmp_path)
+    ws.experiments_path.touch()
 
-    report = ReportService(
-        log_path=log_path,
-        registry_path=tmp_path / "registry.json",
-    ).build_report()
+    report = ReportService(workspace=ws).build_report()
 
     assert report.leaderboard == []
     assert report.latest_run is None
@@ -20,7 +18,8 @@ def test_build_report_empty(tmp_path):
 
 
 def test_build_report_classification_orders_by_primary_score(tmp_path):
-    log_path = tmp_path / "experiments.jsonl"
+    ws = Workspace(root=tmp_path)
+    log_path = ws.experiments_path
     events = [
         {
             "event": "model_completed",
@@ -41,17 +40,15 @@ def test_build_report_classification_orders_by_primary_score(tmp_path):
     ]
     log_path.write_text("\n".join(json.dumps(event) for event in events) + "\n")
 
-    report = ReportService(
-        log_path=log_path,
-        registry_path=tmp_path / "registry.json",
-    ).build_report()
+    report = ReportService(workspace=ws).build_report()
 
     assert [entry.model for entry in report.leaderboard] == ["ModelHigh", "ModelLow"]
     assert report.latest_run.model == "ModelHigh"
 
 
 def test_build_report_regression_uses_r2_by_default(tmp_path):
-    log_path = tmp_path / "experiments.jsonl"
+    ws = Workspace(root=tmp_path)
+    log_path = ws.experiments_path
     events = [
         {
             "event": "model_completed",
@@ -72,10 +69,7 @@ def test_build_report_regression_uses_r2_by_default(tmp_path):
     ]
     log_path.write_text("\n".join(json.dumps(event) for event in events) + "\n")
 
-    report = ReportService(
-        log_path=log_path,
-        registry_path=tmp_path / "registry.json",
-    ).build_report()
+    report = ReportService(workspace=ws).build_report()
 
     assert report.leaderboard[0].model == "ModelB"
     assert report.leaderboard[0].primary_metric == "r2"
@@ -83,7 +77,8 @@ def test_build_report_regression_uses_r2_by_default(tmp_path):
 
 
 def test_build_report_respects_explicit_metric_override(tmp_path):
-    log_path = tmp_path / "experiments.jsonl"
+    ws = Workspace(root=tmp_path)
+    log_path = ws.experiments_path
     events = [
         {
             "event": "model_completed",
@@ -104,17 +99,15 @@ def test_build_report_respects_explicit_metric_override(tmp_path):
     ]
     log_path.write_text("\n".join(json.dumps(event) for event in events) + "\n")
 
-    report = ReportService(
-        log_path=log_path,
-        registry_path=tmp_path / "registry.json",
-    ).build_report(metric="f1_macro")
+    report = ReportService(workspace=ws).build_report(metric="f1_macro")
 
     assert [entry.model for entry in report.leaderboard] == ["Fast", "Balanced"]
     assert report.leaderboard[0].primary_metric == "f1_macro"
 
 
 def test_build_report_sorts_lower_is_better_metric_ascending(tmp_path):
-    log_path = tmp_path / "experiments.jsonl"
+    ws = Workspace(root=tmp_path)
+    log_path = ws.experiments_path
     events = [
         {
             "event": "model_completed",
@@ -135,10 +128,7 @@ def test_build_report_sorts_lower_is_better_metric_ascending(tmp_path):
     ]
     log_path.write_text("\n".join(json.dumps(event) for event in events) + "\n")
 
-    report = ReportService(
-        log_path=log_path,
-        registry_path=tmp_path / "registry.json",
-    ).build_report(metric="rmse")
+    report = ReportService(workspace=ws).build_report(metric="rmse")
 
     assert [entry.model for entry in report.leaderboard] == ["Better", "Worse"]
     assert report.leaderboard[0].primary_metric == "rmse"
@@ -146,11 +136,10 @@ def test_build_report_sorts_lower_is_better_metric_ascending(tmp_path):
 
 
 def test_build_report_includes_registry_summary(tmp_path):
-    log_path = tmp_path / "experiments.jsonl"
-    log_path.write_text("")
-    registry_path = tmp_path / "registry.json"
-    registry_path.write_text(json.dumps({"champion": {"model": "CatBoost", "score": 0.95}}))
+    ws = Workspace(root=tmp_path)
+    ws.experiments_path.write_text("")
+    ws.registry_path.write_text(json.dumps({"champion": {"model": "CatBoost", "score": 0.95}}))
 
-    report = ReportService(log_path=log_path, registry_path=registry_path).build_report()
+    report = ReportService(workspace=ws).build_report()
 
     assert report.registry["champion"]["model"] == "CatBoost"

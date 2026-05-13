@@ -32,13 +32,12 @@ def bench_cv_evaluate(
     warmup: int = 1,
     runs: int = 3,
 ) -> BenchResult:
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with tempfile.TemporaryDirectory():
         config = ExperimentConfig(
             name="bench",
             task=task,
             target_col="target",
             data_path="",
-            workspace_dir=Path(tmpdir),
             cv_folds=cv_folds,
         )
         evaluator = Evaluator(config)
@@ -75,13 +74,12 @@ def bench_cv_strategies(
 
     for strategy in ["kfold", "stratified"]:
         for folds in [3, 5]:
-            with tempfile.TemporaryDirectory() as tmpdir:
+            with tempfile.TemporaryDirectory():
                 config = ExperimentConfig(
                     name="bench",
                     task=task,
                     target_col="target",
                     data_path="",
-                    workspace_dir=Path(tmpdir),
                     cv_folds=folds,
                     cv_strategy=strategy,
                 )

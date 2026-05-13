@@ -7,8 +7,8 @@ from unittest.mock import patch
 import pytest
 from pydantic import ValidationError
 
-from iter8ml.config import DEFAULT_LLM_MODEL, ExperimentConfig
-from iter8ml.constants import CVStrategy
+from iter8ml.config import DEFAULT_LLM_MODEL, ExperimentConfig, HardwareProfile
+from iter8ml.constants import CVStrategy, EmbeddingMethod, TaskType
 
 
 def test_default_config():
@@ -261,3 +261,178 @@ def test_section_comments_in_config():
     assert "Embedding" in source
     assert "LLM" in source
     assert "Model Overrides" in source
+
+
+# --- HardwareProfile tests ---
+
+
+def test_hardware_profile_detect_without_torch(monkeypatch):
+    import torch as real_torch
+
+    monkeypatch.setattr(real_torch.cuda, "is_available", lambda: False)
+    monkeypatch.setattr(
+        "iter8ml.config.psutil.virtual_memory", lambda: type("mem", (), {"total": 8e9})()
+    )
+    monkeypatch.setattr("iter8ml.config.psutil.cpu_count", lambda logical=False: 4)
+    hp = HardwareProfile.detect()
+    assert hp.has_gpu is False
+    assert hp.gpu_name is None
+    assert hp.vram_gb == 0.0
+
+
+def test_hardware_profile_detect_with_torch_no_cuda(monkeypatch):
+    import torch as real_torch
+
+    monkeypatch.setattr(real_torch.cuda, "is_available", lambda: False)
+    monkeypatch.setattr(
+        "iter8ml.config.psutil.virtual_memory", lambda: type("mem", (), {"total": 16e9})()
+    )
+    monkeypatch.setattr("iter8ml.config.psutil.cpu_count", lambda logical=False: 8)
+    hp = HardwareProfile.detect()
+    assert hp.has_gpu is False
+    assert hp.system_ram_gb > 0
+    assert hp.cpu_cores == 8
+
+
+def test_hardware_profile_configure_omp_threads_default(monkeypatch):
+    monkeypatch.delenv("OMP_NUM_THREADS", raising=False)
+    count = HardwareProfile.configure_omp_threads()
+    assert isinstance(count, int)
+    assert count > 0
+
+
+def test_hardware_profile_configure_omp_threads_custom():
+    count = HardwareProfile.configure_omp_threads(threads=8)
+    assert count == 8
+    import os
+
+    assert os.environ["OMP_NUM_THREADS"] == "8"
+
+
+def test_hardware_profile_configure_omp_threads_reentry(monkeypatch):
+    monkeypatch.setenv("OMP_NUM_THREADS", "4")
+    count = HardwareProfile.configure_omp_threads()
+    assert count == 4
+
+
+# --- Flat delegate accessors ---
+
+
+def test_getattr_flat_delegates():
+    config = ExperimentConfig(
+        name="test",
+        task="classification",
+        target_col="target",
+        data_path="data.csv",
+        embedding_method="autoencoder",
+    )
+    assert config.embedding_method == EmbeddingMethod.AUTOENCODER
+
+
+def test_setattr_flat_delegates():
+    config = ExperimentConfig(
+        name="test",
+        task="classification",
+        target_col="target",
+        data_path="data.csv",
+    )
+    config.embedding_method = "entity"
+    assert config.embedding.method == "entity"
+
+
+def test_getattr_unknown_raises():
+    config = ExperimentConfig(
+        name="test",
+        task="classification",
+        target_col="target",
+        data_path="data.csv",
+    )
+    with pytest.raises(AttributeError, match="no attribute"):
+        _ = config.nonexistent_attr
+
+
+# --- from_file edge cases ---
+
+
+def test_from_file_yaml(tmp_path):
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        "name: test\ntask: classification\ntarget_col: target\ndata_path: data.csv\n"
+    )
+    config = ExperimentConfig.from_file(config_path)
+    assert config.name == "test"
+    assert config.task == TaskType.CLASSIFICATION
+
+
+def test_from_file_json(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        '{"name": "test", "task": "classification",'
+        ' "target_col": "target", "data_path": "data.csv"}'
+    )
+    config = ExperimentConfig.from_file(config_path)
+    assert config.name == "test"
+
+
+def test_from_file_toml(tmp_path):
+    config_path = tmp_path / "config.toml"
+    config_path.write_text(
+        'name = "test"\ntask = "classification"\ntarget_col = "target"\ndata_path = "data.csv"\n'
+    )
+    config = ExperimentConfig.from_file(config_path)
+    assert config.name == "test"
+
+
+def test_from_file_unsupported_suffix(tmp_path):
+    config_path = tmp_path / "config.ini"
+    config_path.write_text("[config]\nname=test\n")
+    with pytest.raises(ValueError, match="Unsupported config format"):
+        ExperimentConfig.from_file(config_path)
+
+
+def test_from_file_nonexistent(tmp_path):
+    with pytest.raises(FileNotFoundError, match="Config file not found"):
+        ExperimentConfig.from_file(tmp_path / "missing.yaml")
+
+
+# --- Nested flat key normalization ---
+
+
+def test_nest_flat_config_fields():
+    data = {
+        "name": "test",
+        "task": "classification",
+        "target_col": "target",
+        "data_path": "data.csv",
+        "run_hpo": True,
+        "hpo_n_trials": 100,
+    }
+    config = ExperimentConfig.model_validate(data)
+    assert config.hpo.run is True
+    assert config.hpo.n_trials == 100
+
+
+# --- Enum serialization ---
+
+
+def test_serialize_enum():
+    config = ExperimentConfig(
+        name="test",
+        task="classification",
+        target_col="target",
+        data_path="data.csv",
+    )
+    dumped = config.model_dump(mode="json")
+    assert dumped["task"] == "classification"
+    assert dumped["cv_strategy"] == "stratified"
+
+
+def test_serialize_non_enum_value():
+    config = ExperimentConfig(
+        name="test",
+        task="classification",
+        target_col="target",
+        data_path="data.csv",
+    )
+    result = config.serialize_enum(42)
+    assert result == "42"

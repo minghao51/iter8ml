@@ -8,6 +8,7 @@ from sklearn.datasets import make_classification
 
 from iter8ml.analysis.drift import DriftDetector
 from iter8ml.services.registry import RegistryService
+from iter8ml.workspace import Workspace
 
 
 @pytest.fixture
@@ -52,8 +53,7 @@ def populated_workspace(tmp_path):
 
 def test_registry_update_if_better(populated_workspace):
     """Registry should update when new model beats champion."""
-    registry_path = populated_workspace / "registry.json"
-    registry = RegistryService(str(registry_path))
+    registry = RegistryService(Workspace(root=populated_workspace))
 
     updated = registry.update_if_better(
         key="classification:test",
@@ -69,8 +69,7 @@ def test_registry_update_if_better(populated_workspace):
 
 def test_registry_keeps_best_score(populated_workspace):
     """Registry should not update with worse score."""
-    registry_path = populated_workspace / "registry.json"
-    registry = RegistryService(str(registry_path))
+    registry = RegistryService(Workspace(root=populated_workspace))
 
     registry.update_if_better(
         key="classification:test",
@@ -94,8 +93,7 @@ def test_registry_keeps_best_score(populated_workspace):
 
 def test_registry_promote_run(populated_workspace):
     """Registry should promote a specific run to champion."""
-    registry_path = populated_workspace / "registry.json"
-    registry = RegistryService(str(registry_path))
+    registry = RegistryService(Workspace(root=populated_workspace))
 
     log_path = populated_workspace / "experiments.jsonl"
 
@@ -112,8 +110,7 @@ def test_registry_promote_run(populated_workspace):
 
 def test_registry_regression_uses_r2(populated_workspace):
     """Registry should use R2 for regression tasks."""
-    registry_path = populated_workspace / "registry.json"
-    registry = RegistryService(str(registry_path))
+    registry = RegistryService(Workspace(root=populated_workspace))
 
     updated = registry.update_if_better(
         key="regression:test",

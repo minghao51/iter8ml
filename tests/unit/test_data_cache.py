@@ -6,6 +6,7 @@ import pytest
 from iter8ml.config import ExperimentConfig
 from iter8ml.constants import FeatureStrategy
 from iter8ml.data.cache import PreprocessingCache, _cache_key
+from iter8ml.workspace import Workspace
 
 
 @pytest.fixture
@@ -20,7 +21,7 @@ def config():
 
 @pytest.fixture
 def cache(tmp_path):
-    return PreprocessingCache(workspace_dir=tmp_path)
+    return PreprocessingCache(workspace=Workspace(root=tmp_path))
 
 
 class TestCacheKey:

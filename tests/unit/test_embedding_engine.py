@@ -7,6 +7,7 @@ import pytest
 torch = pytest.importorskip("torch")
 
 from iter8ml.data.embedding import EmbeddingEngine  # noqa: E402
+from iter8ml.workspace import Workspace  # noqa: E402
 
 
 @pytest.fixture
@@ -26,7 +27,7 @@ def high_card_df():
 def _make_engine(tmp_path, **overrides):
     params = {
         "task": "classification",
-        "workspace_dir": str(tmp_path / "workspace"),
+        "workspace": Workspace(root=tmp_path / "workspace"),
         "embedding_method": "entity",
         "embedding_dim": 4,
         "embedding_epochs": 2,

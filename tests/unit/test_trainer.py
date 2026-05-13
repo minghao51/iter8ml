@@ -8,6 +8,7 @@ import polars as pl
 from iter8ml.config import ExperimentConfig
 from iter8ml.constants import TaskType
 from iter8ml.engine.trainer import Trainer
+from iter8ml.workspace import Workspace
 
 
 def test_trainer_init(tmp_path):
@@ -16,9 +17,8 @@ def test_trainer_init(tmp_path):
         task=TaskType.CLASSIFICATION,
         target_col="target",
         data_path="test.csv",
-        workspace_dir=tmp_path,
     )
-    trainer = Trainer(config)
+    trainer = Trainer(config, workspace=Workspace(root=tmp_path))
     assert trainer.config is config
     assert trainer.run_leakage_audit is True
 
@@ -60,9 +60,8 @@ def test_trainer_resume_passes_completed_models_to_pipeline(tmp_path, monkeypatc
         task=TaskType.CLASSIFICATION,
         target_col="target",
         data_path="test.csv",
-        workspace_dir=tmp_path,
     )
-    trainer = Trainer(config=config, resume_run_id=run_id)
+    trainer = Trainer(config=config, workspace=Workspace(root=tmp_path), resume_run_id=run_id)
     df = pl.DataFrame({"x": [1.0, 2.0], "target": [0, 1]})
     trainer.run(df)
 
@@ -75,9 +74,8 @@ def test_trainer_emits_ordered_events_with_run_ids(tmp_path):
         task=TaskType.CLASSIFICATION,
         target_col="target",
         data_path="test.csv",
-        workspace_dir=tmp_path,
     )
-    trainer = Trainer(config=config)
+    trainer = Trainer(config=config, workspace=Workspace(root=tmp_path))
     state = SimpleNamespace(results={"catboost": {"error": "boom"}})
 
     run_id = "exp_contract"

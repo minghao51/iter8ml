@@ -10,6 +10,7 @@ from sklearn.datasets import make_classification, make_regression
 from iter8ml.config import ExperimentConfig
 from iter8ml.engine.tracker import JSONLTracker
 from iter8ml.engine.trainer import Trainer
+from iter8ml.workspace import Workspace
 
 
 def test_full_pipeline_catboost_classification():
@@ -18,26 +19,25 @@ def test_full_pipeline_catboost_classification():
     df = df.with_columns(target=pl.Series(y))
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        ws = Path(tmpdir)
+        ws = Workspace(root=Path(tmpdir))
         config = ExperimentConfig(
             name="integration_test",
             task="classification",
             target_col="target",
             data_path="",
-            workspace_dir=ws,
             cv_folds=3,
             metrics=["roc_auc", "f1_macro"],
         )
 
-        tracker = JSONLTracker(str(ws / "experiments.jsonl"))
-        trainer = Trainer(config, tracker=tracker)
+        tracker = JSONLTracker(str(ws.experiments_path))
+        trainer = Trainer(config, workspace=ws, tracker=tracker)
         results = trainer.run(df)
 
         assert "catboost" in results
         assert "roc_auc" in results["catboost"]["cv_scores"]
 
         events = []
-        with open(ws / "experiments.jsonl") as f:
+        with open(ws.experiments_path) as f:
             for line in f:
                 if line.strip():
                     events.append(json.loads(line))
@@ -45,7 +45,7 @@ def test_full_pipeline_catboost_classification():
         completed = [e for e in events if e.get("event") == "model_completed"]
         assert len(completed) >= 1
 
-        leaderboard_path = ws / "leaderboard.md"
+        leaderboard_path = ws.leaderboard_path
         assert leaderboard_path.exists()
         assert "# Experiment Leaderboard" in leaderboard_path.read_text()
 
@@ -56,20 +56,19 @@ def test_full_pipeline_catboost_regression():
     df = df.with_columns(target=pl.Series(y))
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        ws = Path(tmpdir)
+        ws = Workspace(root=Path(tmpdir))
         config = ExperimentConfig(
             name="integration_regression_test",
             task="regression",
             target_col="target",
             data_path="",
-            workspace_dir=ws,
             cv_folds=3,
             cv_strategy="kfold",
             metrics=["rmse", "r2"],
         )
 
-        tracker = JSONLTracker(str(ws / "experiments.jsonl"))
-        trainer = Trainer(config, tracker=tracker)
+        tracker = JSONLTracker(str(ws.experiments_path))
+        trainer = Trainer(config, workspace=ws, tracker=tracker)
         results = trainer.run(df)
 
         assert "catboost" in results
@@ -77,7 +76,7 @@ def test_full_pipeline_catboost_regression():
         assert "r2" in results["catboost"]["cv_scores"]
 
         events = []
-        with open(ws / "experiments.jsonl") as f:
+        with open(ws.experiments_path) as f:
             for line in f:
                 if line.strip():
                     events.append(json.loads(line))

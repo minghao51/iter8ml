@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 
 from iter8ml.config import ExperimentConfig
-from iter8ml.constants import TaskType
-from iter8ml.engine.evaluator import Evaluator
+from iter8ml.constants import CVStrategy, TaskType
+from iter8ml.engine.evaluator import Evaluator, get_cv_split
 
 
 class ProbaDrivenModel:
@@ -109,3 +109,75 @@ def test_roc_auc_requires_predict_proba():
 
     with pytest.raises(ValueError, match="Metric 'roc_auc' requires predict_proba"):
         Evaluator(config).evaluate(NoProbaModel, X, y)
+
+
+def test_log_loss_metric():
+    X = np.random.RandomState(0).rand(60, 3)
+    y = np.random.RandomState(1).randint(0, 2, size=60)
+
+    config = ExperimentConfig(
+        name="eval_ll",
+        task=TaskType.CLASSIFICATION,
+        target_col="target",
+        data_path="",
+        cv_folds=2,
+        metrics=["log_loss"],
+    )
+    scores = Evaluator(config).evaluate(ProbaDrivenModel, X, y)
+    assert "log_loss" in scores
+    assert scores["log_loss"] > 0
+
+
+def test_log_loss_requires_proba():
+    X = np.random.RandomState(0).rand(20, 3)
+    y = np.random.RandomState(1).randint(0, 2, size=20)
+
+    config = ExperimentConfig(
+        name="eval_ll",
+        task=TaskType.CLASSIFICATION,
+        target_col="target",
+        data_path="",
+        cv_folds=2,
+        metrics=["log_loss"],
+    )
+    with pytest.raises(ValueError, match="Metric 'log_loss'"):
+        Evaluator(config).evaluate(NoProbaModel, X, y)
+
+
+def test_timeseries_cv():
+    splitter = get_cv_split(CVStrategy.TIMESERIES, n_splits=3)
+    from sklearn.model_selection import TimeSeriesSplit
+
+    assert isinstance(splitter, TimeSeriesSplit)
+    assert splitter.n_splits == 3
+
+
+def test_get_cv_split_unknown():
+    with pytest.raises(ValueError, match="Unknown CV strategy"):
+        get_cv_split("unknown_strategy", n_splits=5)
+
+
+def test_get_cv_split_kfold():
+    splitter = get_cv_split(CVStrategy.KFOLD, n_splits=5)
+    from sklearn.model_selection import KFold
+
+    assert isinstance(splitter, KFold)
+
+
+def test_compute_lift_higher_is_better():
+    model_scores = {"roc_auc": 0.90}
+    baseline_scores = {"roc_auc": 0.80}
+    lift = Evaluator.compute_lift(model_scores, baseline_scores, "roc_auc")
+    assert lift == pytest.approx(0.125, rel=1e-3)
+
+
+def test_compute_lift_lower_is_better():
+    model_scores = {"rmse": 0.5}
+    baseline_scores = {"rmse": 1.0}
+    lift = Evaluator.compute_lift(model_scores, baseline_scores, "rmse")
+    assert lift == 0.5
+
+
+def test_compute_lift_zero_baseline():
+    lift = Evaluator.compute_lift({"acc": 0.9}, {"acc": 0.0}, "acc")
+    assert lift == 0.0

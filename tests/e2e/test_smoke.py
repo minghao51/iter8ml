@@ -7,6 +7,7 @@ from sklearn.datasets import make_classification
 from iter8ml.config import ExperimentConfig
 from iter8ml.constants import CVStrategy, TaskType, TrackerType
 from iter8ml.engine.trainer import Trainer
+from iter8ml.workspace import Workspace
 
 
 @pytest.mark.smoke
@@ -26,11 +27,11 @@ def test_trainer_runs_end_to_end(tmp_workspace):
         cv_strategy=CVStrategy.KFOLD,
         tracker=TrackerType.JSONL,
         run_quality_audit=False,
-        workspace_dir=str(tmp_workspace),
         max_workers=1,
     )
 
-    trainer = Trainer(config=config, run_leakage_audit=False)
+    ws = Workspace(root=tmp_workspace)
+    trainer = Trainer(config=config, workspace=ws, run_leakage_audit=False)
     results = trainer.run(df)
 
     assert isinstance(results, dict)
@@ -39,13 +40,13 @@ def test_trainer_runs_end_to_end(tmp_workspace):
     assert "cv_scores" in results["catboost"]
     assert "roc_auc" in results["catboost"]["cv_scores"]
 
-    log_file = tmp_workspace / "experiments.jsonl"
+    log_file = ws.experiments_path
     assert log_file.exists()
     events = log_file.read_text().strip().split("\n")
     assert any("experiment_started" in e for e in events)
     assert any("model_completed" in e for e in events)
 
-    registry_file = tmp_workspace / "registry.json"
+    registry_file = ws.registry_path
     assert registry_file.exists()
     registry = registry_file.read_text()
     assert "catboost" in registry or "smoke_test" in registry

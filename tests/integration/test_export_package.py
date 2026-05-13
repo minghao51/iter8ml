@@ -12,18 +12,19 @@ from sklearn.datasets import make_classification
 
 from iter8ml.engine.models.catboost_model import CatBoostModel
 from iter8ml.services.export import ExportService
+from iter8ml.workspace import Workspace
 
 
 def _setup_export_workspace(tmp_path: Path) -> tuple[Path, Path, object]:
-    workspace = tmp_path / "workspace"
-    artifacts = workspace / "artifacts"
-    artifacts.mkdir(parents=True)
+    ws = Workspace(root=tmp_path / "workspace")
+    ws.root.mkdir(parents=True)
+    ws.artifacts_dir.mkdir(parents=True)
 
     X, y = make_classification(n_samples=80, n_features=4, random_state=42)
     model = CatBoostModel(task="classification")
     model.fit(X, y)
 
-    artifact_path = artifacts / "catboost_exp_001"
+    artifact_path = ws.artifacts_dir / "catboost_exp_001"
     model.save(str(artifact_path))
 
     registry = {
@@ -36,11 +37,11 @@ def _setup_export_workspace(tmp_path: Path) -> tuple[Path, Path, object]:
             "registered_at": "2026-04-27T00:00:00Z",
         }
     }
-    (workspace / "registry.json").write_text(json.dumps(registry), encoding="utf-8")
+    ws.registry_path.write_text(json.dumps(registry), encoding="utf-8")
 
-    service = ExportService(workspace_dir=workspace)
+    service = ExportService(workspace=ws)
     export_path = service.export("export_test:classification")
-    return workspace, export_path, model
+    return ws.root, export_path, model
 
 
 def _load_predictor(export_path: Path):
