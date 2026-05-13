@@ -1,4 +1,4 @@
-# Tabular Blueprint
+# iter8ml
 
 A high-velocity iteration framework for tabular machine learning. Built for single-node efficiency with Polars-native speed.
 
