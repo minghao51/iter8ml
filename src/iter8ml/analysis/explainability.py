@@ -87,7 +87,9 @@ class Explainer:
             t in model_type or t in model_name
             for t in ["lgbm", "lightgbm", "xgboost", "xgb", "catboost", "gbdt"]
         ):
-            model_ref = getattr(self.model, "model", self.model)
+            model_ref = getattr(self.model, "_model", None) or getattr(
+                self.model, "model", self.model
+            )
             return shap.TreeExplainer(model_ref)
 
         background = shap.sample(X, min(100, len(X)))

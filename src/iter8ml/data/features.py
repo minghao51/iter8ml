@@ -132,6 +132,45 @@ class _TargetTransformer:
         return y
 
 
+def _to_sklearn_estimator(model: Any, task: str) -> Any:
+    if hasattr(model, "_estimator_type"):
+        return model
+    if hasattr(model, "_model") and hasattr(model._model, "fit"):
+        inner = model._model
+        if hasattr(inner, "_estimator_type"):
+            return inner
+    classes = getattr(model, "_class_labels", None)
+    return _SKLearnAdapter(model, task, classes=classes)
+
+
+class _SKLearnAdapter:
+    _estimator_type = "classifier"
+
+    def __init__(self, model: Any, task: str, *, classes: np.ndarray | None = None) -> None:
+        self._model = model
+        self.classes_ = classes
+        if task != "classification":
+            self._estimator_type = "regressor"
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -> _SKLearnAdapter:
+        self._model.fit(X, y)
+        self.classes_ = np.unique(y)
+        return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        return self._model.predict(X)
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        return self._model.predict_proba(X)
+
+    def score(self, X: np.ndarray, y: np.ndarray) -> float:
+        from sklearn.metrics import accuracy_score, r2_score
+
+        if self._estimator_type == "classifier":
+            return float(accuracy_score(y, self.predict(X)))
+        return float(r2_score(y, self.predict(X)))
+
+
 def extract_top_k_features(
     model_or_predictions: Any,
     X: np.ndarray,
@@ -146,8 +185,9 @@ def extract_top_k_features(
         feature_names = [f"f_{i}" for i in range(n_features)]
 
     if hasattr(model_or_predictions, "predict"):
+        sk_model = _to_sklearn_estimator(model_or_predictions, task)
         result = permutation_importance(
-            model_or_predictions,
+            sk_model,
             X,
             y,
             n_repeats=10,
@@ -304,8 +344,9 @@ def prune_features(
         )
         return X, result
 
+    sk_model = _to_sklearn_estimator(model, task)
     perm_result = permutation_importance(
-        model, X, y, n_repeats=10, random_state=random_seed, scoring=scoring
+        sk_model, X, y, n_repeats=10, random_state=random_seed, scoring=scoring
     )
 
     importances = perm_result.importances_mean
