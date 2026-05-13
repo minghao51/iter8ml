@@ -1,14 +1,23 @@
 [build-system]
-requires = ["setuptools>=69", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling>=1.25", "hatch-vcs>=0.4"]
+build-backend = "hatchling.build"
 
 [project]
 name = "iter8ml"
-version = "0.1.0"
+dynamic = ["version"]
 description = "A high-velocity iteration framework for tabular ML"
 requires-python = ">=3.11"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
+keywords = ["machine-learning", "tabular", "experiment", "automl"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 
 dependencies = [
     "polars>=1.0",
@@ -57,10 +66,29 @@ full = [
     "iter8ml[train,docs]",
 ]
 
+[project.urls]
+Homepage = "https://github.com/anomalyco/iter8ml"
+Repository = "https://github.com/anomalyco/iter8ml"
+Documentation = "https://iter8ml.dev"
+
+[project.entry-points."iter8ml.models"]
+catboost = "iter8ml.engine.models.catboost_model:CatBoostModel"
+lightgbm = "iter8ml.engine.models.lightgbm_model:LightGBMModel"
+xgboost = "iter8ml.engine.models.xgboost_model:XGBoostModel"
+tabpfn = "iter8ml.engine.models.tabpfn_model:TabPFNModel"
+ft_transformer = "iter8ml.engine.models.ft_transformer:FTTransformerModel"
+tabnet = "iter8ml.engine.models.tabnet_model:TabNetModel"
+naive_baseline = "iter8ml.engine.models.baselines:NaiveBaseline"
+linear_baseline = "iter8ml.engine.models.baselines:LinearBaseline"
+
+[project.scripts]
+iter8 = "iter8ml.cli.main:app"
+
 [dependency-groups]
 dev = [
     "pytest>=9.0.3",
     "pytest-cov>=5.0",
+    "hypothesis>=6.0",
     "ruff>=0.4",
     "pre-commit>=3.6",
     "mypy>=1.10",
@@ -73,8 +101,12 @@ dev = [
     "urllib3>=2.7.0",
 ]
 
-[project.scripts]
-iter8 = "iter8ml.cli.main:app"
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/iter8ml"]
+artifacts = ["src/iter8ml/py.typed"]
 
 [tool.ruff]
 line-length = 100
@@ -130,10 +162,8 @@ markers = [
     "serial: cannot run in parallel",
     "network: needs internet/auth",
     "smoke: critical path tests",
+    "property: hypothesis property-based tests",
+    "metamorphic: metamorphic relation tests",
+    "contract: API contract / surface tests",
+    "differential: reference implementation comparison",
 ]
-
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.setuptools.package-data]
-iter8ml = ["py.typed"]
