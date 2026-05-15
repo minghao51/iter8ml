@@ -211,6 +211,8 @@ class EmbeddingEngine:
         import torch.nn as nn
         import torch.utils.data as torch_data
 
+        torch.set_num_threads(1)
+
         from iter8ml.engine.models.sparse_embedder import EntityEmbedding
 
         task = self._task
@@ -271,6 +273,8 @@ class EmbeddingEngine:
     ) -> tuple[Any, int]:
         import torch
         import torch.utils.data as torch_data
+
+        torch.set_num_threads(1)
 
         from iter8ml.engine.models.sparse_embedder import TabularDAE
 

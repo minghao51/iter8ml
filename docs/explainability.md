@@ -6,13 +6,13 @@ Reference for SHAP-based model explanations: global feature importance and visua
 
 ## SHAP Explainer
 
-**Source:** `src/iter8ml/monitoring/explainability.py:24`
+**Source:** `src/iter8ml/analysis/explainability.py:24`
 
 **Class:** `Explainer`
 
 ### Method Selection
 
-**Source:** `monitoring/explainability.py:76`
+**Source:** `analysis/explainability.py:76`
 
 The explainer automatically selects the appropriate SHAP method based on the model type:
 
@@ -61,7 +61,7 @@ where `π(z)` is the SHAP kernel weight and `h_x(z)` maps binary coalitions to a
 
 ## Global Feature Importance
 
-**Source:** `monitoring/explainability.py:35`
+**Source:** `analysis/explainability.py:35`
 
 **Method:** `Explainer.explain(X, run_id, max_display, generate_plots)`
 
@@ -87,7 +87,7 @@ where `π(z)` is the SHAP kernel weight and `h_x(z)` maps binary coalitions to a
 
 ## Visualization
 
-**Source:** `monitoring/explainability.py:99`
+**Source:** `analysis/explainability.py:99`
 
 **Library:** `shap`, `matplotlib`
 
@@ -96,7 +96,7 @@ where `π(z)` is the SHAP kernel weight and `h_x(z)` maps binary coalitions to a
 Shows the distribution of SHAP values for each feature across all samples. Features are ordered by importance (top = most important). Color represents feature value (red = high, blue = low).
 
 ```
-workspace/artifacts/shap_{run_id}/beeswarm.png
+workspace.artifacts_dir / f"shap_{run_id}/beeswarm.png"
 ```
 
 ### Dependence Plots
@@ -104,7 +104,7 @@ workspace/artifacts/shap_{run_id}/beeswarm.png
 Scatter plots of SHAP value vs feature value for the top 5 features, showing the marginal effect of each feature on the prediction.
 
 ```
-workspace/artifacts/shap_{run_id}/dependence_{i}.png
+workspace.artifacts_dir / f"shap_{run_id}/dependence_{i}.png"
 ```
 
 | Plot | DPI | Format |
@@ -116,7 +116,7 @@ workspace/artifacts/shap_{run_id}/dependence_{i}.png
 
 ## Orchestration
 
-**Source:** `src/iter8ml/monitoring/explainability.py:28`
+**Source:** `src/iter8ml/analysis/explainability.py:28`
 
 **Class:** `Explainer`
 

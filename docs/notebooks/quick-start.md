@@ -4,9 +4,9 @@ hide:
   - toc
 ---
 
-# Quick Start: End-to-End Classification Experiment
+# Quick Start
 
-Walk through the core iter8ml workflow — generate data, configure experiment, train models, inspect leaderboard, export champion.
+The fastest way to run an iter8ml experiment — 5 lines of code with `ExperimentSession`.
 
 <div class="iframe-container" id="iframe-wrapper-quick-start">
   <div class="iframe-controls">

@@ -1,0 +1,188 @@
+---
+title: "Full Walkthrough: End-to-End Classification Experiment"
+description: "Thorough walkthrough of the iter8ml lifecycle — data exploration, multi-model training, leaderboard analysis, champion promotion, drift detection, and state generation."
+date: today
+format:
+  html:
+    self-contained: true
+    embed-resources: true
+    code-fold: true
+    code-tools: true
+---
+
+This notebook demonstrates the complete **iter8ml** experiment lifecycle using `ExperimentSession`:
+
+1. Generate and explore a dataset
+2. Configure and run a multi-model experiment
+3. Inspect the leaderboard
+4. Promote a champion model
+5. Export the champion
+6. Run drift detection
+7. Generate experiment state
+
+## 1. Generate Synthetic Data
+
+```{python}
+#| label: generate-data
+#| cache: true
+import matplotlib.pyplot as plt
+import numpy as np
+import polars as pl
+from sklearn.datasets import make_classification
+
+X, y = make_classification(
+    n_samples=2000,
+    n_features=20,
+    n_informative=10,
+    n_redundant=3,
+    random_state=42,
+)
+df = pl.DataFrame({f"feat_{i}": X[:, i] for i in range(X.shape[1])})
+df = df.with_columns(target=pl.Series(y))
+print(f"Dataset shape: {df.shape}  |  Target balance: {df['target'].mean():.2%} positive class")
+```
+
+```{python}
+#| label: data-preview
+#| fig-cap: "Class distribution and feature correlations with target"
+#| fig-width: 10
+#| fig-height: 4
+fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+
+counts = np.bincount(y)
+axes[0].bar(["Class 0", "Class 1"], counts, color=["#4C72B0", "#DD8452"])
+axes[0].set_title("Class Distribution")
+axes[0].set_ylabel("Count")
+for i, c in enumerate(counts):
+    axes[0].text(i, c + 20, str(c), ha="center", fontsize=10)
+
+corrs = np.corrcoef(X, y.reshape(-1, 1), rowvar=False)[-1, :-1]
+top_idx = np.argsort(np.abs(corrs))[::-1][:10]
+colors = ["#C44E52" if corrs[i] < 0 else "#55A868" for i in top_idx]
+axes[1].barh([f"feat_{i}" for i in top_idx], corrs[top_idx], color=colors)
+axes[1].set_title("Top-10 Feature Correlations with Target")
+axes[1].set_xlabel("Pearson Correlation")
+axes[1].axvline(0, color="gray", linewidth=0.5)
+axes[1].invert_yaxis()
+
+plt.tight_layout()
+plt.show()
+```
+
+## 2. Configure & Run Experiment
+
+```{python}
+#| label: configure-and-run
+#| cache: true
+from iter8ml import ExperimentSession, ExperimentConfig, TaskType
+
+session = ExperimentSession()
+
+config = ExperimentConfig(
+    name="walkthrough",
+    task=TaskType.CLASSIFICATION,
+    target_col="target",
+    data_path="",
+    models=["catboost", "lightgbm", "xgboost"],
+    cv_folds=5,
+    metrics=["roc_auc", "f1_macro", "accuracy"],
+    shap_enabled=True,
+    max_workers=2,
+)
+
+results = session.run(config, df)
+```
+
+## 3. Inspect the Leaderboard
+
+```{python}
+#| label: leaderboard
+lb = session.leaderboard()
+print(lb)
+```
+
+```{python}
+#| label: model-comparison-chart
+#| fig-cap: "Cross-validated metrics across trained models"
+#| fig-width: 9
+#| fig-height: 5
+if len(lb) > 0:
+    models = lb["model"].to_list()
+    scores = lb["primary_score"].to_list()
+    metrics_list = lb["primary_metric"].to_list()
+
+    fig, ax = plt.subplots(figsize=(9, 5))
+    bars = ax.barh(models, scores, color="#4C72B0")
+    ax.set_xlim(0.8, 1.0)
+    ax.set_xlabel("Primary Score")
+    ax.set_title("Model Comparison (Primary Metric)")
+    ax.invert_yaxis()
+    for bar, v in zip(bars, scores):
+        ax.text(v + 0.002, bar.get_y() + bar.get_height() / 2, f"{v:.4f}", va="center", fontsize=9)
+    plt.tight_layout()
+    plt.show()
+```
+
+## 4. Promote a Champion
+
+```{python}
+#| label: promote
+#| error: true
+if len(lb) > 0:
+    best_run_id = lb.row(0, named=True)["run_id"]
+    result = session.promote(best_run_id, "walkthrough:classification")
+    print(f"Status: {result.status}")
+    print(f"Model: {result.selected_model}")
+    print(f"Score: {result.selected_score:.4f} ({result.selected_metric})")
+```
+
+## 5. Export the Champion
+
+```{python}
+#| label: export
+#| error: true
+export_path = session.export("walkthrough:classification")
+print(f"Exported to: {export_path}")
+```
+
+## 6. Drift Detection
+
+```{python}
+#| label: drift
+#| cache: true
+df_live = df.clone()
+df_live = df_live.with_columns(
+    feat_0=pl.Series(np.random.normal(0, 2, len(df_live)))
+)
+
+drift_report = session.drift_check(df, df_live, method="psi")
+print(f"Drift detected: {drift_report.drift_detected}")
+
+if drift_report.psi_report is not None:
+    print(f"Features tested: {drift_report.psi_report.n_features_tested}")
+    for feat in drift_report.psi_report.feature_psi[:5]:
+        print(f"  {feat.feature}: PSI={feat.psi_value:.3f} ({feat.drift_level})")
+else:
+    print("No PSI report available.")
+```
+
+## 7. Experiment State
+
+```{python}
+#| label: state
+state_md = session.state()
+lines = state_md.split("\n")
+print(f"State: {len(lines)} lines\n")
+print("\n".join(lines[:30]))
+```
+
+## Summary
+
+| Step | Session Method | Output |
+|------|---------------|--------|
+| Run experiment | `session.run(config, df)` | results dict |
+| Leaderboard | `session.leaderboard()` | Polars DataFrame |
+| Promote champion | `session.promote(run_id, key)` | `PromotionResult` |
+| Export model | `session.export(key)` | `Path` |
+| Drift check | `session.drift_check(ref, live)` | drift report dict |
+| State summary | `session.state()` | markdown string |

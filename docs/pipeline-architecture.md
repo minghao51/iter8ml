@@ -43,7 +43,7 @@ The pipeline layer uses [Hamilton](https://github.com/DAGWorks-Inc/hamilton) to 
 
 ## Pipeline Executor
 
-**Source:** `src/iter8ml/pipelines/executor.py:122`
+**Source:** `src/iter8ml/engine/pipelines/executor.py:122`
 
 **Class:** `PipelineExecutor`
 
@@ -72,7 +72,7 @@ The pipeline layer uses [Hamilton](https://github.com/DAGWorks-Inc/hamilton) to 
 
 ## Training Pipeline DAG (7 Modules)
 
-**Source:** `pipelines/executor.py:56`
+**Source:** `engine/pipelines/executor.py:56`
 
 The full training pipeline composes 7 node modules in order:
 
@@ -141,7 +141,7 @@ df (input)
 
 ### 1. Preprocessing
 
-**Source:** `pipelines/nodes/preprocessing.py`
+**Source:** `engine/pipelines/nodes/prep.py`
 
 | Node | Input Dependencies | Output |
 |------|-------------------|--------|
@@ -160,7 +160,7 @@ See [preprocessing.md](preprocessing.md) for method details.
 
 ### 2. Data Preparation
 
-**Source:** `pipelines/nodes/data_preparation.py`
+**Source:** `engine/pipelines/nodes/prep.py`
 
 | Node | Input Dependencies | Output |
 |------|-------------------|--------|
@@ -174,7 +174,7 @@ See [preprocessing.md](preprocessing.md) for method details.
 
 ### 3. Model Selection
 
-**Source:** `pipelines/nodes/model_selection.py`
+**Source:** `engine/pipelines/nodes/train.py`
 
 | Node | Input Dependencies | Output |
 |------|-------------------|--------|
@@ -184,7 +184,7 @@ If `config_models="auto"`, uses `ModelSelector.select()`. Otherwise uses the pro
 
 ### 4. Baselines
 
-**Source:** `pipelines/nodes/baselines.py`
+**Source:** `engine/pipelines/nodes/train.py`
 
 | Node | Input Dependencies | Output |
 |------|-------------------|--------|
@@ -193,7 +193,7 @@ If `config_models="auto"`, uses `ModelSelector.select()`. Otherwise uses the pro
 
 ### 5. Feature Engineering (Config Variant)
 
-**Source:** `pipelines/nodes/feature_engineering.py`
+**Source:** `engine/pipelines/nodes/features.py`
 
 Uses `@config.when()` to activate different implementations:
 
@@ -206,11 +206,11 @@ Config is set via `builder.with_config({"afe_enabled": True/False})`.
 
 ### 6. Model Training
 
-**Source:** `pipelines/nodes/model_training.py`
+**Source:** `engine/pipelines/nodes/train.py`
 
 | Node | Input Dependencies | Output |
 |------|-------------------|--------|
-| `training_results` | `training_features`, `data_prep_result`, `models_to_run`, `baseline_scores`, `task`, `cv_folds`, `cv_strategy`, `metrics`, `calibration`, `workspace_dir`, `run_id` | `list[ModelResult]` |
+| `training_results` | `training_features`, `data_prep_result`, `models_to_run`, `baseline_scores`, `task`, `cv_folds`, `cv_strategy`, `metrics`, `calibration`, `workspace`, `run_id` | `list[ModelResult]` |
 
 For each model in `models_to_run` (excluding baselines):
 1. Resolve class via `get_model_class(name)`
@@ -221,11 +221,11 @@ For each model in `models_to_run` (excluding baselines):
 
 ### 7. State Generation
 
-**Source:** `pipelines/nodes/state_generation.py`
+**Source:** `engine/pipelines/nodes/train.py`
 
 | Node | Input Dependencies | Output |
 |------|-------------------|--------|
-| `training_state` | `training_results`, `baseline_scores`, `metrics`, `run_id`, `experiment_name`, `task`, `workspace_dir` | `TrainingState` |
+| `training_state` | `training_results`, `baseline_scores`, `metrics`, `run_id`, `experiment_name`, `task`, `workspace` | `TrainingState` |
 
 Aggregates all results, builds leaderboard, promotes champion to registry.
 
@@ -233,7 +233,7 @@ Aggregates all results, builds leaderboard, promotes champion to registry.
 
 ## Drift Detection Pipeline
 
-**Source:** `pipelines/nodes/drift_detection.py`
+**Source:** `engine/pipelines/nodes/drift_detection.py`
 
 Uses `@config.when(drift_method=...)` for three variants:
 
@@ -249,7 +249,7 @@ Config is set via `builder.with_config({"drift_method": "psi"})`.
 
 ## Tracking Hooks
 
-**Source:** `src/iter8ml/pipelines/hooks/tracking_hook.py`
+**Source:** `src/iter8ml/engine/pipelines/hooks/tracking_hook.py`
 
 **Class:** `TrackingHook` — a Hamilton lifecycle adapter that logs node execution to the experiment tracker.
 
@@ -309,12 +309,12 @@ dr = builder.build()
 
 ### Adding a New Node
 
-1. Create a function in the appropriate module under `pipelines/nodes/`
+1. Create a function in the appropriate module under `engine/pipelines/nodes/`
 2. Its parameters are automatically resolved as dependencies by Hamilton
 3. The function name becomes the node name in the DAG
 
 ```python
-# In pipelines/nodes/my_module.py
+# In engine/pipelines/nodes/my_module.py
 def my_custom_feature(processed_dataframe: pl.DataFrame) -> pl.DataFrame:
     # processed_dataframe is auto-resolved from the preprocessing module
     return processed_dataframe.with_columns(...)

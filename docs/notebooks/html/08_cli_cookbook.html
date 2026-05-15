@@ -7,9 +7,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="dcterms.date" content="2026-05-15">
-<meta name="description" content="The fastest way to run an iter8ml experiment — 5 lines of code.">
+<meta name="description" content="Practical examples for every iter8ml CLI command — init, run, leaderboard, hpo, drift, export, state, and hardware.">
 
-<title>Quick Start</title>
+<title>CLI Cookbook</title>
 <style>
 
 code{white-space: pre-wrap;}
@@ -2209,12 +2209,12 @@ vertical-align: -.125em;
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<div class="quarto-title-block"><div><h1 class="title">Quick Start</h1><button type="button" class="btn code-tools-button dropdown-toggle" id="quarto-code-tools-menu" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi"></i> Code</button><ul class="dropdown-menu dropdown-menu-end" aria-labelelledby="quarto-code-tools-menu"><li><a id="quarto-show-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Show All Code</a></li><li><a id="quarto-hide-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Hide All Code</a></li><li><hr class="dropdown-divider"></li><li><a id="quarto-view-source" class="dropdown-item" href="javascript:void(0)" role="button">View Source</a></li></ul></div></div>
+<div class="quarto-title-block"><div><h1 class="title">CLI Cookbook</h1><button type="button" class="btn code-tools-button dropdown-toggle" id="quarto-code-tools-menu" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi"></i> Code</button><ul class="dropdown-menu dropdown-menu-end" aria-labelelledby="quarto-code-tools-menu"><li><a id="quarto-show-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Show All Code</a></li><li><a id="quarto-hide-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Hide All Code</a></li><li><hr class="dropdown-divider"></li><li><a id="quarto-view-source" class="dropdown-item" href="javascript:void(0)" role="button">View Source</a></li></ul></div></div>
 </div>
 
 <div>
   <div class="description">
-    The fastest way to run an iter8ml experiment — 5 lines of code.
+    Practical examples for every iter8ml CLI command — init, run, leaderboard, hpo, drift, export, state, and hardware.
   </div>
 </div>
 
@@ -2237,110 +2237,482 @@ vertical-align: -.125em;
 </header>
 
 
-<section id="create-a-dataset" class="level2">
-<h2 class="anchored" data-anchor-id="create-a-dataset">1. Create a Dataset</h2>
-<div id="generate-data" class="cell" data-cache="true" data-execution_count="1">
+<p>iter8ml ships a full CLI under the <code>iter8</code> command. This notebook demonstrates each command with real execution using synthetic data.</p>
+<section id="prepare-synthetic-data" class="level2">
+<h2 class="anchored" data-anchor-id="prepare-synthetic-data">1. Prepare Synthetic Data</h2>
+<div id="prepare-data" class="cell" data-cache="true" data-execution_count="1">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.datasets <span class="im">import</span> make_classification</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>X, y <span class="op">=</span> make_classification(n_samples<span class="op">=</span><span class="dv">2000</span>, n_features<span class="op">=</span><span class="dv">20</span>, n_informative<span class="op">=</span><span class="dv">10</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pl.DataFrame({<span class="ss">f&quot;feat_</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span>: X[:, i] <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(X.shape[<span class="dv">1</span>])})</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df.with_columns(target<span class="op">=</span>pl.Series(y))</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Shape: </span><span class="sc">{</span>df<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">  |  Positive class: </span><span class="sc">{</span>df[<span class="st">&#39;target&#39;</span>]<span class="sc">.</span>mean()<span class="sc">:.1%}</span><span class="ss">&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.datasets <span class="im">import</span> make_classification</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>X, y <span class="op">=</span> make_classification(</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    n_samples<span class="op">=</span><span class="dv">1500</span>,</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    n_features<span class="op">=</span><span class="dv">12</span>,</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    n_informative<span class="op">=</span><span class="dv">6</span>,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    random_state<span class="op">=</span><span class="dv">42</span>,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pl.DataFrame({<span class="ss">f&quot;col_</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span>: X[:, i] <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(X.shape[<span class="dv">1</span>])})</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df.with_columns(target<span class="op">=</span>pl.Series(y))</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>data_dir <span class="op">=</span> Path(<span class="st">&quot;notebooks/_cli_data&quot;</span>)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>data_dir.mkdir(exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>df.write_csv(data_dir <span class="op">/</span> <span class="st">&quot;train.csv&quot;</span>)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Training data: </span><span class="sc">{</span>df<span class="sc">.</span>shape<span class="sc">}</span><span class="ss"> saved to </span><span class="sc">{</span>data_dir <span class="op">/</span> <span class="st">&#39;train.csv&#39;</span><span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">99</span>)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>X_ref <span class="op">=</span> X[:<span class="dv">600</span>]</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>X_new <span class="op">=</span> X_ref.copy()</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>X_new[:, <span class="dv">0</span>] <span class="op">+=</span> <span class="fl">1.0</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>X_new[:, <span class="dv">4</span>] <span class="op">*=</span> <span class="fl">1.6</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>df_ref <span class="op">=</span> pl.DataFrame({<span class="ss">f&quot;col_</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span>: X_ref[:, i] <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(X_ref.shape[<span class="dv">1</span>])})</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>df_ref <span class="op">=</span> df_ref.with_columns(target<span class="op">=</span>pl.Series(y[:<span class="dv">600</span>]))</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>df_new <span class="op">=</span> pl.DataFrame({<span class="ss">f&quot;col_</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span>: X_new[:, i] <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(X_new.shape[<span class="dv">1</span>])})</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>df_new <span class="op">=</span> df_new.with_columns(target<span class="op">=</span>pl.Series(y[:<span class="dv">600</span>]))</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>df_ref.write_csv(data_dir <span class="op">/</span> <span class="st">&quot;reference.csv&quot;</span>)</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>df_new.write_csv(data_dir <span class="op">/</span> <span class="st">&quot;live.csv&quot;</span>)</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Drift data: reference.csv (</span><span class="sc">{</span>df_ref<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">), live.csv (</span><span class="sc">{</span>df_new<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">)&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Shape: (2000, 21)  |  Positive class: 50.1%</code></pre>
+<pre><code>Training data: (1500, 13) saved to notebooks/_cli_data/train.csv
+Drift data: reference.csv ((600, 13)), live.csv ((600, 13))</code></pre>
 </div>
 </div>
 </section>
-<section id="run-an-experiment" class="level2">
-<h2 class="anchored" data-anchor-id="run-an-experiment">2. Run an Experiment</h2>
-<div id="run-experiment" class="cell" data-cache="true" data-execution_count="2">
+<section id="iter8-init-initialize-workspace" class="level2">
+<h2 class="anchored" data-anchor-id="iter8-init-initialize-workspace">2. <code>iter8 init</code> — Initialize Workspace</h2>
+<div id="cli-init" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml <span class="im">import</span> ExperimentSession, ExperimentConfig, TaskType</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> subprocess</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>session <span class="op">=</span> ExperimentSession()</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> ExperimentConfig(</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">&quot;quickstart&quot;</span>,</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    task<span class="op">=</span>TaskType.CLASSIFICATION,</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    target_col<span class="op">=</span><span class="st">&quot;target&quot;</span>,</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    data_path<span class="op">=</span><span class="st">&quot;&quot;</span>,</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    models<span class="op">=</span>[<span class="st">&quot;catboost&quot;</span>, <span class="st">&quot;lightgbm&quot;</span>],</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    cv_folds<span class="op">=</span><span class="dv">3</span>,</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> session.run(config, df)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</details>
-</div>
-</section>
-<section id="inspect-the-leaderboard" class="level2">
-<h2 class="anchored" data-anchor-id="inspect-the-leaderboard">3. Inspect the Leaderboard</h2>
-<div id="leaderboard" class="cell" data-execution_count="3">
-<details class="code-fold">
-<summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>lb <span class="op">=</span> session.leaderboard()</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(lb)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> subprocess.run(</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    [<span class="st">&quot;uv&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;iter8&quot;</span>, <span class="st">&quot;init&quot;</span>, <span class="st">&quot;--force-reset-registry&quot;</span>],</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    capture_output<span class="op">=</span><span class="va">True</span>, text<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result.stdout)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> result.stderr:</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(result.stderr)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>shape: (26, 7)
-┌──────────┬──────────────┬──────────────┬──────────────┬──────────────┬─────────────┬─────────────┐
-│ model    ┆ run_id       ┆ primary_metr ┆ primary_scor ┆ duration_sec ┆ timestamp   ┆ task        │
-│ ---      ┆ ---          ┆ ic           ┆ e            ┆ onds         ┆ ---         ┆ ---         │
-│ str      ┆ str          ┆ ---          ┆ ---          ┆ ---          ┆ str         ┆ str         │
-│          ┆              ┆ str          ┆ f64          ┆ f64          ┆             ┆             │
-╞══════════╪══════════════╪══════════════╪══════════════╪══════════════╪═════════════╪═════════════╡
-│ CatBoost ┆ exp_17785866 ┆ roc_auc      ┆ 0.98353      ┆ 18.85        ┆ 2026-05-12T ┆ classificat │
-│          ┆ 77_25bb5c    ┆              ┆              ┆              ┆ 11:51:41.79 ┆ ion         │
-│          ┆              ┆              ┆              ┆              ┆ 5476+00:…   ┆             │
-│ CatBoost ┆ exp_17785865 ┆ roc_auc      ┆ 0.98353      ┆ 16.71        ┆ 2026-05-12T ┆ classificat │
-│          ┆ 89_2e8a59    ┆              ┆              ┆              ┆ 11:50:12.63 ┆ ion         │
-│          ┆              ┆              ┆              ┆              ┆ 3189+00:…   ┆             │
-│ CatBoost ┆ exp_17785864 ┆ roc_auc      ┆ 0.98353      ┆ 16.11        ┆ 2026-05-12T ┆ classificat │
-│          ┆ 75_4d8c61    ┆              ┆              ┆              ┆ 11:48:17.95 ┆ ion         │
-│          ┆              ┆              ┆              ┆              ┆ 8214+00:…   ┆             │
-│ CatBoost ┆ exp_17778263 ┆ roc_auc      ┆ 0.98353      ┆ 5.07         ┆ 2026-05-03T ┆ classificat │
-│          ┆ 42_b98a79    ┆              ┆              ┆              ┆ 16:39:10.99 ┆ ion         │
-│          ┆              ┆              ┆              ┆              ┆ 5658+00:…   ┆             │
-│ CatBoost ┆ exp_17788081 ┆ roc_auc      ┆ 0.980887     ┆ 2.79         ┆ 2026-05-15T ┆ classificat │
-│          ┆ 99_7cc4d6    ┆              ┆              ┆              ┆ 01:23:24.16 ┆ ion         │
-│          ┆              ┆              ┆              ┆              ┆ 7629+00:…   ┆             │
-│ …        ┆ …            ┆ …            ┆ …            ┆ …            ┆ …           ┆ …           │
-│ LightGBM ┆ exp_17786798 ┆ roc_auc      ┆ 0.944429     ┆ 1.99         ┆ 2026-05-13T ┆ classificat │
-│          ┆ 27_86b47c    ┆              ┆              ┆              ┆ 13:43:55.05 ┆ ion         │
-│          ┆              ┆              ┆              ┆              ┆ 5848+00:…   ┆             │
-│ LightGBM ┆ exp_17786798 ┆ roc_auc      ┆ 0.939638     ┆ 1.27         ┆ 2026-05-13T ┆ classificat │
-│          ┆ 88_291cf5    ┆              ┆              ┆              ┆ 13:44:50.49 ┆ ion         │
-│          ┆              ┆              ┆              ┆              ┆ 3288+00:…   ┆             │
-│ XGBoost  ┆ exp_17786798 ┆ roc_auc      ┆ 0.939094     ┆ 0.97         ┆ 2026-05-13T ┆ classificat │
-│          ┆ 80_cf980c    ┆              ┆              ┆              ┆ 13:44:48.36 ┆ ion         │
-│          ┆              ┆              ┆              ┆              ┆ 4065+00:…   ┆             │
-│ XGBoost  ┆ exp_17786798 ┆ roc_auc      ┆ 0.939094     ┆ 0.97         ┆ 2026-05-13T ┆ classificat │
-│          ┆ 27_86b47c    ┆              ┆              ┆              ┆ 13:43:55.05 ┆ ion         │
-│          ┆              ┆              ┆              ┆              ┆ 5951+00:…   ┆             │
-│ XGBoost  ┆ exp_17786798 ┆ roc_auc      ┆ 0.936497     ┆ 0.61         ┆ 2026-05-13T ┆ classificat │
-│          ┆ 88_291cf5    ┆              ┆              ┆              ┆ 13:44:50.49 ┆ ion         │
-│          ┆              ┆              ┆              ┆              ┆ 3368+00:…   ┆             │
-└──────────┴──────────────┴──────────────┴──────────────┴──────────────┴─────────────┴─────────────┘</code></pre>
+<pre><code>Workspace initialized.
+</code></pre>
 </div>
 </div>
 </section>
-<section id="export-the-champion" class="level2">
-<h2 class="anchored" data-anchor-id="export-the-champion">4. Export the Champion</h2>
-<div id="export" class="cell" data-execution_count="4">
+<section id="iter8-hardware-show-hardware-profile" class="level2">
+<h2 class="anchored" data-anchor-id="iter8-hardware-show-hardware-profile">3. <code>iter8 hardware</code> — Show Hardware Profile</h2>
+<div id="cli-hardware" class="cell" data-execution_count="3">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>path <span class="op">=</span> session.export(<span class="st">&quot;quickstart:classification&quot;</span>)</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Exported to: </span><span class="sc">{</span>path<span class="sc">}</span><span class="ss">&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> subprocess.run(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    [<span class="st">&quot;uv&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;iter8&quot;</span>, <span class="st">&quot;hardware&quot;</span>],</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    capture_output<span class="op">=</span><span class="va">True</span>, text<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result.stdout)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Exported to: workspace/exports/quickstart_classification</code></pre>
+<pre><code>
+# Hardware Profile
+GPU: None
+VRAM: 0.0 GB
+RAM: 68.7 GB
+CPU Cores: 16
+</code></pre>
 </div>
 </div>
-<hr>
-<p><strong>Next:</strong> See the <a href="02_full_walkthrough.html">Full Walkthrough</a> for data exploration, multi-model comparison, promotion, drift detection, and state generation.</p>
+</section>
+<section id="iter8-run-run-an-experiment" class="level2">
+<h2 class="anchored" data-anchor-id="iter8-run-run-an-experiment">4. <code>iter8 run</code> — Run an Experiment</h2>
+<section id="quick-mode-fast-iteration" class="level3">
+<h3 class="anchored" data-anchor-id="quick-mode-fast-iteration">Quick mode (fast iteration)</h3>
+<div id="cli-run-quick" class="cell" data-cache="true" data-execution_count="4">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> subprocess.run(</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;uv&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;iter8&quot;</span>, <span class="st">&quot;run&quot;</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--data&quot;</span>, <span class="bu">str</span>(data_dir <span class="op">/</span> <span class="st">&quot;train.csv&quot;</span>),</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--target&quot;</span>, <span class="st">&quot;target&quot;</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--task&quot;</span>, <span class="st">&quot;classification&quot;</span>,</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--models&quot;</span>, <span class="st">&quot;lightgbm&quot;</span>,</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--models&quot;</span>, <span class="st">&quot;xgboost&quot;</span>,</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--quick&quot;</span>,</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    capture_output<span class="op">=</span><span class="va">True</span>, text<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    timeout<span class="op">=</span><span class="dv">300</span>,</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result.stdout[<span class="op">-</span><span class="dv">2000</span>:] <span class="cf">if</span> <span class="bu">len</span>(result.stdout) <span class="op">&gt;</span> <span class="dv">2000</span> <span class="cf">else</span> result.stdout)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> result.returncode <span class="op">!=</span> <span class="dv">0</span> <span class="kw">and</span> result.stderr:</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;STDERR:&quot;</span>, result.stderr[<span class="op">-</span><span class="dv">1000</span>:])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[quick mode] 2 folds, 20% data, SHAP/calibration disabled
+Loaded 1500 rows, 13 columns
+Task: TaskType.CLASSIFICATION, Target: target
+
+Results:
+  lightgbm: {&#39;model_name&#39;: &#39;LightGBM&#39;, &#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.9740124444444445, &#39;f1_macro&#39;: 0.9239831614816841}, &#39;artifact_path&#39;: &#39;workspace/artifacts/lightgbm_exp_1778808524_426764&#39;, &#39;duration_seconds&#39;: 0.5, &#39;lift_over_baselines&#39;: {&#39;lift_over_naive_baseline&#39;: 0.948, &#39;lift_over_linear_baseline&#39;: 0.0893}, &#39;params&#39;: {}}
+  xgboost: {&#39;model_name&#39;: &#39;XGBoost&#39;, &#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.9680782222222222, &#39;f1_macro&#39;: 0.9146523738000383}, &#39;artifact_path&#39;: &#39;workspace/artifacts/xgboost_exp_1778808524_426764&#39;, &#39;duration_seconds&#39;: 0.24, &#39;lift_over_baselines&#39;: {&#39;lift_over_naive_baseline&#39;: 0.9362, &#39;lift_over_linear_baseline&#39;: 0.0827}, &#39;params&#39;: {}}
+  naive_baseline: {&#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.5, &#39;f1_macro&#39;: 0.3333333333333333}, &#39;is_baseline&#39;: True}
+  linear_baseline: {&#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.8941724444444443, &#39;f1_macro&#39;: 0.8133300431800341}, &#39;is_baseline&#39;: True}
+</code></pre>
+</div>
+</div>
+</section>
+<section id="full-run-with-config-file" class="level3">
+<h3 class="anchored" data-anchor-id="full-run-with-config-file">Full run with config file</h3>
+<div id="cli-config-file" class="cell" data-execution_count="5">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> yaml</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>config_yaml <span class="op">=</span> {</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;name&quot;</span>: <span class="st">&quot;cli_cookbook&quot;</span>,</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;task&quot;</span>: <span class="st">&quot;classification&quot;</span>,</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;target_col&quot;</span>: <span class="st">&quot;target&quot;</span>,</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;data_path&quot;</span>: <span class="bu">str</span>(data_dir <span class="op">/</span> <span class="st">&quot;train.csv&quot;</span>),</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;cv_folds&quot;</span>: <span class="dv">3</span>,</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;models&quot;</span>: [<span class="st">&quot;catboost&quot;</span>, <span class="st">&quot;lightgbm&quot;</span>],</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;metrics&quot;</span>: [<span class="st">&quot;roc_auc&quot;</span>, <span class="st">&quot;f1_macro&quot;</span>, <span class="st">&quot;accuracy&quot;</span>],</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;shap_enabled&quot;</span>: <span class="va">False</span>,</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>config_path <span class="op">=</span> data_dir <span class="op">/</span> <span class="st">&quot;config.yaml&quot;</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>config_path.write_text(yaml.dump(config_yaml, default_flow_style<span class="op">=</span><span class="va">False</span>))</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Config written to </span><span class="sc">{</span>config_path<span class="sc">}</span><span class="ss">&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Config written to notebooks/_cli_data/config.yaml</code></pre>
+</div>
+</div>
+<div id="cli-run-config" class="cell" data-cache="true" data-execution_count="6">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> subprocess.run(</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    [<span class="st">&quot;uv&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;iter8&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;--config&quot;</span>, <span class="bu">str</span>(config_path)],</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    capture_output<span class="op">=</span><span class="va">True</span>, text<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    timeout<span class="op">=</span><span class="dv">300</span>,</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result.stdout[<span class="op">-</span><span class="dv">2000</span>:] <span class="cf">if</span> <span class="bu">len</span>(result.stdout) <span class="op">&gt;</span> <span class="dv">2000</span> <span class="cf">else</span> result.stdout)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> result.returncode <span class="op">!=</span> <span class="dv">0</span> <span class="kw">and</span> result.stderr:</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;STDERR:&quot;</span>, result.stderr[<span class="op">-</span><span class="dv">1000</span>:])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded 1500 rows, 13 columns
+Task: TaskType.CLASSIFICATION, Target: target
+
+Results:
+  catboost: {&#39;model_name&#39;: &#39;CatBoost&#39;, &#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.979232, &#39;f1_macro&#39;: 0.9259962741409696, &#39;accuracy&#39;: 0.926}, &#39;artifact_path&#39;: &#39;workspace/artifacts/catboost_exp_1778808528_48419a&#39;, &#39;duration_seconds&#39;: 2.45, &#39;lift_over_baselines&#39;: {&#39;lift_over_naive_baseline&#39;: 0.9585, &#39;lift_over_linear_baseline&#39;: 0.0954}, &#39;params&#39;: {}}
+  lightgbm: {&#39;model_name&#39;: &#39;LightGBM&#39;, &#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.97424, &#39;f1_macro&#39;: 0.9233086557853478, &#39;accuracy&#39;: 0.9233333333333333}, &#39;artifact_path&#39;: &#39;workspace/artifacts/lightgbm_exp_1778808528_48419a&#39;, &#39;duration_seconds&#39;: 0.69, &#39;lift_over_baselines&#39;: {&#39;lift_over_naive_baseline&#39;: 0.9485, &#39;lift_over_linear_baseline&#39;: 0.0898}, &#39;params&#39;: {}}
+  naive_baseline: {&#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.5, &#39;f1_macro&#39;: 0.3333333333333333, &#39;accuracy&#39;: 0.5}, &#39;is_baseline&#39;: True}
+  linear_baseline: {&#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.893984, &#39;f1_macro&#39;: 0.8138567228774521, &#39;accuracy&#39;: 0.8140000000000001}, &#39;is_baseline&#39;: True}
+</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="iter8-leaderboard-view-results" class="level2">
+<h2 class="anchored" data-anchor-id="iter8-leaderboard-view-results">5. <code>iter8 leaderboard</code> — View Results</h2>
+<div id="cli-leaderboard" class="cell" data-execution_count="7">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> subprocess.run(</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    [<span class="st">&quot;uv&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;iter8&quot;</span>, <span class="st">&quot;leaderboard&quot;</span>, <span class="st">&quot;--top&quot;</span>, <span class="st">&quot;5&quot;</span>],</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    capture_output<span class="op">=</span><span class="va">True</span>, text<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result.stdout)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+# Leaderboard
+
+| Rank | Model | Run ID | Primary Metric | Score | Duration |
+|---|---|---|---|---|---|
+| 1 | CatBoost | exp_1778808362_edb95f | roc_auc | 0.9835 | 4.05s |
+| 2 | CatBoost | exp_1778808278_912160 | roc_auc | 0.9835 | 4.17s |
+| 3 | CatBoost | exp_1778808208_c33bb4 | roc_auc | 0.9835 | 4.18s |
+| 4 | CatBoost | exp_1778586677_25bb5c | roc_auc | 0.9835 | 18.85s |
+| 5 | CatBoost | exp_1778586589_2e8a59 | roc_auc | 0.9835 | 16.71s |
+</code></pre>
+</div>
+</div>
+<div id="cell-leaderboard-viz" class="cell" data-fig-height="4" data-fig-width="8" data-execution_count="8">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.workspace <span class="im">import</span> Workspace</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.utils.io <span class="im">import</span> iter_events</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>ws <span class="op">=</span> Workspace()</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>model_scores <span class="op">=</span> {}</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ev <span class="kw">in</span> iter_events(<span class="bu">str</span>(ws.experiments_path)):</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> ev.get(<span class="st">&quot;event&quot;</span>) <span class="op">==</span> <span class="st">&quot;model_completed&quot;</span>:</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>        name <span class="op">=</span> ev.get(<span class="st">&quot;model&quot;</span>, <span class="st">&quot;unknown&quot;</span>)</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>        scores <span class="op">=</span> ev.get(<span class="st">&quot;cv_scores&quot;</span>, {})</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> scores:</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>            model_scores[name] <span class="op">=</span> scores</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> model_scores:</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>    models <span class="op">=</span> <span class="bu">list</span>(model_scores.keys())</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>    metrics <span class="op">=</span> [<span class="st">&quot;roc_auc&quot;</span>, <span class="st">&quot;f1_macro&quot;</span>, <span class="st">&quot;accuracy&quot;</span>]</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>    x <span class="op">=</span> np.arange(<span class="bu">len</span>(models))</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>    width <span class="op">=</span> <span class="fl">0.25</span></span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>    fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">4</span>))</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>    palette <span class="op">=</span> [<span class="st">&quot;#4C72B0&quot;</span>, <span class="st">&quot;#55A868&quot;</span>, <span class="st">&quot;#C44E52&quot;</span>]</span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, metric <span class="kw">in</span> <span class="bu">enumerate</span>(metrics):</span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>        vals <span class="op">=</span> [model_scores[m].get(metric, <span class="dv">0</span>) <span class="cf">for</span> m <span class="kw">in</span> models]</span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>        ax.bar(x <span class="op">+</span> i <span class="op">*</span> width, vals, width, label<span class="op">=</span>metric.upper(), color<span class="op">=</span>palette[i])</span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>    ax.set_xticks(x <span class="op">+</span> width)</span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a>    ax.set_xticklabels(models)</span>
+<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>    ax.set_ylabel(<span class="st">&quot;Score&quot;</span>)</span>
+<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>    ax.set_title(<span class="st">&quot;CLI Experiment Results&quot;</span>)</span>
+<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a>    ax.legend(fontsize<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a>    ax.grid(axis<span class="op">=</span><span class="st">&quot;y&quot;</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a>    plt.tight_layout()</span>
+<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a>    plt.show()</span>
+<span id="cb15-34"><a href="#cb15-34" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb15-35"><a href="#cb15-35" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;No model results found in workspace.&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="leaderboard-viz" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img role="img" src="data:image/png;base64,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eDpWWsdBZqm4WDkdK9djFfSLL74Ybr755oWuWMhVi8eq2VhpHV1yySWpYrs8cbDPgw8+OFUXd+jQIXTt2jU0b948refpp59Ole3Tpk0LRx55ZHjuuefSe1ea+Py4rk8//TT9u2HDhmHfffdN1eqxEv37778PL7zwQvj6669TxX4cuyD2KC/Z/qQ0X331VbpiIG7DRhttlJYZK9EnTJiQqtSX1s8//xwOOOCAtPy43N/85jehRYsWaX88/vjj6fXE7YzV85988kkaNPjee+8NTZs2DQcddFDaV/FKgUGDBqV2TbnxGXbeeeew6667lrrO+L7E7Y/V8bkWMHvttVfYaqut0nLjvn7llVfSWA2xiju+L/E9iNtQnjgo8/7775/2R6yyjtNt2rRJVwgMGDAgjBw5MvX3//Of/5z29y677FLqILCx5VTuaoxFB4aNVllllbAilLyCJFbLlyVWif/2t78t/rzHwZ3j/oxXFSxYsCCMGDEijX/x66+/pv2Q2/eLttUaN25c2sdxP0Zt27YN++yzT6pij/PGz8qXX34Z3nnnnfDDDz+ELIjf7bhdd911VxqcO4pXhcSrY8oTrzh49dVX03S8giDuk0033TS9t/HzHPfF8OHDiz/TAAAV5twFAED1MX/+/KJmzZpVqhK5Mgqhwj566623UtV8XGasoh82bNhCj5esAN95552L5s2bt8Rti5XXuf0W36dFK+YPPPDA4nnbtm1bNG3atFKXecABBxTPd+yxxxZNnjx5sXni8v/6178Wz7feeuulyvXyti/eYjV6nz59yryqYGkq7HOv/YYbbljsdX///fdF66yzzkKvJ97vscceRRMnTlxo3rhNp5566kJXP5TlzDPPLJ5vn332KRo3blyp8z344IPFV0nE781PP/20xNcSb1ddddVi+3POnDkLXfUQ11uRz39VqkyFfdyfW2+99RK/OyNHjkxXfsR5GjZsWHT//feX+vn48ccfizp37ly8vMsvv3yxeS677LLix+N7WdpnMrdtb7/9dtEzzzyz0ivsc+K6cvPEbShP3Ge5eeNVCfGqjLLE70D8zgEAVJQKewCAaiT2Ry/ZRz32gy4kY8eODTfeeGOF5o2Vrqeeemqpj8Xq7dhn/vLLL09VxbGaftiwYakHdawKjxXguWX069cv9Xlfkphzx6rb0vpox+U88cQTqRd9rDCO1bf33Xdf6k9fUqzYffbZZ4v7jz/44IOl9s6O4xXEnvix2j72jY+V33FQ0eOOO67cbYxjF5x11lmhqsWK8549ey7289i//JprrinerocffjhVW8cq7bivS4qvM14B8Nhjj6WrAOIgyrFSO/YDLylW8t95551peocddkjV4bE/emniemN1fNy++L2Jz7v00kvLfS1nnHFGuOyyyxb7eawQ/8c//pGuBIgV1LGCv7Tty4LYi/6cc85ZqG99rj//ouL3IO7v3PsTr0YoTezlH6vsYxV5/B7G3uzxM1jyfSy5vjh+QOznXpr4XsexDqqrkq8zfl7atWtX5rzxO7A8vnMAQP4S2AMAVCOLDt4ZW48UktiyIoaEFRFDtLIC+1wrjBi6vvHGGylEj6FaDNt///vfL9Q+p7wwbtEQ/eqrry7z8dg2I54gyIXX999//2KB/e233148HQeGLWugy5wYksfAPophanmBfWync/7554eqFsPy2EKkLLE1UEmx/dCiYX3Jti1dunRJgX5sxRJb2izadiaG7vGxKJ4MKCusz4kteOJ7HdscxX1UXmAfQ/n4HpUltjiKLYhiS6O4Df/5z3/KbNuzIix68mr27Nlp0NZ4UiGezMmJg8iecMIJpf4+iSd6ciexygrrc+LJidNOOy3tz9hqKH53YtugnPnz5xdPx/Y5cZDZfLTo6wQAqEoCewCAaiRXCZuTxere6iIG7LGieMsttwyTJ08Offv2DYMHD079rKOTTjop9ZuvqO222y717C5Pt27d0npzYW8MkXO9xePPcj3ZY//0DTfccInrXHPNNUPLli1Tz/YPPvig3HljX/zY372qxV7u5Z04WnXVVVPQHfdxFHual6fkmAzxipJF5fqGx6A+hvtLEufbZJNN0v6JPcVj2FrWFRPxtcS+/uWJ70sM7KPY/39lWtLJq/h+xwrwq666Kn3uFvX666+HefPmpenYg70i4jgBOXGflgzs43fp+eefT9O/+93v0ncqjgGQb+KVMjlxDIx4tUDs+Q8AUBUW/18bAACZtWjg+ssvv4RC0qlTp9R6piK3WGm8JDFgv+eee4r/HQdKzYWyt912W6W2rWSQWZZYWR4H9IxicBxb2eTEwWlj1XI0evToVF1fkVsM66PcfVnigLDLw9prr73EeUpW1C9p/pLzxhMaJcV9lhuMN7YyihXxFdlHuZMZ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Evdl3F+x8nzGjBnpao8Y+MdbPAlSsp1TTvy8xhMEsRVPDPTjLZ6cit+b+B7E71BszZNz5JFHlvqenHbaaeHWW29NwX98D2Ov/cMPPzyss8464eeff077My4nbkP8nubGnljW9yw3eGz8Do8YMSL9fig5IG7cj1HcT/HKm3iLn7cdd9wxff7ivorbFz+b8YRCbkDc+B6cd955y7yNAECBKAIAoFp75ZVXinbcccfYn6JCt9VXX73ohhtuKJo1a9Ziy+revXuFl1Py1q5du4WWE/+de+y1115bptd33333LdU2xVu3bt0WWtbgwYOLatasmR6rX79+0f/+978y1zt79uyirbfeunhZZ599drnbdsUVVxQNGTKkqEWLFmVuT+PGjYueeOKJJb7mGTNmFJ166qlFtWrVqtDrXG211YqGDh26xO2rqLLe15z4nubmiZ+ZJSn5eViSuJ25eeP2l2XevHlFF198cVG9evUqtI/K2veVfS0V2b65c+cW7b777hX+vlTU6NGjF1pORU2aNCm9/tzzHn300cXm+eijj4q22GKLCn+3OnbsuNgyNthggwo//4QTTij1d1DO22+/XbTqqquW+fz4PYu/+yryGS/5e62830fHHHNMuducc+2111b4dW644YZF//nPfyrwLgEA/D8q7AEAqrk4cGS8xVYTsT1KrD6Nleixsj62TImDOMZBamP1/W9+85t0W1J1fT766aefwvHHH1/cruaGG25IFbRliVXBcVDTbbbZJlXKxqruWHm/3377lfmcTp06hf/85z/paoM4wOy3336b3oO4/2MFb2yvEytylyReOfGPf/wjDVoZ2/MMGTIkDcAZX0PNmjXTexoro7fddtu0TXvttVe51f/5KFbRX3vttalH+3333RcGDx6cqqLjPorvcax2bt++fargju2i4vtWWlX48hC/Xy+//HL4+9//nq6uiFdDxCshVlYbqtVWWy21foqtXKJevXqlivX4WcqJ+yle1RHHxHj66afD22+/narq41U5sf96vLojVrrHNk2xbVNp3534/HilT/y8Dhs2LFWax99DsQ1VbMsT34+dd945XV2w3XbblbvNO+20U/jss8/SFTBxm+J3Kb7n7dq1S1fNxNcTryKKbXyqSmzVE79P8Xv/3//+N32W4tgTi7r44ovT79H4Hr/zzjvpcxdbWMUrEerXr5/2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K3Er85MKewAAAACASortYWK7mOOPPz4V+sZWNnEsy6OOOir8+uuvC8272mqrpftFx8wsr2I/atGiRfHPctMVXcbSmj9/fnE771xFfU7sJBJ7zC/L4LO5guiSVyCsyNeXdQVXYU9+O/DcASt7E6gCz9zUzX4EAAAAMu3CCy9MQX1OrDiPVfex73x8rE+fPsWPbb311ikE//DDD5e43AULFoT//Oc/aTr2si+5jKFDh4Zhw4aF5emll14KP/zwQ5qOLX7KOpnw0EMPheuuuy7UrPl/NeENGzZMJytmzJhR5vJzjzVq1Gihn8fXN27cuPT6jjvuuFCoVNgDAAAAACyj2B7mn//8Z5r++9//HkaNGlX82P7775/uYxD/2WeflbucF154IUyePDk0aNBgobY7BxxwwEKPLy8lK+ffeuutxW5fffVVeuy7774LL7/88kLPXWuttdL9yJEjy1x+7rHYUryk3Ot74oknwrx580KhEtgDAAAAAFSBOEBrDNnnzp0brr322oXC/K5du6bpP//5z6mKvjQzZ84M559/fpo+5ZRT0qCvOfvss0+qQp81a1ZaxpK8/fbbld7+n3/+OQwY8P86WHz99depfU1ptyuvvLLUtjidOnVK9wMHDixzHU8//XS6L3l1Qq79zhprrJFOBFx11VXlbmcM9N97772Qj7TEAQDIc1rG5Qct4wAAqoerr7467LrrruHBBx8Ml19+eWjXrl1x1X0M3GNVehzMNf4719s+Gjt2bAqtP/3007DBBhukdjOLim1odtxxx7TsGPrfdNNNaaDbkj755JPUkqd27drF4XhFPfbYY+mEQMeOHcN6661X5nzHHHNMuOKKK9Lyp02bFpo2bZp+ftZZZ4V777039O3bN/X4z/W7j2LQH7d3yJAhaf6TTz55sf74Dz/8cDoxEfdhbJ0T15FbdskTET179gw77LBD2hf5RoU9AAAAAEAV2WWXXcJ+++2Xquyvv/764p/HFjCvv/56aN++fXjyySfTv/fee+8Ufsdq8/jzGGZvs8026b5x48aLLXuTTTYJb7zxRjoJEMPtuIydd945DXR76KGHpkr+zTffPDz33HOhQ4cOld72XMX8scceW+5866+/fgrL4xUBjz/+ePHPN9tss3DXXXel6SOOOCL9O25bDO7jCYDYEz/2ue/Xr19YffXVF1tuly5dwqBBg9IA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79La06yyyirhiiuuSKF0vXr1quS5y0tsgxND8+jVV19Nle7Luo+W5bVefPHFqdo/Picuo6Q475dffhn233//cMIJJ4SsE9gDAAAAAFRSrnI89lI/6KCDQosWLcLw4cPDJ598sljVeOyvHl155ZVhjTXWKHe52267bWjQoMEyP3d522yzzdJ9bFkTK+2XZR8t62utU6dOao1Tu3btcNFFF4XRo0enn3/44YfhpptuCk2bNg133313qA4E9gAAAAAAlRBD6n79+qXpWLUdA+OjjjpqoZC6ZJX5uHHj0gCuMbiujGV57vI2bdq0dF+zZs0UxC/LPqqK17rNNtuE888/P8yYMSOceuqpqV1O7HU/f/78FNrHgW+rA4E9AAAAAEAlPP/886mHeqwyj0FxFAdkzQ2yGkPinI8++ijdt2/fPqy66qqV2s/L8tzlbdCgQel+7733TmH8suyjqnqtl19+edhkk01Sm55OnTqF//3vf2n7Yg/76kJgDwAAAABQCbkK8ZI90bfbbrsUFv/www/hxRdfLP75pEmT0n3sy15Zy/Lc5eW7775Lg7fGgWjjAK633nrrMu+jqnqt9erVC/fee2+q+n/33XdD48aNwz//+c9QnQjsAQAAAAAqKPZrf+aZZ0KtWrXCscceu9Bjxx9/fJktX6qzddddN7WqibfYWubss88O66yzTmpj06FDh0ztox133DEccsghafq0004L7dq1C9WJwB4AAAAAoIIeffTR1B99zz33DG3atFnoseOOOy5Vdw8cODBMnTo1/SzX333ixImV3sfL8twoBuxLUlRUtMR5DjvssNTOJobvO+20U/rZF198kX4WB4td1n1UFa+1pFhZHzVq1ChUN7VX9gYAAAAAAFQXucrwzz//POy6666LPR77uc+aNSs89thj4Q9/+EPYeuut089HjRqVAurK9GdfludGDRs2TPdxINay5B4rL9yO7W9iRX3O0KFDw3777Zfa2sT2OOecc84y7aOqeK35QoU9AAAAAEAFxAD6/fffT9PffvtteOuttxa7zZ49Oz3et2/fdL/VVlulNjKxkv2RRx6p1H5eludGa621VrofOXJkmfPkHovrqagYwv/lL39J09dcc034+eefl2kfVcVrzRcCewAAAACACshVjsc+7DFYLu0WK9ZjS5Y46OmXX36Z2r/07NkzPa9Xr17hxx9/LHcdw4cPDzNnzvx/4e0yPDfq1KlTuo/tZ8ry9NNPp/vOnTtX6jNw+umnhw022CBMmTIl9OnTZ5n2UVW81nwhsAcAAAAAWILYq/2hhx5K04sOpLpoG5qDDz54ofD6rLPOCnvvvXeYMGFCqk5//fXXF3ve9OnTw7XXXpsez1WgL+tzf/e734WmTZuGV199NbWuWbRffew1/8ADD4TatWuHM888s1KfgficK664Ik3HZf/yyy/LtI+W9bXmC4E9AAAAAMASxNB73LhxoVWrVmGvvfYqd95cWP3ggw+mEDtWj8dK9qOOOiq1oInV7Outt1445JBDwtFHHx123333NOjqpZdempZfr169/wtwl+G5q6++eujXr18KyM8+++z0vMMPPzwta9NNN03PjwPT3nXXXWGzzTar9GcgPj8uZ/LkyeGOO+5Ypn20rK81Xxh0FgAAAACotNb33Vwle2295u2qxd7PVYIfeeSRoVatWuXOG8PqGJaPHTs2DB48OP07huaxN/sZZ5wR7rvvvvDmm2+Gl19+OcydOze0bNky7LvvvuG3v/1tCqvr1q270PKW5bldu3YN//nPf8LNN9+cAvXnnnsuBeRrrLFGOOGEE8Kf//zn4gFfKysG7FdddVU47LDDwk033VQ8wOzS7qNlfa35QGAPAAAAALAEsdVLrt3LEkPX2rXD+PHjS30shtq5YLuylva566+/frjzzjsr/bxFW+iU5tBDD63QfJXZR8u6n+JgtiUHtK1OtMQBAAAAAIAMENgDAAAAAEAGCOwBAAAAACADBPYAAAAAAJABAnsAAAAAAMgAgT0AAAAAAGSAwB4AAAAAKF2RHUNhKipaOR9+gT0AAAAAsJDZC+aG+UULwoL5C0LRAqk9hWXevHlhzpw5abpWrVordN0CewAAAABgIT/MnhBmzZ0Vy4zDnOmzhPYUTFX97Nmzw/fff1/8syZNmqzQbai9QtcGAAAAAGTeqF/Hhc2bbhimzJwWmoUQ5syYHWrWqhlCjeWwrqmjqn6hsBRh/fz589MtJ1bXr7LKKmFFEtgDAAAAAAuZPm9GeG3S+6FLix3CrHmzQv069UOtGsunWUedRiJKsqdevXqhbdu2K7wljm8DAAAAALCY72aNDwN+HBzWbdg2tKnXMtSrWXe57KW2zdvY+2RCzZo1U1DfqFGj0Lhx4/TvFU1gDwAAAACUWWn/32lfhP+GL5bbHjq28+H2Pvz/DDoLAAAAAAAZILAHAAAAAIAMENgDAAAAAEAGCOwBAAAAACADBPYAAAAAAJABAnsAAAAAAMgAgT0AAAAAAGSAwB4AAAAAADJAYA8AAAAAABkgsAcAAAAAgAwQ2AMAAAAAQAYI7AEAAAAAIAME9gAAAAAAkAECewAAAAAAyACBPQAAAAAAZIDAHgAAAAAAMqBgA/sXX3wxdOvWLbRp0ybUr18/rL322uHYY48N77333jIve8GCBeHBBx8M+++/f1p+3bp1Q6NGjUKHDh3CSSedFN55550qeQ0AAAAAAOSPggzse/ToEfbbb78wcODA8MMPP4TZs2eHsWPHhn79+oVddtkl3HjjjUu97ClTpoTddtstnHDCCeH5559Py587d2749ddfw5dffhn69u0bdt5553DeeedV6WsCAAAAAKB6K7jA/uabbw59+vRJ0127dg3vv/9+mDhxYhgyZEjo2LFjmD9/fgrT+/fvv1TL7969e3j77bfTdKzgf+ONN1Jo/9VXX6Wwvl27dumxeFLgnnvuqcJXBgAAAABAdVZQgf2kSZNCr1690nSXLl1Shf32228fWrRoETp16hQGDx6c2tZE5557bpgzZ06llv/111+HZ555pvhkwNNPP52q7Vu3bh3WX3/9FOa/+uqrqT1OdMcdd1T5awQAAAAAoHoqqMD+gQceCNOnT0/TvXv3DjVrLvzyGzRoEK666qo0PWbMmDBo0KBKLf/jjz8unj7uuONKnWe99dZLLXGizz//vNKvAQAAAACA/FRQgX2sqI/WXXfdVFlfmtjGpl69eml6wIABlVp+HLw2p0aNGmXOV6tWrXS/+uqrV2r5AAAAAADkr4IK7IcPH57ud9pppzLniWH9Nttss9D8FbXlllsWh/FPPPFEqfOMGzeuuMf9/vvvX6nlAwAAAACQv2qHAvHdd98Vt8Np3759ufPGCvx33nknfPnll6GoqKjcavmS1lprrfC73/0u/OMf/whPPfVU6ll/9tlnhw022CDMmDEjBfUXXXRRmDZtWthoo43C1VdfXenXMWXKlDIfmzp1avH0ggUL0q3QVPCtIuNqBG9kPijyhcwLhXgsyUe+jvnB8TE/OD7mB8fH/OD4mB8cH/OD36tUVwuWw9/MtQtpwNmcVq1alTtv7vFZs2aFX375JTRp0qTC67n99ttTlX0M7WPP/HhbdNkXXnhhCu6bNm1a6dfRvHnzCs03ceLEMHfu3FBo1mq2sreAqlC3Zgs7Mg/MaVtnZW8CVWDChAn2Yx5wfMwPjo/5wfExPzg+5gfHx/zg+Jgf/F6luppaooC6qhRMS5xY4V5ar/nSxMFnc2JgXxl16tQJN954Y7j22mtD7dqLnw+J1fWxLY5fRAAAAAAAFGSFfUlLanFT0RY4pRk2bFg4+OCDUyh//PHHhz/+8Y9hww03DDNnzgxDhw4NvXr1Cg899FB4/vnnw7PPPhs6duxYqeVPnjy53DM6uXY/LVu2DM2aFV65+diyOwZRjTRY8H9XxFB91R2nMjsfGCA9Pzg+5gfHx/zg+JgfHB/zg+NjfnB8zA9+r1Jd1alT9d0FCiawb9SoUfF0DM/LU/Lxxo0bV3gdo0ePDp07d05V+bHlzXXXXbfQ40ceeWTYb7/9wvbbbx+++uqr9O+vv/66Um9sRUP4mjVrpluhKSpa2VtAVSgK3sh8UMMXMi8U4rEkH/k65gfHx/zg+JgfHB/zg+NjfnB8zA9+r1Jd1VwOfzMXzF/hLVr8X0/sJbWjGT9+fLqvV69epQL7m266KYX1DRs2DJdeemmp86yyyirh4osvTtPffvtteOmllyq8fAAAAAAA8lfBBPZrrrlmcfg+cuTIJVbKR7GVTWXa48SWN9Gmm26aQvuyxAr7nE8//bTCywcAAAAAIH8VTGAfbbvttun+3XffLXOeOXPmhOHDhy80f0XlWulUpkf+svTLBwAAAAAgfxRUYH/ggQem+1GjRqXBYUszcODAMGvWrDR90EEHVWr5bdq0Ka6aL69P/gcffFA83a5du0qtAwAAAACA/FRQgX337t1DkyZN0vQFF1wQFixYsNDjMWS//PLLi4P0rl27Vmr5e++9d7qfMWPGYgPO5kybNq34sbp164YuXbos1WsBAAAAACC/FFRgHwee7dWrV5p+9dVXQ7du3cKHH34YJk2aFN54442w5557hhEjRhQPIBsD9ZKGDBmSWtjEW245JZ1++umhVatWafqaa64JJ510UnjvvffClClTwvfffx+eeOKJsNNOO4Uvv/wyzdOjR4/QsmXLFfDKAQAAAADIutqhwJxzzjlhzJgx4bbbbgvPPvtsupVUs2bN0Lt373DYYYdVetnNmjULzz//fDj44IPDt99+G/r27ZtupTnhhBPCX/7yl6V+HQAAAAAA5JeCqrDP6dOnT3jhhRdSj/rWrVunSvq2bduGo48+Orz99tuhZ8+eS73srbfeOnzyySfhlltuCXvssUeqoK9Tp05o0KBBWG+99cJxxx2Xqvvvv//+UKtWrSp9XQAAAAAAVF8FV2Gfs++++6ZbZXTu3DkUFRUtcb7YJz+2u4k3AAAAAACoiIKssAcAAAAAgKwR2AMAAAAAQAYI7AEAAAAAIAME9gAAAAAAkAECewAAAAAAyACBPQAAAAAAZIDAHgAAAAAAMkBgDwAAAAAAGSCwBwAAAACADBDYAwAAAABABgjsAQAAAAAgAwT2AAAAAACQAQJ7AAAAAADIAIE9AAAAAABkgMAeAAAAAAAyQGAPAAAAAAAZILAHAAAAAIAMENgDAAAAAEAGCOwBAAAAACADBPYAAAAAAJABAnsAAAAAAMgAgT0AAAAAAGSAwB4AAAAAADJAYA8AAAAAABkgsAcAAAAAgAwQ2AMAAAAAQAYI7AEAAAAAIAME9gAAAAAAkAECewAAAAAAyACBPQAAAAAAZIDAHgAAAAAAMkBgDwAAAAAAGSCwBwAAAACADBDYAwAAAABABgjsAQAAAAAgAwT2AAAAAACQAQJ7AAAAAADIAIE9AAAAAABkgMAeAAAAAAAyQGAPAAAAAAAZILAHAAAAAIAMENgDAAAAAEAGCOwBAAAAACADBPYAAAAAAJABAnsAAAAAAMgAgT0AAAAAAGSAwB4AAAAAADJAYA8AAAAAABkgsAcAAAAAgAwQ2AMAAAAAQAYI7AEAAAAAIAME9gAAAAAAkAECewAAAAAAyACBPQAAAAAAZIDAHgAAAAAAMkBgDwAAAAAAGSCwBwAAAACADBDYAwAAAABABgjsAQAAAAAgAwT2AAAAAACQAQJ7AAAAAADIAIE9AAAAAABkgMAeAAAAAAAyQGAPAAAAAAAZILAHAAAAAIAMENgDAAAAAEAGCOwBAAAAACADBPYAAAAAAJABAnsAAAAAAMgAgT0AAAAAAGSAwB4AAAAAADJAYA8AAAAAABkgsAcAAAAAgAwQ2AMAAAAAQAYI7AEAAAAAIAME9gAAAAAAkAECewAAAAAAyACBPQAAAAAAZIDAHgAAAAAAMkBgDwAAAAAAGSCwBwAAAACADBDYAwAAAABABgjsAQAAAAAgAwT2AAAAAACQAQJ7AAAAAADIAIE9AAAAAABkgMAeAAAAAAAyQGAPAAAAAAAZILAHAAAAAIAMENgDAAAAAEAGCOwBAAAAACADBPYAAAAAAJABAnsAAAAAAMgAgT0AAAAAAGSAwB4AAAAAADJAYA8AAAAAABkgsAcAAAAAgAwQ2AMAAAAAQAYI7AEAAAAAIAME9gAAAAAAkAECewAAAAAAyICCDexffPHF0K1bt9CmTZtQv379sPbaa4djjz02vPfee1W2jgkTJoSrr7467LDDDqFly5bF6+nSpUvo1atX+Oabb6psXQAAAAAAVG+1QwHq0aNH6NOnz0I/Gzt2bOjXr1947LHHwvXXXx969uy5TOuIyzn99NPDlClTFltPvA0ZMiSss8464cQTT1ym9QAAAAAAkB8KrsL+5ptvLg7ru3btGt5///0wceLEFKB37NgxzJ8/P5x33nmhf//+S72Ohx9+OBxzzDEprN98883DQw89FEaPHh0mT54cvvjii9C3b9+w1157hVq1alXhKwMAAAAAoDorqAr7SZMmpVY0UWxLM3DgwFCz5v87Z9GpU6cwePDgsPXWW6dQ/dxzzw0HHHBAqFu3bqXWMWbMmPCHP/whLFiwIBx00EHhySefDHXq1Cl+vFmzZmHDDTcM3bt3r+JXBwAAAABAdVZQFfYPPPBAmD59epru3bt3cVif06BBg3DVVVcVB++DBg2q9DouueSSMGPGjNCiRYtUSV8yrAcAAAAAgLIUVGAfK+qjddddN2y//falzhMHoq1Xr16aHjBgQKWW/9NPP4WnnnoqTcfe9LGaHgAAAAAAKqKgAvvhw4en+5122qnMeWJYv8022yw0f0W9+uqrYfbs2Wl6n332WeixuXPnLsUWAwAAAABQKAqmh/13331X3A6nffv25c4bK/Dfeeed8OWXX4aioqJQo0aNCq3jgw8+KJ7eZJNNwrBhw8J1110XXnnllTBt2rTQuHHjNLDt73//+3D44Ycv1euIA9mWZerUqcXTsYd+vBWaCr5VZFyN4I3MB0W+kHmhEI8l+cjXMT84PuYHx8f84PiYHxwf84PjY37we5XqasFy+Ju5diENOJvTqlWrcufNPT5r1qzwyy+/hCZNmlRoHd9++23x9AsvvBBOO+20MG/evOKfxWXF8D7ejjzyyPDQQw+F2rUr9xY0b968QvNNnDixIKv619KFKC/UrdliZW8CVWBOW2N45IMJEyas7E2gCjg+5gfHx/zg+JgfHB/zg+NjfnB8zA9+r1JdTS1RQF1VCqYlThwINqd+/frlzhsHny0ZslfUzz//XDz9xz/+MQX999xzTwrPZ86cGd56662w6667pscfe+yxcOmll1byVQAAAAAAkK8KpsK+pCW1uKloC5zyLoGIlfXPPffcQv3yd95551RdH9vifPzxx+GWW24Jf/7zn0Pr1q0rvI7JkyeXe0Yn1+6nZcuWBTno7diyOwZRjTRY8H9XxFB91R2nMjsfrL766it7E6gCjo/5wfExPzg+5gfHx/zg+JgfHB/zg9+rVFd16lR9d4GCCewbNWpUPB2r3ctT8vHYd76iSs673377lTq4bRzUNlbW//a3v00D1D7//PPhpJNOqvA6KhrC16xZM90KTVHRyt4CqkJR8Ebmgxq+kHmhEI8l+cjXMT84PuYHx8f84PiYHxwf84PjY37we5XqquZy+Ju5YP4Kb9GiRYX7Yo0fP744XK9MYF9yHbvttluZ8+2+++7F059++mmFlw8AAAAAQP4qmMB+zTXXLA7fR44cWe68o0ePTvcbbrhhpdrjbLzxxhWqhC/52LRp0yq8fAAAAAAA8lfBBPbRtttum+7ffffdMueZM2dOGD58+ELzV9T2229fPP3TTz+VOV/Jx1ZdddVKrQMAAAAAgPxUUIH9gQcemO5HjRoVhg0bVuo8AwcODLNmzUrTBx10UKWWHweVbdWqVZp+/fXXy5xvyJAhxdNbb711pdYBAAAAAEB+KqjAvnv37qFJkyZp+oILLggLFixYbLDZyy+/PE23a9cudO3atdKDDJx55plp+uWXXw6vvfbaYvP8+uuv4eqrr07Tq6yySvjNb36z1K8HAAAAAID8UVCBfRwUtlevXmn61VdfDd26dQsffvhhmDRpUnjjjTfCnnvuGUaMGJEev+mmm0LdunUXq4yPPe3jLbecRZ1zzjlho402CkVFRWn5ffr0Cd9++21qg/PSSy+FTp06FQ80e80112iJAwAAAABAUjsUmBiojxkzJtx2223h2WefTbdFq+R79+4dDjvssKVafsOGDcPzzz8f9ttvv/DFF1+EHj16pNuiLrvssuJqfAAAAAAAKKgK+5xY9f7CCy+kHvWtW7dOlfRt27YNRx99dHj77bdDz549l2n566yzTvjoo4/CDTfcEHbYYYdURR/XEdvsHH/88eGDDz4IV111VZW9HgAAAAAAqr+Cq7DP2XfffdOtMjp37pxa3VREgwYNUvC/rOE/AAAAAACFoSAr7AEAAAAAIGsE9gAAAAAAkAECewAAAAAAyACBPQAAAAAAZIDAHgAAAAAAMkBgDwAAAAAAGSCwBwAAAACADKi9slY8evToMHHixDBr1qyw++67r6zNAAAAAACAwgvsJ0yYEK699trQr1+/MHny5PSzGjVqhHnz5hXP8+WXX4aePXuGevXqhUceeSTUrr3SzikAAAAAAMAKs8LS8GHDhoUDDzwwjB8/PhQVFZU534Ybbhi++uqrFNw///zz6TkAAAAAAJDvVkgP+6lTp4YDDjgg/Pjjj2H99dcPffv2De+//36Z8x9xxBEp1B80aNCK2DwAAAAAACiMwP5vf/tbqqzfeOONwwcffBBOOOGENF2WTp06pfs4LwAAAAAAFIIVEtgPHDgw9aq/6qqrQtOmTZc4f2yLkxuYFgAAAAAACsEKCexHjRqV7nfdddcKzZ8L9adPn75ctwsAAAAAAAoqsJ87d266r1u3boXmzwX1jRo1Wq7bBQAAAAAABRXYt27dOt2PHDmyQvMPHz483a+99trLdbsAAAAAAKCgAvtddtkl3T/yyCMVmv/uu+9OPe9zg88CAAAAAEC+WyGB/SmnnBKKiorC7bffHl5++eVy5+3du3cYNGhQmv7973+/IjYPAAAAAABWutorYiWxUv64444LDz30UNh///3DMcccE/bYY4/ix2NA//XXX4dHH300vPfee6m6/swzzwybbbbZitg8AAAAAAAojMA+uueee8KcOXPC448/noL7eIvBfHTggQem+1iFH8Vw/+abb15RmwYAAAAAAIXREieqW7duqqDv379/2G233ULt2rVTQJ+7xfB+p512Ck8++WR44IEHQq1atVbUpgEAAAAAQOFU2OccfPDB6TZz5swwatSo8PPPP4fGjRuHddZZJzRt2nRFbw4AAAAAABROYJ/rV3/RRReFvffeO003aNAgbLrppiti9QAAAAAAkHkrJLB/8803w4IFC8J99923IlYHAAAAAADVzgrpYd+qVat036RJkxWxOgAAAAAAqHZWSGC/3XbbpfsRI0asiNUBAAAAAEC1s0IC+9NPPz0UFRWFv/71rytidQAAAAAAUO2skMB+3333DZdcckl45plnwrHHHht+/PHHFbFaAAAAAACoNlbIoLMnn3xyul9zzTXDo48+Gp544omw1VZbhfbt24eGDRuW+bwaNWqEf/3rXytiEwEAAAAAIP8D+759+6bwPYqtcebNmxc+/PDDMGzYsDKfE+cT2AMAAAAAUChWSGC/++67Fwf2AAAAAADASgrshwwZsiJWAwAAAAAA1dYKGXQWAAAAAAAon8AeAAAAAAAKpSVOaT755JMwZsyYMH369NCkSZOwzjrrhM0222xlbQ4AAAAAABROYD9t2rRwzTXXhHvvvTdMmTJlscebNWsWTjnllHDxxReHpk2brshNAwAAAACAwmiJ88UXX4Qtttgi3HTTTWHy5MmhqKhosVv8+Q033BC23HLL8NVXX62oTQMAAAAAgMKosJ85c2b4zW9+E7799tv07/322y8ceeSRYdNNN03tcH755ZfUIueJJ54IgwYNCt98802aP/6sfv36K2ITAQAAAAAg/wP7O++8M/Wrr1evXujXr1845JBDFptn2223Dd27dw8DBgwIRx11VBg9enR63jnnnLMiNhEAAAAAAPK/JU7//v1DjRo1Um/60sL6krp165bmiy1y4vMAAAAAAKAQrJDA/vPPP0/3Rx99dIXmz803YsSI5bpdAAAAAABQUIH9jBkz0v1qq61Woflz8+WeBwAAAAAA+W6FBPYtWrSoVMV8br6WLVsu1+0CAAAAAICCCux32mmn1JP+L3/5S4Xmj/PFnvcdO3Zc7tsGAAAAAAAFE9iffPLJ6X7QoEHhyCOPDOPHjy91vokTJ6b+9c8991z69ymnnLIiNg8AAAAAAFa62itiJb/5zW9SEP/II4+EJ598Mjz99NNht912C5tssklo0qRJ+OWXX8Knn34ahg4dGubOnZuec8wxx4R99913RWweAAAAAAAURmAf9e3bNzRt2jTcfffdKZR/7bXX0q2k2DYnOu2008Ktt966ojYNAAAAAAAKoyVOVKdOnXDXXXeFjz/+OJx55plhiy22CKusskqoWbNmut9yyy3DWWedlR6/88470/wAAAAAAFAoVliFfU4M6vv06bOiVwsAAAAAAJm2wirsAQAAAACAsgnsAQAAAACgUAL7jz76KLRv3z7stNNOYcGCBeXOO3/+/NCxY8ew3nrrhf/9738rYvMAAAAAAKAwAvtHH300jBkzJuy+++5pkNny1KpVK3Tp0iWMHj06PPbYYyti8wAAAAAAoDAC+8GDB4caNWqE3/zmNxWaf//990/3L7/88nLeMgAAAAAAKKDAfuzYsel+4403rtD8HTp0SPfjxo1brtsFAAAAAAAFFdhPnTo13detW7dC89epUyfd//TTT8t1uwAAAAAAoKAC++bNm6f72Me+Ir755pt0v8oqqyzX7QIAAAAAgIIK7Lfccst0/8QTT1Ro/scffzzdb7755st1uwAAAAAAoKAC+27duoWioqJw6623hnfeeafced977700Xxyk9pBDDlkRmwcAAAAAAIUR2J988slh3XXXDTNnzgx77LFHuPzyy8PIkSMXmif+O/68S5cuab511lknnHrqqSti8wAAAAAAYKWrvSJWEgebffrpp1MYP3ny5HDttdemW8OGDUOTJk3C9OnTw6+//prmjZX4sef9gAEDKjxILQAAAAAAVHcrpMI+149+2LBhYb/99kuhfLzNmDEj/Pjjj+k+97OuXbuG4cOHh80222xFbRoAAAAAABRGhX1Ou3btwqBBg8JXX30VXnnlldQGZ9q0aaFp06Zh/fXXD3vttVe6BwAAAACAQrNCA/ucDTbYIN0AAAAAAICVGNiX9N1336UWOLGHfZs2bULHjh1DnTp1VvZmAQAAAABA9Q7sFyxYED7++OM0vfbaa4cWLVqUOt9PP/0Ufv/736fBaEuK7XF69eoVevToUdWbBgAAAAAAhRPYDx06NHTu3DnUqFEjfPLJJ6UG9rGaPs7z2WefpYFmS/r555/DOeeck3rbX3bZZVW9eQAAAAAAkEk1q3qBcTDZaNdddw0bb7xxqfNcf/314dNPP03T9erVC2eccUa48847w0UXXZQC/hjiX3PNNWlQWgAAAAAAKARVXmH/wQcfpOr6gw8+uNTH582bF/7+97+n6bp164Y33ngjbL/99sWP/+EPfwjbbbddapnTt2/fcPXVV1f1JgIAAAAAQP5X2I8dOzbd77zzzqU+/s4774RJkyalUP/4449fKKzP9b0/99xzU5V9DPMBAAAAAKAQVHlgP2HChHS/7rrrlvr4m2++WTx9+OGHlzrPfvvtl+6//PLLqt48AAAAAAAojMB+6tSp/2/BNUtf9LBhw9J9rLDfaaedSp0nVtmXXBYAAAAAAOS7Kg/sGzdunO7HjRtXZo/7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PRVMYL/mmmsWh+8jR44sd97Ro0en+w033LBS7Ws6dOiQ7r///vs0YO2Slh9ttNFGFV4+AAAAAAD5q2AC+2jbbbdN9++++26Z88yZMycMHz58ofkrarvttkv38+fPDx988EGZ873zzjvFg89uvPHGlVoHAAAAAAD5qaAC+wMPPLB4oMdhw4aVOs/AgQOLq+MPOuigSi2/a9euxQO9Pv7446XOM3v27LSOaO+9906hPQAAAAAAFFRg371799CkSZM0fcEFF6RRfBcdDPbyyy9P0+3atUsBfGXEAV+POOKINP2vf/0rfPHFF4vNc/3114effvopTZ9xxhlL/VoAAAAAAMgvBRXYx0Fhe/XqlaZfffXV0K1bt/Dhhx+GSZMmhTfeeCPsueeeYcSIEenxm266KdStW3eh5w8ZMiT1tI+33HIWde2114ZVVlklhf977LFHeOKJJ9Igs19//XU6SXDllVcWV/vvs88+y/01AwAAAABQPdQOBeacc84JY8aMCbfddlt49tln062k2NKmd+/e4bDDDluq5bdv3z70798/PT8OPpuruC9p1113DQ8//PBSvwag+mrWrFkoKipa2ZsBAJni+AgAjo9AAVbY5/Tp0ye88MILqUd969atUyV927Ztw9FHHx3efvvt0LNnz2Vafqys/9///hd69OgRNthgg1C/fv30R8guu+wS7rrrrlSpn2vNAwAAAAAAUY0ipZ4AAAAAALDSFWSFPQAAAAAAZI3AHgAAAAAAMkBgDwAAAAAAGSCwBwAAAACADBDYAwAAAABABgjsAQAAAAAgAwT2AAAAAACQAQJ7AAAAAADIAIE9kGnjx48PN954Y9h3331Du3btQsOGDdNtrbXWCvvvv3+44YYbwnfffbdSt7FGjRpl3po0aRI22WSTcNppp4X//Oc/K3U7Aahe+vbtW3w8GTJkSIWfd+KJJ6bndO7ceblsV69evdLy11lnnbCiFRUVhWeffTacfvrpYcsttwyrr756qFOnTlhllVXCeuutF7p165b+bzBq1KgK7ddFb7Vr1w6rrbZa2H333dNyfv755zKXM2bMmIWe26JFizB37twlvoZbb711oefF9wuAZTdx4sT0uzj+bt1mm23CvHnzyp3/f//7X6hbt26a/7e//W2Z88Xf7Y8++mg46aST0t92cR3x2NOsWbPQoUOHcPjhh4c77rgj/PDDD0s8dpZ2i8tq1apV2GuvvcLf//73MHv27GXaD0D1J7AHMmnBggXpPzXt27cP5513XnjppZfCt99+G2bOnJlu48aNC88//3w4//zzU2AQ/3CPP68qVRV2/PLLL2HEiBHh7rvvDttuu2246aabQr6JIVLuP5sxvACA5XGcHTp0aArpDzzwwBRo/Pe//03hTAxkpk2blkL6gQMHpv8bxPD+kEMOCd98802l3oz58+eHyZMnhzfffDMtZ7PNNguffPJJhZ77008/heeee26J891///2V2iYAKqZly5bhlltuSdMfffRROvFa3u/7k08+OYXxzZs3T4F7aQYMGBA23HDDcPTRR6cTvvFvu/j7Ph57pk6dGr788svw5JNPhjPPPDMVlcVQPx5HKiMua8KECeHVV19Nf9fGvxu///77vHvb4zHfiWqoGIE9kDmxoiBWyF155ZXh119/DW3btg1/+ctfwvvvv5/+4xL/M/Pxxx+nCrUddtgh/Qcn/uEeq/FXpmOPPTZMnz69+Bb/Axf/yL/99ttTxUT8T2HPnj3Diy++uFK3EwCqmwceeCDsscceqRqyVq1a6Zj7+OOPp6AkBifxpP7bb78drr766rDpppum5zz99NMpeC/PoEGDFjp2//jjj+Gdd94Jv/vd70LNmjVTgcBBBx0UZs2aVe5ymjZtWryd5fn0009TiBRfQ6NGjSq9HwAo33HHHZeuxI6uuuqqdJwozc033xw+/PDD4un499qirrvuunTyNxYl1a9fP101/cwzz4SRI0emUH706NGpeOniiy9ORWTx770Y6n/22WdLPBaUPPbEY01cTlxX7vFYtQ8ULoE9kDlnn312utw9OuaYY9J/si688MKw/fbbhzXWWCNVTsQKuz/96U/hvffeC//+97/TJfErW7yMvnHjxsW3eHl+DA3OOOOMVHEXH4/+9re/rexNBSCPxbAgto6pTBudLIuV9TFAj1WQa6+9dhg+fHh46KGHUpixwQYbpMrIWNW40047hUsvvTSF+o888kiF/m/QoEGDhY7dMbDp2LFjuOeee0KPHj3SPDGQieF/eXKtFOLxvrzKylx1fWx7sOqqq1ZyTwBQEbGYK7YmjSdb4/EjHhNL+uqrr8IVV1yRpmPr1e7duy+2jMceeyxccskl6blbbLFF+Pzzz8Ndd90VDjjggHQVeGyHE0P6Tp06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" width="758" height="374" class="figure-img"></p>
+<figcaption>CLI experiment results — cross-validated metrics</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="iter8-hpo-hyperparameter-optimization" class="level2">
+<h2 class="anchored" data-anchor-id="iter8-hpo-hyperparameter-optimization">6. <code>iter8 hpo</code> — Hyperparameter Optimization</h2>
+<div id="cli-hpo" class="cell" data-cache="true" data-execution_count="9">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> subprocess.run(</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;uv&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;iter8&quot;</span>, <span class="st">&quot;hpo&quot;</span>,</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--data&quot;</span>, <span class="bu">str</span>(data_dir <span class="op">/</span> <span class="st">&quot;train.csv&quot;</span>),</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--target&quot;</span>, <span class="st">&quot;target&quot;</span>,</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--model&quot;</span>, <span class="st">&quot;lightgbm&quot;</span>,</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--task&quot;</span>, <span class="st">&quot;classification&quot;</span>,</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--trials&quot;</span>, <span class="st">&quot;5&quot;</span>,</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>    capture_output<span class="op">=</span><span class="va">True</span>, text<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>    timeout<span class="op">=</span><span class="dv">300</span>,</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result.stdout[<span class="op">-</span><span class="dv">2000</span>:] <span class="cf">if</span> <span class="bu">len</span>(result.stdout) <span class="op">&gt;</span> <span class="dv">2000</span> <span class="cf">else</span> result.stdout)</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> result.returncode <span class="op">!=</span> <span class="dv">0</span> <span class="kw">and</span> result.stderr:</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;STDERR:&quot;</span>, result.stderr[<span class="op">-</span><span class="dv">1000</span>:])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Running HPO for lightgbm (5 trials)...
+
+Best params: {&#39;max_depth&#39;: 10, &#39;learning_rate&#39;: 0.02768287674555442, &#39;num_leaves&#39;: 83, &#39;min_child_samples&#39;: 9, &#39;subsample&#39;: 0.5726281163411522, &#39;colsample_bytree&#39;: 0.7684529873048094}
+Best value: 0.9777
+Trials completed: 10
+Warmstart: injected 5 historical trials
+Warmstart summary: scanned=5, injected=5, skipped_missing_scores=0, skipped_missing_params=0, skipped_invalid_trials=0
+</code></pre>
+</div>
+</div>
+</section>
+<section id="iter8-drift-detect-distribution-drift" class="level2">
+<h2 class="anchored" data-anchor-id="iter8-drift-detect-distribution-drift">7. <code>iter8 drift</code> — Detect Distribution Drift</h2>
+<div id="cli-drift" class="cell" data-cache="true" data-execution_count="10">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> subprocess.run(</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;uv&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;iter8&quot;</span>, <span class="st">&quot;drift&quot;</span>,</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--reference&quot;</span>, <span class="bu">str</span>(data_dir <span class="op">/</span> <span class="st">&quot;reference.csv&quot;</span>),</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--new&quot;</span>, <span class="bu">str</span>(data_dir <span class="op">/</span> <span class="st">&quot;live.csv&quot;</span>),</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--method&quot;</span>, <span class="st">&quot;ks&quot;</span>,</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    capture_output<span class="op">=</span><span class="va">True</span>, text<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    timeout<span class="op">=</span><span class="dv">120</span>,</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result.stdout[<span class="op">-</span><span class="dv">2000</span>:] <span class="cf">if</span> <span class="bu">len</span>(result.stdout) <span class="op">&gt;</span> <span class="dv">2000</span> <span class="cf">else</span> result.stdout)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+# KS/Chi2 Drift Detection Report
+Drift detected: True
+Columns tested: 13
+Columns drifted: 2
+
+OK | col_8 | p=1.000000 | ks_test
+OK | col_1 | p=1.000000 | ks_test
+OK | target | p=1.000000 | ks_test
+DRIFT | col_0 | p=0.000000 | ks_test
+OK | col_6 | p=1.000000 | ks_test
+OK | col_2 | p=1.000000 | ks_test
+OK | col_3 | p=1.000000 | ks_test
+OK | col_5 | p=1.000000 | ks_test
+DRIFT | col_4 | p=0.000004 | ks_test
+OK | col_10 | p=1.000000 | ks_test
+OK | col_7 | p=1.000000 | ks_test
+OK | col_11 | p=1.000000 | ks_test
+OK | col_9 | p=1.000000 | ks_test
+</code></pre>
+</div>
+</div>
+</section>
+<section id="iter8-export-export-champion-model" class="level2">
+<h2 class="anchored" data-anchor-id="iter8-export-export-champion-model">8. <code>iter8 export</code> — Export Champion Model</h2>
+<div id="cli-export" class="cell" data-execution_count="11">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> subprocess.run(</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    [<span class="st">&quot;uv&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;iter8&quot;</span>, <span class="st">&quot;export&quot;</span>, <span class="st">&quot;cli_cookbook:classification&quot;</span>],</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    capture_output<span class="op">=</span><span class="va">True</span>, text<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    timeout<span class="op">=</span><span class="dv">60</span>,</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result.stdout)</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> result.returncode <span class="op">!=</span> <span class="dv">0</span> <span class="kw">and</span> result.stderr:</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;STDERR:&quot;</span>, result.stderr[<span class="op">-</span><span class="dv">500</span>:])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Exported to: workspace/exports/cli_cookbook_classification
+  Model artifact: model.artifact
+  Preprocessing:  pipelines/preprocessing.py
+  Predictor:      predictor.py
+
+Usage:
+  cd workspace/exports/cli_cookbook_classification
+  python predictor.py data.csv
+</code></pre>
+</div>
+</div>
+</section>
+<section id="iter8-state-experiment-state-summary" class="level2">
+<h2 class="anchored" data-anchor-id="iter8-state-experiment-state-summary">9. <code>iter8 state</code> — Experiment State Summary</h2>
+<div id="cli-state" class="cell" data-execution_count="12">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> subprocess.run(</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>    [<span class="st">&quot;uv&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;iter8&quot;</span>, <span class="st">&quot;state&quot;</span>],</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    capture_output<span class="op">=</span><span class="va">True</span>, text<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result.stdout[:<span class="dv">2000</span>] <span class="cf">if</span> <span class="bu">len</span>(result.stdout) <span class="op">&gt;</span> <span class="dv">2000</span> <span class="cf">else</span> result.stdout)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># Current Experiment State
+
+**Task:** Classification
+**Dataset:** unknown
+**Rows / Features:** ? / ?
+**Latest Run ID:** exp_1778808528_48419a
+
+## Leaderboard
+
+| Rank | Model | Run ID | Primary Metric | Score | Duration |
+|---|---|---|---|---|---|
+| 1 | CatBoost | exp_1778808362_edb95f | roc_auc | 0.9835 | 4.05s |
+| 2 | CatBoost | exp_1778808278_912160 | roc_auc | 0.9835 | 4.17s |
+| 3 | CatBoost | exp_1778808208_c33bb4 | roc_auc | 0.9835 | 4.18s |
+| 4 | CatBoost | exp_1778586677_25bb5c | roc_auc | 0.9835 | 18.85s |
+| 5 | CatBoost | exp_1778586589_2e8a59 | roc_auc | 0.9835 | 16.71s |
+| 6 | CatBoost | exp_1778586475_4d8c61 | roc_auc | 0.9835 | 16.11s |
+| 7 | CatBoost | exp_1777826342_b98a79 | roc_auc | 0.9835 | 5.07s |
+| 8 | CatBoost | exp_1778808199_7cc4d6 | roc_auc | 0.9809 | 2.79s |
+| 9 | LightGBM | exp_1778808362_edb95f | roc_auc | 0.9806 | 1.71s |
+| 10 | LightGBM | exp_1778808278_912160 | roc_auc | 0.9806 | 1.74s |
+| 11 | LightGBM | exp_1778808208_c33bb4 | roc_auc | 0.9806 | 1.74s |
+| 12 | LightGBM | exp_1778586677_25bb5c | roc_auc | 0.9806 | 3.25s |
+| 13 | LightGBM | exp_1778586589_2e8a59 | roc_auc | 0.9806 | 3.77s |
+| 14 | LightGBM | exp_1778586475_4d8c61 | roc_auc | 0.9806 | 4.02s |
+| 15 | LightGBM | exp_1777826342_b98a79 | roc_auc | 0.9806 | 1.86s |
+| 16 | CatBoost | exp_1778808528_48419a | roc_auc | 0.9792 | 2.45s |
+| 17 | CatBoost | exp_1778679910_f95871 | roc_auc | 0.9792 | 2.45s |
+| 18 | LightGBM | exp_1778808199_7cc4d6 | roc_auc | 0.9774 | 1.11s |
+| 19 | XGBoost | exp_1778808362_edb95f | roc_auc | 0.9767 | 0.86s |
+| 20 | XGBoost | exp_1778808278_912160 | roc_auc | 0.9767 | 0.88s |
+| 21 | XGBoost | exp_1778808208_c33bb4 | roc_auc | 0.9767 | 0.89s |
+| 22 | XGBoost | exp_1778586677_25bb5c | roc_auc | 0.9767 | 1.73s |
+| 23 | XGBoost | exp_1778586589_2e8a59 | roc_auc | 0.9767 | 2.11s |
+| 24 | XGBoost | exp_1778586475_4d8c61 | roc_auc | 0.9767 | 1.84s |
+| 25 | XGBoost | exp_1777826342_b98a79 | roc_auc | 0.9767 | 0.92s |
+| 26 | LightGBM | exp_1778808528_48419a |</code></pre>
+</div>
+</div>
+</section>
+<section id="cleanup" class="level2">
+<h2 class="anchored" data-anchor-id="cleanup">10. Cleanup</h2>
+<div id="cleanup" class="cell" data-execution_count="13">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> shutil</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> data_dir.exists():</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    shutil.rmtree(data_dir)</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;Cleaned up temporary CLI data.&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Cleaned up temporary CLI data.</code></pre>
+</div>
+</div>
+</section>
+<section id="command-reference" class="level2">
+<h2 class="anchored" data-anchor-id="command-reference">Command Reference</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 31%">
+<col style="width: 37%">
+<col style="width: 31%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Command</th>
+<th>Key Flags</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>iter8 init</code></td>
+<td><code>--force-reset-registry</code></td>
+<td>Initialize workspace</td>
+</tr>
+<tr class="even">
+<td><code>iter8 hardware</code></td>
+<td>—</td>
+<td>Show detected hardware profile</td>
+</tr>
+<tr class="odd">
+<td><code>iter8 run</code></td>
+<td><code>--config</code>, <code>--data</code>, <code>--target</code>, <code>--task</code>, <code>--models</code>, <code>--quick</code>, <code>--resume</code></td>
+<td>Run an experiment</td>
+</tr>
+<tr class="even">
+<td><code>iter8 leaderboard</code></td>
+<td><code>--top</code>, <code>--metric</code></td>
+<td>View ranked results</td>
+</tr>
+<tr class="odd">
+<td><code>iter8 hpo</code></td>
+<td><code>--data</code>, <code>--target</code>, <code>--model</code>, <code>--task</code>, <code>--trials</code></td>
+<td>Hyperparameter optimization</td>
+</tr>
+<tr class="even">
+<td><code>iter8 drift</code></td>
+<td><code>--reference</code>, <code>--new</code>, <code>--method</code> (ks/psi/domain/both)</td>
+<td>Detect distribution drift</td>
+</tr>
+<tr class="odd">
+<td><code>iter8 export</code></td>
+<td><code>&lt;key&gt;</code>, <code>--output</code>, <code>--target</code></td>
+<td>Export champion model</td>
+</tr>
+<tr class="even">
+<td><code>iter8 state</code></td>
+<td>—</td>
+<td>Generate experiment state summary</td>
+</tr>
+</tbody>
+</table>
 <!-- -->
 
 </section>
@@ -2798,72 +3170,285 @@ vertical-align: -.125em;
     }
   });
   </script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> &quot;Quick Start&quot;</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="an">description:</span><span class="co"> &quot;The fastest way to run an iter8ml experiment — 5 lines of code.&quot;</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="an">date:</span><span class="co"> today</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="an">format:</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">  html:</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co">    self-contained: true</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co">    embed-resources: true</span></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co">    code-fold: true</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co">    code-tools: true</span></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="fu">## 1. Create a Dataset</span></span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: generate-data</span></span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.datasets <span class="im">import</span> make_classification</span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>X, y <span class="op">=</span> make_classification(n_samples<span class="op">=</span><span class="dv">2000</span>, n_features<span class="op">=</span><span class="dv">20</span>, n_informative<span class="op">=</span><span class="dv">10</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
-<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pl.DataFrame({<span class="ss">f&quot;feat_</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span>: X[:, i] <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(X.shape[<span class="dv">1</span>])})</span>
-<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df.with_columns(target<span class="op">=</span>pl.Series(y))</span>
-<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Shape: </span><span class="sc">{</span>df<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">  |  Positive class: </span><span class="sc">{</span>df[<span class="st">&#39;target&#39;</span>]<span class="sc">.</span>mean()<span class="sc">:.1%}</span><span class="ss">&quot;</span>)</span>
-<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="fu">## 2. Run an Experiment</span></span>
-<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: run-experiment</span></span>
-<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
-<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml <span class="im">import</span> ExperimentSession, ExperimentConfig, TaskType</span>
-<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>session <span class="op">=</span> ExperimentSession()</span>
-<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> ExperimentConfig(</span>
-<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">&quot;quickstart&quot;</span>,</span>
-<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a>    task<span class="op">=</span>TaskType.CLASSIFICATION,</span>
-<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a>    target_col<span class="op">=</span><span class="st">&quot;target&quot;</span>,</span>
-<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a>    data_path<span class="op">=</span><span class="st">&quot;&quot;</span>,</span>
-<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a>    models<span class="op">=</span>[<span class="st">&quot;catboost&quot;</span>, <span class="st">&quot;lightgbm&quot;</span>],</span>
-<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a>    cv_folds<span class="op">=</span><span class="dv">3</span>,</span>
-<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> session.run(config, df)</span>
-<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a><span class="fu">## 3. Inspect the Leaderboard</span></span>
-<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: leaderboard</span></span>
-<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a>lb <span class="op">=</span> session.leaderboard()</span>
-<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(lb)</span>
-<span id="cb8-59"><a href="#cb8-59" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb8-60"><a href="#cb8-60" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-61"><a href="#cb8-61" aria-hidden="true" tabindex="-1"></a><span class="fu">## 4. Export the Champion</span></span>
-<span id="cb8-62"><a href="#cb8-62" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-65"><a href="#cb8-65" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb8-66"><a href="#cb8-66" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: export</span></span>
-<span id="cb8-67"><a href="#cb8-67" aria-hidden="true" tabindex="-1"></a><span class="co">#| error: true</span></span>
-<span id="cb8-68"><a href="#cb8-68" aria-hidden="true" tabindex="-1"></a>path <span class="op">=</span> session.export(<span class="st">&quot;quickstart:classification&quot;</span>)</span>
-<span id="cb8-69"><a href="#cb8-69" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Exported to: </span><span class="sc">{</span>path<span class="sc">}</span><span class="ss">&quot;</span>)</span>
-<span id="cb8-70"><a href="#cb8-70" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb8-71"><a href="#cb8-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-72"><a href="#cb8-72" aria-hidden="true" tabindex="-1"></a>---</span>
-<span id="cb8-73"><a href="#cb8-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-74"><a href="#cb8-74" aria-hidden="true" tabindex="-1"></a>**Next:** See the <span class="co">[</span><span class="ot">Full Walkthrough</span><span class="co">](02_full_walkthrough.html)</span> for data exploration, multi-model comparison, promotion, drift detection, and state generation.</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> &quot;CLI Cookbook&quot;</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="an">description:</span><span class="co"> &quot;Practical examples for every iter8ml CLI command — init, run, leaderboard, hpo, drift, export, state, and hardware.&quot;</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="an">date:</span><span class="co"> today</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="an">format:</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="co">  html:</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="co">    self-contained: true</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="co">    embed-resources: true</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a><span class="co">    code-fold: true</span></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a><span class="co">    code-tools: true</span></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>iter8ml ships a full CLI under the <span class="in">`iter8`</span> command. This notebook demonstrates</span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>each command with real execution using synthetic data.</span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a><span class="fu">## 1. Prepare Synthetic Data</span></span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: prepare-data</span></span>
+<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
+<span id="cb26-23"><a href="#cb26-23" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb26-24"><a href="#cb26-24" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
+<span id="cb26-25"><a href="#cb26-25" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb26-26"><a href="#cb26-26" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.datasets <span class="im">import</span> make_classification</span>
+<span id="cb26-27"><a href="#cb26-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-28"><a href="#cb26-28" aria-hidden="true" tabindex="-1"></a>X, y <span class="op">=</span> make_classification(</span>
+<span id="cb26-29"><a href="#cb26-29" aria-hidden="true" tabindex="-1"></a>    n_samples<span class="op">=</span><span class="dv">1500</span>,</span>
+<span id="cb26-30"><a href="#cb26-30" aria-hidden="true" tabindex="-1"></a>    n_features<span class="op">=</span><span class="dv">12</span>,</span>
+<span id="cb26-31"><a href="#cb26-31" aria-hidden="true" tabindex="-1"></a>    n_informative<span class="op">=</span><span class="dv">6</span>,</span>
+<span id="cb26-32"><a href="#cb26-32" aria-hidden="true" tabindex="-1"></a>    random_state<span class="op">=</span><span class="dv">42</span>,</span>
+<span id="cb26-33"><a href="#cb26-33" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb26-34"><a href="#cb26-34" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pl.DataFrame({<span class="ss">f&quot;col_</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span>: X[:, i] <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(X.shape[<span class="dv">1</span>])})</span>
+<span id="cb26-35"><a href="#cb26-35" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df.with_columns(target<span class="op">=</span>pl.Series(y))</span>
+<span id="cb26-36"><a href="#cb26-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-37"><a href="#cb26-37" aria-hidden="true" tabindex="-1"></a>data_dir <span class="op">=</span> Path(<span class="st">&quot;notebooks/_cli_data&quot;</span>)</span>
+<span id="cb26-38"><a href="#cb26-38" aria-hidden="true" tabindex="-1"></a>data_dir.mkdir(exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb26-39"><a href="#cb26-39" aria-hidden="true" tabindex="-1"></a>df.write_csv(data_dir <span class="op">/</span> <span class="st">&quot;train.csv&quot;</span>)</span>
+<span id="cb26-40"><a href="#cb26-40" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Training data: </span><span class="sc">{</span>df<span class="sc">.</span>shape<span class="sc">}</span><span class="ss"> saved to </span><span class="sc">{</span>data_dir <span class="op">/</span> <span class="st">&#39;train.csv&#39;</span><span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb26-41"><a href="#cb26-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-42"><a href="#cb26-42" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">99</span>)</span>
+<span id="cb26-43"><a href="#cb26-43" aria-hidden="true" tabindex="-1"></a>X_ref <span class="op">=</span> X[:<span class="dv">600</span>]</span>
+<span id="cb26-44"><a href="#cb26-44" aria-hidden="true" tabindex="-1"></a>X_new <span class="op">=</span> X_ref.copy()</span>
+<span id="cb26-45"><a href="#cb26-45" aria-hidden="true" tabindex="-1"></a>X_new[:, <span class="dv">0</span>] <span class="op">+=</span> <span class="fl">1.0</span></span>
+<span id="cb26-46"><a href="#cb26-46" aria-hidden="true" tabindex="-1"></a>X_new[:, <span class="dv">4</span>] <span class="op">*=</span> <span class="fl">1.6</span></span>
+<span id="cb26-47"><a href="#cb26-47" aria-hidden="true" tabindex="-1"></a>df_ref <span class="op">=</span> pl.DataFrame({<span class="ss">f&quot;col_</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span>: X_ref[:, i] <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(X_ref.shape[<span class="dv">1</span>])})</span>
+<span id="cb26-48"><a href="#cb26-48" aria-hidden="true" tabindex="-1"></a>df_ref <span class="op">=</span> df_ref.with_columns(target<span class="op">=</span>pl.Series(y[:<span class="dv">600</span>]))</span>
+<span id="cb26-49"><a href="#cb26-49" aria-hidden="true" tabindex="-1"></a>df_new <span class="op">=</span> pl.DataFrame({<span class="ss">f&quot;col_</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span>: X_new[:, i] <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(X_new.shape[<span class="dv">1</span>])})</span>
+<span id="cb26-50"><a href="#cb26-50" aria-hidden="true" tabindex="-1"></a>df_new <span class="op">=</span> df_new.with_columns(target<span class="op">=</span>pl.Series(y[:<span class="dv">600</span>]))</span>
+<span id="cb26-51"><a href="#cb26-51" aria-hidden="true" tabindex="-1"></a>df_ref.write_csv(data_dir <span class="op">/</span> <span class="st">&quot;reference.csv&quot;</span>)</span>
+<span id="cb26-52"><a href="#cb26-52" aria-hidden="true" tabindex="-1"></a>df_new.write_csv(data_dir <span class="op">/</span> <span class="st">&quot;live.csv&quot;</span>)</span>
+<span id="cb26-53"><a href="#cb26-53" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Drift data: reference.csv (</span><span class="sc">{</span>df_ref<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">), live.csv (</span><span class="sc">{</span>df_new<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">)&quot;</span>)</span>
+<span id="cb26-54"><a href="#cb26-54" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-55"><a href="#cb26-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-56"><a href="#cb26-56" aria-hidden="true" tabindex="-1"></a><span class="fu">## 2. `iter8 init` — Initialize Workspace</span></span>
+<span id="cb26-57"><a href="#cb26-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-60"><a href="#cb26-60" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-61"><a href="#cb26-61" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: cli-init</span></span>
+<span id="cb26-62"><a href="#cb26-62" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> subprocess</span>
+<span id="cb26-63"><a href="#cb26-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-64"><a href="#cb26-64" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> subprocess.run(</span>
+<span id="cb26-65"><a href="#cb26-65" aria-hidden="true" tabindex="-1"></a>    [<span class="st">&quot;uv&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;iter8&quot;</span>, <span class="st">&quot;init&quot;</span>, <span class="st">&quot;--force-reset-registry&quot;</span>],</span>
+<span id="cb26-66"><a href="#cb26-66" aria-hidden="true" tabindex="-1"></a>    capture_output<span class="op">=</span><span class="va">True</span>, text<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb26-67"><a href="#cb26-67" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb26-68"><a href="#cb26-68" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result.stdout)</span>
+<span id="cb26-69"><a href="#cb26-69" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> result.stderr:</span>
+<span id="cb26-70"><a href="#cb26-70" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(result.stderr)</span>
+<span id="cb26-71"><a href="#cb26-71" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-72"><a href="#cb26-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-73"><a href="#cb26-73" aria-hidden="true" tabindex="-1"></a><span class="fu">## 3. `iter8 hardware` — Show Hardware Profile</span></span>
+<span id="cb26-74"><a href="#cb26-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-77"><a href="#cb26-77" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-78"><a href="#cb26-78" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: cli-hardware</span></span>
+<span id="cb26-79"><a href="#cb26-79" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> subprocess.run(</span>
+<span id="cb26-80"><a href="#cb26-80" aria-hidden="true" tabindex="-1"></a>    [<span class="st">&quot;uv&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;iter8&quot;</span>, <span class="st">&quot;hardware&quot;</span>],</span>
+<span id="cb26-81"><a href="#cb26-81" aria-hidden="true" tabindex="-1"></a>    capture_output<span class="op">=</span><span class="va">True</span>, text<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb26-82"><a href="#cb26-82" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb26-83"><a href="#cb26-83" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result.stdout)</span>
+<span id="cb26-84"><a href="#cb26-84" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-85"><a href="#cb26-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-86"><a href="#cb26-86" aria-hidden="true" tabindex="-1"></a><span class="fu">## 4. `iter8 run` — Run an Experiment</span></span>
+<span id="cb26-87"><a href="#cb26-87" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-88"><a href="#cb26-88" aria-hidden="true" tabindex="-1"></a><span class="fu">### Quick mode (fast iteration)</span></span>
+<span id="cb26-89"><a href="#cb26-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-92"><a href="#cb26-92" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-93"><a href="#cb26-93" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: cli-run-quick</span></span>
+<span id="cb26-94"><a href="#cb26-94" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
+<span id="cb26-95"><a href="#cb26-95" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> subprocess.run(</span>
+<span id="cb26-96"><a href="#cb26-96" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb26-97"><a href="#cb26-97" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;uv&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;iter8&quot;</span>, <span class="st">&quot;run&quot;</span>,</span>
+<span id="cb26-98"><a href="#cb26-98" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--data&quot;</span>, <span class="bu">str</span>(data_dir <span class="op">/</span> <span class="st">&quot;train.csv&quot;</span>),</span>
+<span id="cb26-99"><a href="#cb26-99" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--target&quot;</span>, <span class="st">&quot;target&quot;</span>,</span>
+<span id="cb26-100"><a href="#cb26-100" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--task&quot;</span>, <span class="st">&quot;classification&quot;</span>,</span>
+<span id="cb26-101"><a href="#cb26-101" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--models&quot;</span>, <span class="st">&quot;lightgbm&quot;</span>,</span>
+<span id="cb26-102"><a href="#cb26-102" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--models&quot;</span>, <span class="st">&quot;xgboost&quot;</span>,</span>
+<span id="cb26-103"><a href="#cb26-103" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--quick&quot;</span>,</span>
+<span id="cb26-104"><a href="#cb26-104" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb26-105"><a href="#cb26-105" aria-hidden="true" tabindex="-1"></a>    capture_output<span class="op">=</span><span class="va">True</span>, text<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb26-106"><a href="#cb26-106" aria-hidden="true" tabindex="-1"></a>    timeout<span class="op">=</span><span class="dv">300</span>,</span>
+<span id="cb26-107"><a href="#cb26-107" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb26-108"><a href="#cb26-108" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result.stdout[<span class="op">-</span><span class="dv">2000</span>:] <span class="cf">if</span> <span class="bu">len</span>(result.stdout) <span class="op">&gt;</span> <span class="dv">2000</span> <span class="cf">else</span> result.stdout)</span>
+<span id="cb26-109"><a href="#cb26-109" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> result.returncode <span class="op">!=</span> <span class="dv">0</span> <span class="kw">and</span> result.stderr:</span>
+<span id="cb26-110"><a href="#cb26-110" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;STDERR:&quot;</span>, result.stderr[<span class="op">-</span><span class="dv">1000</span>:])</span>
+<span id="cb26-111"><a href="#cb26-111" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-112"><a href="#cb26-112" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-113"><a href="#cb26-113" aria-hidden="true" tabindex="-1"></a><span class="fu">### Full run with config file</span></span>
+<span id="cb26-114"><a href="#cb26-114" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-117"><a href="#cb26-117" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-118"><a href="#cb26-118" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: cli-config-file</span></span>
+<span id="cb26-119"><a href="#cb26-119" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> yaml</span>
+<span id="cb26-120"><a href="#cb26-120" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-121"><a href="#cb26-121" aria-hidden="true" tabindex="-1"></a>config_yaml <span class="op">=</span> {</span>
+<span id="cb26-122"><a href="#cb26-122" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;name&quot;</span>: <span class="st">&quot;cli_cookbook&quot;</span>,</span>
+<span id="cb26-123"><a href="#cb26-123" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;task&quot;</span>: <span class="st">&quot;classification&quot;</span>,</span>
+<span id="cb26-124"><a href="#cb26-124" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;target_col&quot;</span>: <span class="st">&quot;target&quot;</span>,</span>
+<span id="cb26-125"><a href="#cb26-125" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;data_path&quot;</span>: <span class="bu">str</span>(data_dir <span class="op">/</span> <span class="st">&quot;train.csv&quot;</span>),</span>
+<span id="cb26-126"><a href="#cb26-126" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;cv_folds&quot;</span>: <span class="dv">3</span>,</span>
+<span id="cb26-127"><a href="#cb26-127" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;models&quot;</span>: [<span class="st">&quot;catboost&quot;</span>, <span class="st">&quot;lightgbm&quot;</span>],</span>
+<span id="cb26-128"><a href="#cb26-128" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;metrics&quot;</span>: [<span class="st">&quot;roc_auc&quot;</span>, <span class="st">&quot;f1_macro&quot;</span>, <span class="st">&quot;accuracy&quot;</span>],</span>
+<span id="cb26-129"><a href="#cb26-129" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;shap_enabled&quot;</span>: <span class="va">False</span>,</span>
+<span id="cb26-130"><a href="#cb26-130" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb26-131"><a href="#cb26-131" aria-hidden="true" tabindex="-1"></a>config_path <span class="op">=</span> data_dir <span class="op">/</span> <span class="st">&quot;config.yaml&quot;</span></span>
+<span id="cb26-132"><a href="#cb26-132" aria-hidden="true" tabindex="-1"></a>config_path.write_text(yaml.dump(config_yaml, default_flow_style<span class="op">=</span><span class="va">False</span>))</span>
+<span id="cb26-133"><a href="#cb26-133" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Config written to </span><span class="sc">{</span>config_path<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb26-134"><a href="#cb26-134" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-135"><a href="#cb26-135" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-138"><a href="#cb26-138" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-139"><a href="#cb26-139" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: cli-run-config</span></span>
+<span id="cb26-140"><a href="#cb26-140" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
+<span id="cb26-141"><a href="#cb26-141" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> subprocess.run(</span>
+<span id="cb26-142"><a href="#cb26-142" aria-hidden="true" tabindex="-1"></a>    [<span class="st">&quot;uv&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;iter8&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;--config&quot;</span>, <span class="bu">str</span>(config_path)],</span>
+<span id="cb26-143"><a href="#cb26-143" aria-hidden="true" tabindex="-1"></a>    capture_output<span class="op">=</span><span class="va">True</span>, text<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb26-144"><a href="#cb26-144" aria-hidden="true" tabindex="-1"></a>    timeout<span class="op">=</span><span class="dv">300</span>,</span>
+<span id="cb26-145"><a href="#cb26-145" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb26-146"><a href="#cb26-146" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result.stdout[<span class="op">-</span><span class="dv">2000</span>:] <span class="cf">if</span> <span class="bu">len</span>(result.stdout) <span class="op">&gt;</span> <span class="dv">2000</span> <span class="cf">else</span> result.stdout)</span>
+<span id="cb26-147"><a href="#cb26-147" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> result.returncode <span class="op">!=</span> <span class="dv">0</span> <span class="kw">and</span> result.stderr:</span>
+<span id="cb26-148"><a href="#cb26-148" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;STDERR:&quot;</span>, result.stderr[<span class="op">-</span><span class="dv">1000</span>:])</span>
+<span id="cb26-149"><a href="#cb26-149" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-150"><a href="#cb26-150" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-151"><a href="#cb26-151" aria-hidden="true" tabindex="-1"></a><span class="fu">## 5. `iter8 leaderboard` — View Results</span></span>
+<span id="cb26-152"><a href="#cb26-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-155"><a href="#cb26-155" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-156"><a href="#cb26-156" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: cli-leaderboard</span></span>
+<span id="cb26-157"><a href="#cb26-157" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> subprocess.run(</span>
+<span id="cb26-158"><a href="#cb26-158" aria-hidden="true" tabindex="-1"></a>    [<span class="st">&quot;uv&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;iter8&quot;</span>, <span class="st">&quot;leaderboard&quot;</span>, <span class="st">&quot;--top&quot;</span>, <span class="st">&quot;5&quot;</span>],</span>
+<span id="cb26-159"><a href="#cb26-159" aria-hidden="true" tabindex="-1"></a>    capture_output<span class="op">=</span><span class="va">True</span>, text<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb26-160"><a href="#cb26-160" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb26-161"><a href="#cb26-161" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result.stdout)</span>
+<span id="cb26-162"><a href="#cb26-162" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-163"><a href="#cb26-163" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-166"><a href="#cb26-166" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-167"><a href="#cb26-167" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: leaderboard-viz</span></span>
+<span id="cb26-168"><a href="#cb26-168" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: &quot;CLI experiment results — cross-validated metrics&quot;</span></span>
+<span id="cb26-169"><a href="#cb26-169" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-width: 8</span></span>
+<span id="cb26-170"><a href="#cb26-170" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-height: 4</span></span>
+<span id="cb26-171"><a href="#cb26-171" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.workspace <span class="im">import</span> Workspace</span>
+<span id="cb26-172"><a href="#cb26-172" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.utils.io <span class="im">import</span> iter_events</span>
+<span id="cb26-173"><a href="#cb26-173" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb26-174"><a href="#cb26-174" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-175"><a href="#cb26-175" aria-hidden="true" tabindex="-1"></a>ws <span class="op">=</span> Workspace()</span>
+<span id="cb26-176"><a href="#cb26-176" aria-hidden="true" tabindex="-1"></a>model_scores <span class="op">=</span> {}</span>
+<span id="cb26-177"><a href="#cb26-177" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ev <span class="kw">in</span> iter_events(<span class="bu">str</span>(ws.experiments_path)):</span>
+<span id="cb26-178"><a href="#cb26-178" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> ev.get(<span class="st">&quot;event&quot;</span>) <span class="op">==</span> <span class="st">&quot;model_completed&quot;</span>:</span>
+<span id="cb26-179"><a href="#cb26-179" aria-hidden="true" tabindex="-1"></a>        name <span class="op">=</span> ev.get(<span class="st">&quot;model&quot;</span>, <span class="st">&quot;unknown&quot;</span>)</span>
+<span id="cb26-180"><a href="#cb26-180" aria-hidden="true" tabindex="-1"></a>        scores <span class="op">=</span> ev.get(<span class="st">&quot;cv_scores&quot;</span>, {})</span>
+<span id="cb26-181"><a href="#cb26-181" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> scores:</span>
+<span id="cb26-182"><a href="#cb26-182" aria-hidden="true" tabindex="-1"></a>            model_scores[name] <span class="op">=</span> scores</span>
+<span id="cb26-183"><a href="#cb26-183" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-184"><a href="#cb26-184" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> model_scores:</span>
+<span id="cb26-185"><a href="#cb26-185" aria-hidden="true" tabindex="-1"></a>    models <span class="op">=</span> <span class="bu">list</span>(model_scores.keys())</span>
+<span id="cb26-186"><a href="#cb26-186" aria-hidden="true" tabindex="-1"></a>    metrics <span class="op">=</span> [<span class="st">&quot;roc_auc&quot;</span>, <span class="st">&quot;f1_macro&quot;</span>, <span class="st">&quot;accuracy&quot;</span>]</span>
+<span id="cb26-187"><a href="#cb26-187" aria-hidden="true" tabindex="-1"></a>    x <span class="op">=</span> np.arange(<span class="bu">len</span>(models))</span>
+<span id="cb26-188"><a href="#cb26-188" aria-hidden="true" tabindex="-1"></a>    width <span class="op">=</span> <span class="fl">0.25</span></span>
+<span id="cb26-189"><a href="#cb26-189" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-190"><a href="#cb26-190" aria-hidden="true" tabindex="-1"></a>    fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">4</span>))</span>
+<span id="cb26-191"><a href="#cb26-191" aria-hidden="true" tabindex="-1"></a>    palette <span class="op">=</span> [<span class="st">&quot;#4C72B0&quot;</span>, <span class="st">&quot;#55A868&quot;</span>, <span class="st">&quot;#C44E52&quot;</span>]</span>
+<span id="cb26-192"><a href="#cb26-192" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, metric <span class="kw">in</span> <span class="bu">enumerate</span>(metrics):</span>
+<span id="cb26-193"><a href="#cb26-193" aria-hidden="true" tabindex="-1"></a>        vals <span class="op">=</span> [model_scores[m].get(metric, <span class="dv">0</span>) <span class="cf">for</span> m <span class="kw">in</span> models]</span>
+<span id="cb26-194"><a href="#cb26-194" aria-hidden="true" tabindex="-1"></a>        ax.bar(x <span class="op">+</span> i <span class="op">*</span> width, vals, width, label<span class="op">=</span>metric.upper(), color<span class="op">=</span>palette[i])</span>
+<span id="cb26-195"><a href="#cb26-195" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-196"><a href="#cb26-196" aria-hidden="true" tabindex="-1"></a>    ax.set_xticks(x <span class="op">+</span> width)</span>
+<span id="cb26-197"><a href="#cb26-197" aria-hidden="true" tabindex="-1"></a>    ax.set_xticklabels(models)</span>
+<span id="cb26-198"><a href="#cb26-198" aria-hidden="true" tabindex="-1"></a>    ax.set_ylabel(<span class="st">&quot;Score&quot;</span>)</span>
+<span id="cb26-199"><a href="#cb26-199" aria-hidden="true" tabindex="-1"></a>    ax.set_title(<span class="st">&quot;CLI Experiment Results&quot;</span>)</span>
+<span id="cb26-200"><a href="#cb26-200" aria-hidden="true" tabindex="-1"></a>    ax.legend(fontsize<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb26-201"><a href="#cb26-201" aria-hidden="true" tabindex="-1"></a>    ax.grid(axis<span class="op">=</span><span class="st">&quot;y&quot;</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb26-202"><a href="#cb26-202" aria-hidden="true" tabindex="-1"></a>    plt.tight_layout()</span>
+<span id="cb26-203"><a href="#cb26-203" aria-hidden="true" tabindex="-1"></a>    plt.show()</span>
+<span id="cb26-204"><a href="#cb26-204" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb26-205"><a href="#cb26-205" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;No model results found in workspace.&quot;</span>)</span>
+<span id="cb26-206"><a href="#cb26-206" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-207"><a href="#cb26-207" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-208"><a href="#cb26-208" aria-hidden="true" tabindex="-1"></a><span class="fu">## 6. `iter8 hpo` — Hyperparameter Optimization</span></span>
+<span id="cb26-209"><a href="#cb26-209" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-212"><a href="#cb26-212" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-213"><a href="#cb26-213" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: cli-hpo</span></span>
+<span id="cb26-214"><a href="#cb26-214" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
+<span id="cb26-215"><a href="#cb26-215" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> subprocess.run(</span>
+<span id="cb26-216"><a href="#cb26-216" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb26-217"><a href="#cb26-217" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;uv&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;iter8&quot;</span>, <span class="st">&quot;hpo&quot;</span>,</span>
+<span id="cb26-218"><a href="#cb26-218" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--data&quot;</span>, <span class="bu">str</span>(data_dir <span class="op">/</span> <span class="st">&quot;train.csv&quot;</span>),</span>
+<span id="cb26-219"><a href="#cb26-219" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--target&quot;</span>, <span class="st">&quot;target&quot;</span>,</span>
+<span id="cb26-220"><a href="#cb26-220" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--model&quot;</span>, <span class="st">&quot;lightgbm&quot;</span>,</span>
+<span id="cb26-221"><a href="#cb26-221" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--task&quot;</span>, <span class="st">&quot;classification&quot;</span>,</span>
+<span id="cb26-222"><a href="#cb26-222" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--trials&quot;</span>, <span class="st">&quot;5&quot;</span>,</span>
+<span id="cb26-223"><a href="#cb26-223" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb26-224"><a href="#cb26-224" aria-hidden="true" tabindex="-1"></a>    capture_output<span class="op">=</span><span class="va">True</span>, text<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb26-225"><a href="#cb26-225" aria-hidden="true" tabindex="-1"></a>    timeout<span class="op">=</span><span class="dv">300</span>,</span>
+<span id="cb26-226"><a href="#cb26-226" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb26-227"><a href="#cb26-227" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result.stdout[<span class="op">-</span><span class="dv">2000</span>:] <span class="cf">if</span> <span class="bu">len</span>(result.stdout) <span class="op">&gt;</span> <span class="dv">2000</span> <span class="cf">else</span> result.stdout)</span>
+<span id="cb26-228"><a href="#cb26-228" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> result.returncode <span class="op">!=</span> <span class="dv">0</span> <span class="kw">and</span> result.stderr:</span>
+<span id="cb26-229"><a href="#cb26-229" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;STDERR:&quot;</span>, result.stderr[<span class="op">-</span><span class="dv">1000</span>:])</span>
+<span id="cb26-230"><a href="#cb26-230" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-231"><a href="#cb26-231" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-232"><a href="#cb26-232" aria-hidden="true" tabindex="-1"></a><span class="fu">## 7. `iter8 drift` — Detect Distribution Drift</span></span>
+<span id="cb26-233"><a href="#cb26-233" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-236"><a href="#cb26-236" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-237"><a href="#cb26-237" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: cli-drift</span></span>
+<span id="cb26-238"><a href="#cb26-238" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
+<span id="cb26-239"><a href="#cb26-239" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> subprocess.run(</span>
+<span id="cb26-240"><a href="#cb26-240" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb26-241"><a href="#cb26-241" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;uv&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;iter8&quot;</span>, <span class="st">&quot;drift&quot;</span>,</span>
+<span id="cb26-242"><a href="#cb26-242" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--reference&quot;</span>, <span class="bu">str</span>(data_dir <span class="op">/</span> <span class="st">&quot;reference.csv&quot;</span>),</span>
+<span id="cb26-243"><a href="#cb26-243" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--new&quot;</span>, <span class="bu">str</span>(data_dir <span class="op">/</span> <span class="st">&quot;live.csv&quot;</span>),</span>
+<span id="cb26-244"><a href="#cb26-244" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;--method&quot;</span>, <span class="st">&quot;ks&quot;</span>,</span>
+<span id="cb26-245"><a href="#cb26-245" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb26-246"><a href="#cb26-246" aria-hidden="true" tabindex="-1"></a>    capture_output<span class="op">=</span><span class="va">True</span>, text<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb26-247"><a href="#cb26-247" aria-hidden="true" tabindex="-1"></a>    timeout<span class="op">=</span><span class="dv">120</span>,</span>
+<span id="cb26-248"><a href="#cb26-248" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb26-249"><a href="#cb26-249" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result.stdout[<span class="op">-</span><span class="dv">2000</span>:] <span class="cf">if</span> <span class="bu">len</span>(result.stdout) <span class="op">&gt;</span> <span class="dv">2000</span> <span class="cf">else</span> result.stdout)</span>
+<span id="cb26-250"><a href="#cb26-250" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-251"><a href="#cb26-251" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-252"><a href="#cb26-252" aria-hidden="true" tabindex="-1"></a><span class="fu">## 8. `iter8 export` — Export Champion Model</span></span>
+<span id="cb26-253"><a href="#cb26-253" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-256"><a href="#cb26-256" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-257"><a href="#cb26-257" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: cli-export</span></span>
+<span id="cb26-258"><a href="#cb26-258" aria-hidden="true" tabindex="-1"></a><span class="co">#| error: true</span></span>
+<span id="cb26-259"><a href="#cb26-259" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> subprocess.run(</span>
+<span id="cb26-260"><a href="#cb26-260" aria-hidden="true" tabindex="-1"></a>    [<span class="st">&quot;uv&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;iter8&quot;</span>, <span class="st">&quot;export&quot;</span>, <span class="st">&quot;cli_cookbook:classification&quot;</span>],</span>
+<span id="cb26-261"><a href="#cb26-261" aria-hidden="true" tabindex="-1"></a>    capture_output<span class="op">=</span><span class="va">True</span>, text<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb26-262"><a href="#cb26-262" aria-hidden="true" tabindex="-1"></a>    timeout<span class="op">=</span><span class="dv">60</span>,</span>
+<span id="cb26-263"><a href="#cb26-263" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb26-264"><a href="#cb26-264" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result.stdout)</span>
+<span id="cb26-265"><a href="#cb26-265" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> result.returncode <span class="op">!=</span> <span class="dv">0</span> <span class="kw">and</span> result.stderr:</span>
+<span id="cb26-266"><a href="#cb26-266" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;STDERR:&quot;</span>, result.stderr[<span class="op">-</span><span class="dv">500</span>:])</span>
+<span id="cb26-267"><a href="#cb26-267" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-268"><a href="#cb26-268" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-269"><a href="#cb26-269" aria-hidden="true" tabindex="-1"></a><span class="fu">## 9. `iter8 state` — Experiment State Summary</span></span>
+<span id="cb26-270"><a href="#cb26-270" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-273"><a href="#cb26-273" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-274"><a href="#cb26-274" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: cli-state</span></span>
+<span id="cb26-275"><a href="#cb26-275" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> subprocess.run(</span>
+<span id="cb26-276"><a href="#cb26-276" aria-hidden="true" tabindex="-1"></a>    [<span class="st">&quot;uv&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;iter8&quot;</span>, <span class="st">&quot;state&quot;</span>],</span>
+<span id="cb26-277"><a href="#cb26-277" aria-hidden="true" tabindex="-1"></a>    capture_output<span class="op">=</span><span class="va">True</span>, text<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb26-278"><a href="#cb26-278" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb26-279"><a href="#cb26-279" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result.stdout[:<span class="dv">2000</span>] <span class="cf">if</span> <span class="bu">len</span>(result.stdout) <span class="op">&gt;</span> <span class="dv">2000</span> <span class="cf">else</span> result.stdout)</span>
+<span id="cb26-280"><a href="#cb26-280" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-281"><a href="#cb26-281" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-282"><a href="#cb26-282" aria-hidden="true" tabindex="-1"></a><span class="fu">## 10. Cleanup</span></span>
+<span id="cb26-283"><a href="#cb26-283" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-286"><a href="#cb26-286" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-287"><a href="#cb26-287" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: cleanup</span></span>
+<span id="cb26-288"><a href="#cb26-288" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> shutil</span>
+<span id="cb26-289"><a href="#cb26-289" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> data_dir.exists():</span>
+<span id="cb26-290"><a href="#cb26-290" aria-hidden="true" tabindex="-1"></a>    shutil.rmtree(data_dir)</span>
+<span id="cb26-291"><a href="#cb26-291" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;Cleaned up temporary CLI data.&quot;</span>)</span>
+<span id="cb26-292"><a href="#cb26-292" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-293"><a href="#cb26-293" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-294"><a href="#cb26-294" aria-hidden="true" tabindex="-1"></a><span class="fu">## Command Reference</span></span>
+<span id="cb26-295"><a href="#cb26-295" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-296"><a href="#cb26-296" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Command <span class="pp">|</span> Key Flags <span class="pp">|</span> Purpose <span class="pp">|</span></span>
+<span id="cb26-297"><a href="#cb26-297" aria-hidden="true" tabindex="-1"></a><span class="pp">|---------|-----------|---------|</span></span>
+<span id="cb26-298"><a href="#cb26-298" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`iter8 init`</span> <span class="pp">|</span> <span class="in">`--force-reset-registry`</span> <span class="pp">|</span> Initialize workspace <span class="pp">|</span></span>
+<span id="cb26-299"><a href="#cb26-299" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`iter8 hardware`</span> <span class="pp">|</span> — <span class="pp">|</span> Show detected hardware profile <span class="pp">|</span></span>
+<span id="cb26-300"><a href="#cb26-300" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`iter8 run`</span> <span class="pp">|</span> <span class="in">`--config`</span>, <span class="in">`--data`</span>, <span class="in">`--target`</span>, <span class="in">`--task`</span>, <span class="in">`--models`</span>, <span class="in">`--quick`</span>, <span class="in">`--resume`</span> <span class="pp">|</span> Run an experiment <span class="pp">|</span></span>
+<span id="cb26-301"><a href="#cb26-301" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`iter8 leaderboard`</span> <span class="pp">|</span> <span class="in">`--top`</span>, <span class="in">`--metric`</span> <span class="pp">|</span> View ranked results <span class="pp">|</span></span>
+<span id="cb26-302"><a href="#cb26-302" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`iter8 hpo`</span> <span class="pp">|</span> <span class="in">`--data`</span>, <span class="in">`--target`</span>, <span class="in">`--model`</span>, <span class="in">`--task`</span>, <span class="in">`--trials`</span> <span class="pp">|</span> Hyperparameter optimization <span class="pp">|</span></span>
+<span id="cb26-303"><a href="#cb26-303" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`iter8 drift`</span> <span class="pp">|</span> <span class="in">`--reference`</span>, <span class="in">`--new`</span>, <span class="in">`--method`</span> (ks/psi/domain/both) <span class="pp">|</span> Detect distribution drift <span class="pp">|</span></span>
+<span id="cb26-304"><a href="#cb26-304" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`iter8 export`</span> <span class="pp">|</span> <span class="in">`&lt;key&gt;`</span>, <span class="in">`--output`</span>, <span class="in">`--target`</span> <span class="pp">|</span> Export champion model <span class="pp">|</span></span>
+<span id="cb26-305"><a href="#cb26-305" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`iter8 state`</span> <span class="pp">|</span> — <span class="pp">|</span> Generate experiment state summary <span class="pp">|</span></span>
 </code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->

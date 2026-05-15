@@ -6,7 +6,7 @@ Reference for data ingestion from various sources and data hashing.
 
 ## Supported Formats
 
-**Source:** `src/iter8ml/data/loaders.py`
+**Source:** `src/iter8ml/data/loader.py`
 
 All loading functions return a **Polars DataFrame**.
 
@@ -14,7 +14,7 @@ All loading functions return a **Polars DataFrame**.
 
 ## CSV Loading
 
-**Source:** `loaders.py:10`
+**Source:** `loader.py:10`
 
 **Function:** `load_csv(path, separator, infer_schema_length, low_memory)`
 
@@ -31,7 +31,7 @@ All loading functions return a **Polars DataFrame**.
 
 ## Parquet Loading
 
-**Source:** `loaders.py:26`
+**Source:** `loader.py:26`
 
 **Function:** `load_parquet(path)`
 
@@ -43,7 +43,7 @@ Direct `pl.read_parquet()` — zero-copy Arrow-based loading.
 
 ## Auto-Detection
 
-**Source:** `loaders.py:31`
+**Source:** `loader.py:31`
 
 **Function:** `load_data(path)`
 
@@ -59,7 +59,7 @@ Dispatches based on file extension:
 
 ## SQLite Loading
 
-**Source:** `loaders.py:41`
+**Source:** `loader.py:41`
 
 **Function:** `load_sqlite(db_path, query)`
 
@@ -83,7 +83,7 @@ The blocklist check strips common SQL keywords (`SELECT`, `FROM`, `WHERE`, `JOIN
 
 ## Data Hashing
 
-**Source:** `loaders.py:102`
+**Source:** `loader.py:102`
 
 **Function:** `get_data_hash(df)`
 

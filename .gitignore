@@ -24,6 +24,7 @@ htmlcov/
 workspace/*
 !workspace/.gitkeep
 notebooks/workspace/*
+notebooks/notebooks/
 
 # Preprocessing cache
 .tabblueprint/

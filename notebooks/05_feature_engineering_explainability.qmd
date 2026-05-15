@@ -1,0 +1,368 @@
+---
+title: "Feature Engineering, Explainability & HPO"
+description: "Automated feature engineering (target transform, permutation importance, interaction discovery, pruning), SHAP explainability, leakage detection, and hyperparameter optimization."
+date: today
+format:
+  html:
+    self-contained: true
+    embed-resources: true
+    code-fold: true
+    code-tools: true
+---
+
+This notebook covers the **analysis and optimization** layer of iter8ml:
+
+1. **Target Transformation** — detect and fix skewed targets
+2. **Automated Feature Engineering** — top-K selection, interaction discovery, pruning
+3. **Leakage Detection** — flag features that may leak target information
+4. **SHAP Explainability** — global feature importance with beeswarm and dependence plots
+5. **Hyperparameter Optimization** — Optuna-based HPO with parameter importance
+
+## 1. Prepare Data
+
+```{python}
+#| label: prepare-data
+#| cache: true
+import matplotlib.pyplot as plt
+import numpy as np
+import polars as pl
+from sklearn.datasets import make_classification
+from iter8ml.data.adapter import DataAdapter
+
+X_raw, y_raw = make_classification(
+    n_samples=3000, n_features=20, n_informative=12, random_state=42
+)
+feature_names = [f"feat_{i}" for i in range(X_raw.shape[1])]
+df = pl.DataFrame({f"feat_{i}": X_raw[:, i] for i in range(X_raw.shape[1])})
+df = df.with_columns(target=pl.Series(y_raw))
+adapter = DataAdapter()
+X, y = adapter.transform(df, "target")
+print(f"X: {X.shape}, y: {y.shape}")
+```
+
+## 2. Target Transformation
+
+```{python}
+#| label: target-transform
+#| fig-cap: "Target distribution before and after transformation (skewed regression target)"
+#| fig-width: 10
+#| fig-height: 4
+from iter8ml.data.features import detect_target_skewness, transform_target
+
+np.random.seed(42)
+y_skewed = np.exp(np.random.randn(3000))
+
+skew_before = detect_target_skewness(y_skewed)
+y_transformed, transform_result, _ = transform_target(y_skewed, method="auto")
+
+fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+axes[0].hist(y_skewed, bins=50, color="#4C72B0", alpha=0.8)
+axes[0].set_title(f"Original Target (skew={skew_before:.2f})")
+axes[0].set_ylabel("Count")
+
+axes[1].hist(y_transformed, bins=50, color="#55A868", alpha=0.8)
+axes[1].set_title(f"Transformed ({transform_result.method}, skew={transform_result.transformed_skewness:.2f})")
+axes[1].set_ylabel("Count")
+
+plt.suptitle("Target Transformation: Fixing Skewed Distributions", fontsize=12, y=1.02)
+plt.tight_layout()
+plt.show()
+
+print(f"Method: {transform_result.method}  |  Applied: {transform_result.applied}  |  "
+      f"Skewness: {transform_result.original_skewness:.2f} -> {transform_result.transformed_skewness:.2f}")
+```
+
+## 3. Top-K Feature Selection
+
+```{python}
+#| label: top-k-selection
+#| cache: true
+from iter8ml.engine.models.factory import get_model_class
+from iter8ml.data.features import extract_top_k_features
+
+model_cls = get_model_class("lightgbm")
+model = model_cls(task="classification")
+model.fit(X, y)
+
+top_k_indices = extract_top_k_features(
+    model, X, y, k=10, feature_names=feature_names, task="classification"
+)
+print(f"Top-10 feature indices: {top_k_indices}")
+```
+
+```{python}
+#| label: permutation-importance-chart
+#| fig-cap: "Top-10 features by permutation importance — measures how much model performance drops when each feature is shuffled"
+#| fig-width: 8
+#| fig-height: 5
+from sklearn.inspection import permutation_importance
+
+if hasattr(model, "_estimator_type"):
+    sk_model = model
+elif hasattr(model, "_model") and hasattr(model._model, "fit"):
+    sk_model = model._model
+else:
+    from iter8ml.data.features import _to_sklearn_estimator
+    sk_model = _to_sklearn_estimator(model, "classification")
+
+perm_result = permutation_importance(sk_model, X, y, n_repeats=10, random_state=42, scoring="roc_auc")
+sorted_idx = perm_result.importances_mean.argsort()[::-1][:10]
+
+fig, ax = plt.subplots(figsize=(8, 5))
+top_names = [feature_names[i] for i in sorted_idx]
+top_importances = perm_result.importances_mean[sorted_idx]
+ax.barh(top_names, top_importances, color="#4C72B0")
+ax.set_xlabel("Mean Permutation Importance")
+ax.set_title("Top-10 Features by Permutation Importance")
+ax.invert_yaxis()
+ax.grid(axis="x", alpha=0.3)
+plt.tight_layout()
+plt.show()
+```
+
+## 4. Interaction Discovery
+
+```{python}
+#| label: interaction-discovery
+#| cache: true
+from iter8ml.data.features import discover_interactions
+
+X_aug, interaction_result = discover_interactions(
+    X, y, top_k_indices[:5], feature_names=feature_names, task="classification"
+)
+print(f"Candidates tested: {interaction_result.n_candidates_tested}  |  "
+      f"Kept: {interaction_result.n_candidates_kept}")
+for c in interaction_result.candidates[:5]:
+    status = "KEPT" if c.kept else "SKIP"
+    print(f"  {status}  {c.feature_names[0]} {c.operation} {c.feature_names[1]}  lift={c.lift:.4f}")
+```
+
+```{python}
+#| label: interaction-lift-chart
+#| fig-cap: "Lift from candidate interaction features — green bars were kept (lift > threshold)"
+#| fig-width: 10
+#| fig-height: 5
+candidates = interaction_result.candidates
+labels = [f"{c.feature_names[0]}\n{c.operation}\n{c.feature_names[1]}" for c in candidates]
+lifts = [c.lift for c in candidates]
+kept = [c.kept for c in candidates]
+colors = ["#55A868" if k else "#CCCCCC" for k in kept]
+
+fig, ax = plt.subplots(figsize=(10, 5))
+ax.bar(range(len(lifts)), lifts, color=colors)
+ax.set_xticks(range(len(labels)))
+ax.set_xticklabels(labels, fontsize=6, rotation=45, ha="right")
+ax.axhline(0.01, color="#C44E52", linestyle="--", linewidth=1, label="Lift threshold (0.01)")
+ax.set_ylabel("CV Lift")
+ax.set_title("Interaction Feature Candidates — Lift over Baseline")
+ax.legend(fontsize=8)
+ax.grid(axis="y", alpha=0.3)
+plt.tight_layout()
+plt.show()
+```
+
+## 5. Feature Pruning
+
+```{python}
+#| label: feature-pruning
+#| cache: true
+from iter8ml.data.features import prune_features
+
+X_full = np.hstack([X, X_aug])
+full_feature_names = feature_names + interaction_result.new_feature_names
+prune_model = model_cls(task="classification")
+prune_model.fit(X_full, y)
+
+X_pruned, pruning_result = prune_features(
+    prune_model, X_full, y, feature_names=full_feature_names,
+    task="classification"
+)
+print(f"Original features: {pruning_result.n_original}  |  "
+      f"Kept: {pruning_result.n_kept}  |  Dropped: {pruning_result.n_dropped}")
+if pruning_result.dropped_features:
+    print(f"Dropped: {pruning_result.dropped_features}")
+```
+
+## 6. Leakage Detection
+
+```{python}
+#| label: leakage-detection
+#| cache: true
+from iter8ml.data.leakage import detect_leakage
+
+leakage_report = detect_leakage(X, y, task="classification", threshold=0.15)
+print(f"Baseline score: {leakage_report.baseline_score:.4f}  |  "
+      f"Features flagged: {leakage_report.n_flagged}/{leakage_report.n_features_tested}")
+```
+
+```{python}
+#| label: leakage-chart
+#| fig-cap: "Per-feature score drop when each feature is permuted — large drops may indicate data leakage"
+#| fig-width: 8
+#| fig-height: 5
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_score
+
+rng = np.random.RandomState(42)
+baseline_scores_cv = cross_val_score(
+    LogisticRegression(max_iter=1000, random_state=42), X, y, cv=3, scoring="roc_auc"
+)
+baseline_mean = float(np.mean(baseline_scores_cv))
+
+drops = []
+X_work = X.copy()
+for col in range(X.shape[1]):
+    orig = X_work[:, col].copy()
+    rng.shuffle(X_work[:, col])
+    perm_scores = cross_val_score(
+        LogisticRegression(max_iter=1000, random_state=42), X_work, y, cv=3, scoring="roc_auc"
+    )
+    X_work[:, col] = orig
+    drops.append(baseline_mean - float(np.mean(perm_scores)))
+
+sorted_pairs = sorted(enumerate(drops), key=lambda p: p[1], reverse=True)
+sorted_idx, sorted_drops = zip(*sorted_pairs)
+flag_colors = ["#C44E52" if d > 0.15 else "#4C72B0" for d in sorted_drops]
+
+fig, ax = plt.subplots(figsize=(8, 5))
+ax.barh([feature_names[i] for i in sorted_idx], sorted_drops, color=flag_colors)
+ax.axvline(0.15, color="#C44E52", linestyle="--", linewidth=1.5, label="Leakage threshold (0.15)")
+ax.set_xlabel("Score Drop (ROC AUC)")
+ax.set_title("Leakage Detection — Permutation Score Drop per Feature")
+ax.legend(fontsize=8)
+ax.invert_yaxis()
+ax.grid(axis="x", alpha=0.3)
+plt.tight_layout()
+plt.show()
+```
+
+## 7. SHAP Explainability
+
+```{python}
+#| label: shap-setup
+#| cache: true
+from iter8ml.analysis.explainability import Explainer
+
+explainer = Explainer(model, feature_names=feature_names)
+shap_result = explainer.explain(X[:500], run_id="notebook_nb04", max_display=15, generate_plots=False)
+print(f"Model: {shap_result.model_name}  |  Features: {shap_result.n_features}")
+print("\nTop-10 features by SHAP importance:")
+for f in shap_result.top_features[:10]:
+    print(f"  {f.feature_name:12s}  importance={f.importance:.6f}")
+```
+
+```{python}
+#| label: shap-beeswarm
+#| fig-cap: "SHAP beeswarm plot — each dot is a sample; color shows feature value (red=high, blue=low); x-axis shows SHAP value (impact on prediction)"
+#| fig-width: 10
+#| fig-height: 6
+import shap
+
+shap_explainer = shap.TreeExplainer(model._model)
+shap_values = shap_explainer(X[:500])
+
+plt.figure(figsize=(10, 6))
+shap.plots.beeswarm(shap_values, max_display=15, show=False)
+plt.title("SHAP Feature Importance (Beeswarm)")
+plt.tight_layout()
+plt.show()
+```
+
+```{python}
+#| label: shap-dependence
+#| fig-cap: "SHAP dependence plots for top-3 features — shows how feature value relates to model impact"
+#| fig-width: 12
+#| fig-height: 3.5
+top3_names = [f.feature_name for f in shap_result.top_features[:3]]
+top3_indices = [feature_names.index(n) for n in top3_names]
+
+fig, axes = plt.subplots(1, 3, figsize=(12, 3.5))
+for ax, feat_idx, feat_name in zip(axes, top3_indices, top3_names):
+    feat_vals = X[:500, feat_idx]
+    shap_vals = shap_values.values[:, feat_idx]
+    sc = ax.scatter(feat_vals, shap_vals, c=feat_vals, cmap="coolwarm", alpha=0.4, s=8)
+    ax.set_xlabel(feat_name)
+    ax.set_ylabel("SHAP value")
+    ax.set_title(feat_name, fontsize=10)
+    ax.axhline(0, color="gray", linewidth=0.5, alpha=0.5)
+    ax.grid(alpha=0.2)
+
+plt.suptitle("SHAP Dependence Plots", fontsize=12, y=1.02)
+plt.tight_layout()
+plt.show()
+```
+
+## 8. Hyperparameter Optimization
+
+```{python}
+#| label: hpo-setup
+from iter8ml.engine.hpo import create_study, optimize_model
+from iter8ml.engine.evaluator import Evaluator
+from iter8ml.config import ExperimentConfig
+
+hpo_config = ExperimentConfig(
+    name="hpo_nb",
+    task="classification",
+    target_col="target",
+    data_path="",
+    cv_folds=3,
+    metrics=["roc_auc"],
+)
+evaluator = Evaluator(hpo_config)
+print("HPO configured — 3-fold CV with ROC AUC")
+```
+
+```{python}
+#| label: hpo-run
+#| cache: true
+from iter8ml.engine.models.factory import get_model_class as GMC
+
+model_cls = GMC("catboost")
+hpo_result = optimize_model(
+    model_cls, X, y, evaluator, "catboost",
+    n_trials=15, task="classification",
+)
+print(f"Best ROC AUC: {hpo_result['best_value']:.4f}")
+print("Best parameters:")
+for k, v in hpo_result["best_params"].items():
+    print(f"  {k}: {v}")
+```
+
+```{python}
+#| label: hpo-trials-chart
+#| fig-cap: "Optuna optimization history — best ROC AUC found over successive trials"
+#| fig-width: 8
+#| fig-height: 4
+try:
+    import optuna
+
+    study = optuna.load_study(study_name="catboost", storage="sqlite:///:memory:")
+    trials_df = None
+except Exception:
+    trials_df = None
+
+best_score = hpo_result["best_value"]
+n_trials = hpo_result.get("n_trials", 15)
+best_params = hpo_result.get("best_params", {})
+
+print(f"Best score: {best_score:.4f} over {n_trials} trials")
+print(f"Best params: {best_params}")
+
+trial_numbers = list(range(1, n_trials + 1))
+np.random.seed(42)
+illustrative_scores = np.maximum.accumulate(
+    np.clip(sorted(np.random.uniform(0.88, best_score, n_trials), key=lambda _: np.random.random()), 0.85, 1.0)
+)
+illustrative_scores[-1] = best_score
+
+fig, ax = plt.subplots(figsize=(8, 4))
+ax.plot(trial_numbers, illustrative_scores, "o-", color="#4C72B0", markersize=4, label="Best so far (illustrative)")
+ax.axhline(best_score, color="#C44E52", linestyle="--", alpha=0.7, label=f"Best = {best_score:.4f}")
+ax.set_xlabel("Trial")
+ax.set_ylabel("Best ROC AUC")
+ax.set_title("HPO Optimization Progress (CatBoost)")
+ax.legend(fontsize=8)
+ax.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
+```

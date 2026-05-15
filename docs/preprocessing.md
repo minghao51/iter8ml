@@ -6,7 +6,7 @@ Reference for the preprocessing pipeline, target transformation, data quality, l
 
 ## Preprocessing Pipeline (Hamilton DAG Nodes)
 
-**Source:** `src/iter8ml/pipelines/nodes/preprocessing.py`
+**Source:** `src/iter8ml/engine/pipelines/nodes/prep.py`
 
 The preprocessing pipeline is implemented as Hamilton DAG nodes that execute in dependency order. All operations use Polars for lazy, columnar processing.
 
@@ -36,7 +36,7 @@ raw_dataframe → [numeric_columns, categorical_columns, date_columns]
 
 ### Null Imputation
 
-**Source:** `preprocessing.py:23` (numeric), `preprocessing.py:31` (categorical)
+**Source:** `prep.py:23` (numeric), `prep.py:31` (categorical)
 
 | Node | Strategy | Details |
 |------|----------|---------|
@@ -47,7 +47,7 @@ raw_dataframe → [numeric_columns, categorical_columns, date_columns]
 
 ### Date Decomposition
 
-**Source:** `preprocessing.py:63`
+**Source:** `prep.py:63`
 
 Extracts calendar features from each date column, then drops the original:
 
@@ -62,7 +62,7 @@ The prefix is derived by stripping `_date` or `_dt` suffixes from the original c
 
 ### Categorical Encoding
 
-**Source:** `preprocessing.py:82`
+**Source:** `prep.py:82`
 
 Uses **ordinal encoding** via Polars native operations:
 
@@ -76,7 +76,7 @@ This converts each categorical value to its integer representation. No one-hot e
 
 ## Target Transformation
 
-**Source:** `src/iter8ml/data/feature_engine.py:57`
+**Source:** `src/iter8ml/data/features.py:57`
 
 ### Skewness Detection
 
