@@ -1,6 +1,7 @@
 """Optuna study factory for hyperparameter optimization."""
 
 import json
+import threading
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -8,11 +9,13 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import optuna
 
-from iter8ml.constants import from_task_type
+from iter8ml.constants import TaskType
 from iter8ml.engine.evaluator import Evaluator
 
 if TYPE_CHECKING:
     from iter8ml.engine.tracker import Tracker
+
+_hpo_file_lock = threading.Lock()
 
 
 def _build_pruner(pruner: str) -> optuna.pruners.BasePruner:
@@ -74,7 +77,7 @@ def setup_hpo_components(
 
     hpo_config = ExperimentConfig(
         name="hpo",
-        task=from_task_type(task),
+        task=TaskType(task),
         target_col=target_col,
         data_path=data_path,
     )
@@ -135,6 +138,17 @@ def optimize_model(
         study = create_study(model_name, n_trials=n_trials)
         injection = None
 
+    def _write_event(event: dict[str, Any]) -> None:
+        if tracker is not None:
+            tracker.log_event(event)
+            return
+        if log_path is None:
+            return
+        path = Path(log_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with _hpo_file_lock, open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(event) + "\n")
+
     def _log_hpo_trial(
         *,
         params: dict[str, Any],
@@ -149,15 +163,7 @@ def optimize_model(
             "params": params,
             "cv_scores": cv_scores,
         }
-        if tracker is not None:
-            tracker.log_event(event)
-            return
-        if log_path is None:
-            return
-        path = Path(log_path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(event) + "\n")
+        _write_event(event)
 
     def _log_warning_event(
         *,
@@ -176,15 +182,7 @@ def optimize_model(
             "warning_type": warning_type,
             "message": message,
         }
-        if tracker is not None:
-            tracker.log_event(event)
-            return
-        if log_path is None:
-            return
-        path = Path(log_path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(event) + "\n")
+        _write_event(event)
 
     def objective(trial: optuna.Trial) -> float:
         params = {}

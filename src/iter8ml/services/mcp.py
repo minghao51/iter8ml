@@ -4,7 +4,7 @@ import json
 from typing import Any
 
 from iter8ml.config import ExperimentConfig
-from iter8ml.constants import from_task_type
+from iter8ml.constants import TaskType
 from iter8ml.data.loader import load_data
 from iter8ml.engine.models.factory import get_model_class
 from iter8ml.engine.state_observer import StateObserver
@@ -77,7 +77,7 @@ def run_baseline(data_path: str, target_col: str, task: str = "classification") 
 
     config = ExperimentConfig(
         name="baseline",
-        task=from_task_type(task),
+        task=TaskType(task),
         target_col=target_col,
         data_path=data_path,
         models=["tabpfn", "catboost"],

@@ -62,31 +62,42 @@ The pipeline layer uses [Hamilton](https://github.com/DAGWorks-Inc/hamilton) to 
 | Method | Final Variables | Description |
 |--------|----------------|-------------|
 | `run_preprocessing(df)` | `["processed_dataframe"]` | Preprocessing-only pipeline |
-| `run_data_prep(df, target_col, ...)` | `["data_prep_result"]` | Preprocessing + quality audit + leakage + target transform |
-| `run_training(df, target_col, ...)` | `["training_state"]` | Full training pipeline (all 7 modules) |
+| `run_training(config, df, ...)` | `["training_state"]` | Full training pipeline (spec-driven modules) |
 | `run_drift(reference_df, live_df, method)` | `["drift_report"]` | Drift detection pipeline |
-| `get_mermaid_graph()` | — | Returns Mermaid diagram of the DAG |
+| `get_mermaid_graph(spec)` | — | Returns Mermaid diagram of the DAG (spec-aware if provided) |
+| `describe_pipeline(spec)` | — | Returns list of dicts with step name, enabled, params |
 | `execute(inputs, final_vars, overrides)` | Custom | Generic execution with custom targets |
 
 ---
 
-## Training Pipeline DAG (7 Modules)
+## Training Pipeline DAG (Spec-Driven Modules)
 
 **Source:** `engine/pipelines/executor.py:56`
 
-The full training pipeline composes 7 node modules in order:
+The full training pipeline composes node modules based on the `PipelineSpec` attached to `ExperimentConfig`:
 
 ```python
-modules = [
-    preprocessing,        # 1. Column detection + imputation + encoding
-    data_preparation,     # 2. Quality audit + leakage + target transform
-    model_selection,      # 3. Hardware-aware model routing
-    baselines,            # 4. Naive + Linear baseline CV
-    feature_engineering,  # 5. AFE (config-variant: enabled/disabled)
-    model_training,       # 6. Per-model train + calibrate + save
-    state_generation,     # 7. Leaderboard + registry + champion update
-]
+modules = [prep]
+if spec.is_enabled(StepName.FEATURE_ENGINEERING):
+    modules.append(features)
+modules.append(train)
 ```
+
+Each module contains Hamilton nodes that may use `@config.when()` variants, resolved from `_resolve_hamilton_config()` which reads step params from the `PipelineSpec`.
+
+### Default Steps
+
+| Step | `StepName` | Default | Configurable Params |
+|------|-----------|---------|-------------------|
+| Data Prep | `DATA_PREP` | enabled | — |
+| Quality Audit | `QUALITY_AUDIT` | enabled | `auto_clean_noise: bool`, `noise_quality_threshold: float` |
+| Leakage Audit | `LEAKAGE_AUDIT` | enabled | — |
+| Target Transform | `TARGET_TRANSFORM` | enabled | `method: "none"\|"auto"\|"log1p"\|"yeo-johnson"\|"box-cox"`, `skewness_threshold: float` |
+| Feature Engineering | `FEATURE_ENGINEERING` | enabled | `strategy: "none"\|"default"\|...` |
+| Model Training | `MODEL_TRAINING` | enabled | — |
+| Calibration | `CALIBRATION` | enabled | `method: "none"\|"platt"\|"isotonic"` |
+| Evaluation | `EVALUATION` | enabled | — |
+| HPO | `HPO` | disabled | — |
 
 ### Full DAG Flow
 
@@ -110,7 +121,8 @@ df (input)
  │                             │
  │              ┌──────────────┤
  │              │              │
- │     quality_cleaned_df   (run_quality_audit,
+ │     quality_cleaned_df   (Hamilton config:
+ │              │            run_quality_audit,
  │              │            auto_clean_noise,
  │              │            noise_quality_threshold)
  │              │
@@ -118,9 +130,10 @@ df (input)
  │     │                 │
  │  adapter_result    feature_names
  │     │
- │  leakage_report ──→ (run_leakage_audit, task)
+ │  leakage_report ──→ (Hamilton config: run_leakage_audit, task)
  │     │
- │  target_transform_result
+ │  target_transform_result ──→ (Hamilton config: target_transform,
+ │     │                        target_skewness_threshold)
  │     │
  │  data_prep_result
  │     │
@@ -128,9 +141,9 @@ df (input)
  │     │
  │  baseline_models → baseline_scores
  │     │                 │
- │  training_features ──┤  ← @config.when(afe_enabled=True/False)
+ │  training_features ──┤  ← @config.when(feature_strategy=...)
  │     │                 │
- │  training_results ←───┘  (per-model loop)
+ │  training_results ←───┘  (per-model loop, Hamilton config: calibration)
  │     │
  │  training_state ──→ (leaderboard, registry, champion)
 ```
@@ -162,14 +175,16 @@ See [preprocessing.md](preprocessing.md) for method details.
 
 **Source:** `engine/pipelines/nodes/prep.py`
 
+These nodes use `@config.when()` variants resolved from `_resolve_hamilton_config()`, which reads step params from `PipelineSpec`.
+
 | Node | Input Dependencies | Output |
 |------|-------------------|--------|
 | `validate_target` | `processed_dataframe`, `target_col` | `pl.DataFrame` |
-| `quality_cleaned_df` | `validate_target`, `target_col`, `run_quality_audit`, `auto_clean_noise`, `noise_quality_threshold` | `tuple[df, cleaned, n_dropped]` |
+| `quality_cleaned_df` | `validate_target`, `target_col` + Hamilton config (`run_quality_audit`, `auto_clean_noise`, `noise_quality_threshold`) | `tuple[df, cleaned, n_dropped]` |
 | `adapter_result` | `quality_cleaned_df`, `target_col` | `(X, y)` numpy arrays |
 | `feature_names` | `quality_cleaned_df`, `target_col` | `list[str]` |
-| `leakage_report` | `adapter_result`, `run_leakage_audit`, `task` | `LeakageReport \| None` |
-| `target_transform_result` | `adapter_result`, `target_transform`, `target_skewness_threshold` | `(y, transformer, method, skew_orig, skew_trans, applied)` |
+| `leakage_report` | `adapter_result`, `task` + Hamilton config (`run_leakage_audit`) | `LeakageReport \| None` |
+| `target_transform_result` | `adapter_result` + Hamilton config (`target_transform`, `target_skewness_threshold`) | `(y, transformer, method, skew_orig, skew_trans, applied)` |
 | `data_prep_result` | `adapter_result`, `target_transform_result`, `feature_names`, `leakage_report`, `quality_cleaned_df` | `DataPrepResult` |
 
 ### 3. Model Selection
@@ -195,14 +210,14 @@ If `config_models="auto"`, uses `ModelSelector.select()`. Otherwise uses the pro
 
 **Source:** `engine/pipelines/nodes/features.py`
 
-Uses `@config.when()` to activate different implementations:
+The features module is only loaded when `PipelineSpec.is_enabled(StepName.FEATURE_ENGINEERING)` is true. Uses `@config.when()` to activate different implementations:
 
 | Node | Config Condition | Behavior |
 |------|-----------------|----------|
-| `training_features__default` | `afe_enabled != True` | Pass-through: returns `(X, feature_names)` from `data_prep_result` |
+| `training_features__default` | `feature_strategy != "auto"` and not in `afe` variants | Pass-through: returns `(X, feature_names)` from `data_prep_result` |
 | `training_features__afe_enabled` | `afe_enabled == True` | Runs full AFE: top-K → interactions → pruning |
 
-Config is set via `builder.with_config({"afe_enabled": True/False})`.
+Config is set via `_resolve_hamilton_config()` which reads `feature_strategy` from `PipelineSpec.step_params(StepName.FEATURE_ENGINEERING)`.
 
 ### 6. Model Training
 
@@ -210,12 +225,12 @@ Config is set via `builder.with_config({"afe_enabled": True/False})`.
 
 | Node | Input Dependencies | Output |
 |------|-------------------|--------|
-| `training_results` | `training_features`, `data_prep_result`, `models_to_run`, `baseline_scores`, `task`, `cv_folds`, `cv_strategy`, `metrics`, `calibration`, `workspace`, `run_id` | `list[ModelResult]` |
+| `training_results` | `training_features`, `data_prep_result`, `models_to_run`, `baseline_scores`, `task`, `cv_folds`, `cv_strategy`, `metrics`, `workspace`, `run_id` + Hamilton config (`calibration`) | `list[ModelResult]` |
 
 For each model in `models_to_run` (excluding baselines):
 1. Resolve class via `get_model_class(name)`
 2. Cross-validate via `Evaluator.evaluate()`
-3. Fit on full data (with optional calibration)
+3. Fit on full data (with optional calibration via Hamilton config)
 4. Save artifact
 5. Compute lift over baselines
 
@@ -294,14 +309,58 @@ dr = builder.build()
 | `afe_top_k` | 10 | Top-K features for AFE |
 | `afe_lift_threshold` | 0.01 | Minimum lift to keep an interaction |
 | `afe_pruning` | `False` | Enable feature pruning after AFE |
-| `target_transform` | `"none"` | Target transformation: `"none"`, `"auto"`, `"log1p"`, `"yeo-johnson"`, `"box-cox"` |
-| `calibration` | `"none"` | Probability calibration: `"none"`, `"platt"`, `"isotonic"` |
+| `pipeline` | `PipelineSpec()` (all steps enabled except HPO) | Pipeline step configuration (see below) |
 | `drift_detection` | `"psi"` | Drift method: `"none"`, `"psi"`, `"domain_classifier"`, `"both"` |
 | `shap_enabled` | `False` | Enable SHAP explainability |
 | `max_workers` | 1 | Concurrent model training (auto-reduced to 1 for low-VRAM GPUs) |
-| `run_quality_audit` | `True` | Enable Cleanlab label noise detection |
-| `auto_clean_noise` | `False` | Auto-drop noisy labels |
 | `tracker` | `JSONL` | Tracker backend: `JSONL`, `WANDB`, `MLFLOW` |
+
+### `PipelineSpec` — Step Configuration
+
+Pipeline behavior is controlled via the `pipeline` field on `ExperimentConfig`:
+
+```python
+from iter8ml import ExperimentConfig, PipelineSpec, PipelineStep, StepName
+
+config = ExperimentConfig(
+    name="my_experiment",
+    task="classification",
+    target_col="label",
+    data_path="data.csv",
+    pipeline=PipelineSpec(steps=[
+        PipelineStep(name=StepName.DATA_PREP),
+        PipelineStep(name=StepName.QUALITY_AUDIT, params={"auto_clean_noise": True, "noise_quality_threshold": 0.5}),
+        PipelineStep(name=StepName.LEAKAGE_AUDIT),
+        PipelineStep(name=StepName.TARGET_TRANSFORM, params={"method": "auto", "skewness_threshold": 1.0}),
+        PipelineStep(name=StepName.FEATURE_ENGINEERING, params={"strategy": "auto"}),
+        PipelineStep(name=StepName.MODEL_TRAINING),
+        PipelineStep(name=StepName.CALIBRATION, params={"method": "platt"}),
+        PipelineStep(name=StepName.EVALUATION),
+    ]),
+)
+```
+
+Disable a step by setting `enabled=False`:
+
+```python
+PipelineStep(name=StepName.LEAKAGE_AUDIT, enabled=False)
+```
+
+Query at runtime:
+
+```python
+config.pipeline.is_enabled(StepName.CALIBRATION)  # True
+config.pipeline.step_params(StepName.TARGET_TRANSFORM)  # {"method": "auto", "skewness_threshold": 1.0}
+```
+
+Inspect or visualize:
+
+```python
+from iter8ml.engine.pipelines import describe_pipeline, visualize_pipeline
+
+steps = describe_pipeline(config.pipeline)  # list[dict] with name, enabled, params
+graph = visualize_pipeline(spec=config.pipeline)  # Mermaid diagram
+```
 
 ---
 
@@ -322,7 +381,7 @@ def my_custom_feature(processed_dataframe: pl.DataFrame) -> pl.DataFrame:
 
 ### Adding a Config Variant
 
-Use `@config.when()` to create conditional node implementations:
+Use `@config.when()` to create conditional node implementations. These are resolved from `_resolve_hamilton_config()`, which reads step params from `PipelineSpec`:
 
 ```python
 from hamilton.function_modifiers import config
@@ -342,7 +401,7 @@ def training_features__default(
     return data_prep_result.X, data_prep_result.feature_names
 ```
 
-Then set the config when building: `builder.with_config({"feature_method": "advanced"})`.
+The config key is set automatically by `_resolve_hamilton_config()` reading from `PipelineSpec.step_params()`. To add a new config key, add it to `_resolve_hamilton_config()` in `executor.py` and document it as a param on the corresponding `PipelineStep`.
 
 ### Adding a New Pipeline Mode
 
@@ -368,8 +427,25 @@ Attach via `builder.with_adapters(hook)`.
 The executor can generate a Mermaid diagram of the current DAG:
 
 ```python
-executor = PipelineExecutor(mode=PipelineMode.TRAINING)
+from iter8ml.engine.pipelines import visualize_pipeline
+
+# Spec-aware diagram (annotates disabled steps)
+graph = visualize_pipeline(spec=config.pipeline)
+print(graph)
+
+# Full Hamilton DAG (requires Hamilton installed)
+from iter8ml.engine.pipelines.executor import PipelineExecutor
+executor = PipelineExecutor()
 print(executor.get_mermaid_graph())
+```
+
+Or inspect the pipeline steps programmatically:
+
+```python
+from iter8ml.engine.pipelines import describe_pipeline
+
+for step in describe_pipeline(config.pipeline):
+    print(f"  {step['step']}: enabled={step['enabled']}, params={step['params']}")
 ```
 
 This is also logged automatically in the `experiment_started` event under `pipeline_lineage`.

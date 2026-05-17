@@ -1,4 +1,4 @@
-"""Custom exception hierarchy for Tabular Blueprint."""
+"""Custom exception hierarchy for iter8ml."""
 
 from collections.abc import Callable
 from functools import wraps
@@ -6,7 +6,7 @@ from typing import Any
 
 
 class TabularBlueprintError(Exception):
-    """Base exception for all Tabular Blueprint errors."""
+    """Base exception for all iter8ml errors."""
 
     def __init__(self, message: str, *, context: dict[str, Any] | None = None):
         super().__init__(message)
@@ -25,6 +25,20 @@ class RegistryError(TabularBlueprintError):
     """Raised when registry operations fail."""
 
 
+_DATA_KEYWORDS = frozenset(
+    {
+        "target_col",
+        "file not found",
+        "unsupported file format",
+        "invalid json",
+        "query cannot be empty",
+        "only select queries",
+        "destructive keywords",
+        "database error",
+    }
+)
+
+
 def track_errors(tracker_attr: str = "tracker") -> Callable[..., Any]:
     """Decorator that catches exceptions, logs them as events, and re-raises typed errors.
 
@@ -36,6 +50,12 @@ def track_errors(tracker_attr: str = "tracker") -> Callable[..., Any]:
                 ...
     """
 
+    def _classify(exc: Exception) -> type[TabularBlueprintError]:
+        msg = str(exc).lower()
+        if isinstance(exc, ValueError) and any(kw in msg for kw in _DATA_KEYWORDS):
+            return DataLoadError
+        return ModelFitError
+
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
         def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
@@ -43,31 +63,18 @@ def track_errors(tracker_attr: str = "tracker") -> Callable[..., Any]:
                 return func(self, *args, **kwargs)
             except TabularBlueprintError:
                 raise
-            except ValueError as e:
-                tracker = getattr(self, tracker_attr, None)
-                if tracker is not None:
-                    tracker.log_event(
-                        {"event": "error", "error_type": "DataLoadError", "message": str(e)}
-                    )
-                raise DataLoadError(str(e)) from e
-            except RuntimeError as e:
-                tracker = getattr(self, tracker_attr, None)
-                if tracker is not None:
-                    tracker.log_event(
-                        {"event": "error", "error_type": "ModelFitError", "message": str(e)}
-                    )
-                raise ModelFitError(str(e)) from e
             except Exception as e:
+                exc_type = _classify(e)
                 tracker = getattr(self, tracker_attr, None)
                 if tracker is not None:
                     tracker.log_event(
                         {
                             "event": "error",
-                            "error_type": type(e).__name__,
+                            "error_type": exc_type.__name__,
                             "message": str(e),
                         }
                     )
-                raise ModelFitError(str(e), context={"original_type": type(e).__name__}) from e
+                raise exc_type(str(e), context={"original_type": type(e).__name__}) from e
 
         return wrapper
 

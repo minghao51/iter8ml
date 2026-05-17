@@ -55,13 +55,13 @@ class BaseGBDTModel:
         return self._class_labels[idx]
 
     def _classify_predictions(self, preds: np.ndarray) -> np.ndarray:
-        n_cls = getattr(self, "_n_classes", 2)
+        n_cls = self._n_classes
         if n_cls > 2:
             return self._decode_class_indices(np.argmax(preds, axis=1))
         return self._decode_class_indices((preds >= 0.5).astype(int))
 
     def _format_proba(self, preds: np.ndarray) -> np.ndarray:
-        n_cls = getattr(self, "_n_classes", 2)
+        n_cls = self._n_classes
         if n_cls > 2:
             return preds
         return np.column_stack([1 - preds, preds])

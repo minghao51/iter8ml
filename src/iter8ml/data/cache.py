@@ -20,6 +20,10 @@ def _cache_key(data_hash: str, config: "ExperimentConfig") -> str:
     return f"{data_hash}_{config_hash}"
 
 
+def _array_hash(arr: np.ndarray) -> str:
+    return hashlib.sha256(arr.tobytes()).hexdigest()[:16]
+
+
 class PreprocessingCache:
     def __init__(self, workspace: "Workspace") -> None:
         self.cache_dir = workspace.root / _CACHE_DIR
@@ -41,6 +45,8 @@ class PreprocessingCache:
             meta = json.loads(meta_path.read_text())
             X = np.load(x_path)
             y = np.load(y_path)
+            if _array_hash(X) != meta.get("x_hash", "") or _array_hash(y) != meta.get("y_hash", ""):
+                return None
             feature_names: list[str] = meta["feature_names"]
             return X, y, feature_names
         except (OSError, json.JSONDecodeError, ValueError):
@@ -62,7 +68,15 @@ class PreprocessingCache:
 
         np.save(x_path, X)
         np.save(y_path, y)
-        meta_path.write_text(json.dumps({"feature_names": feature_names}))
+        meta_path.write_text(
+            json.dumps(
+                {
+                    "feature_names": feature_names,
+                    "x_hash": _array_hash(X),
+                    "y_hash": _array_hash(y),
+                }
+            )
+        )
 
     def clear(self) -> int:
         """Remove all cached files. Returns count of deleted entries."""

@@ -72,13 +72,13 @@ class TestTrackingHook:
         hook = TrackingHook(tracker, run_id="exp_001")
         assert hook._run_id == "exp_001"
 
-    def test_before_and_after_execution_are_noops(self, tmp_path):
+    def test_noop_methods_not_present(self, tmp_path):
         log_path = tmp_path / "experiments.jsonl"
         tracker = JSONLTracker(str(log_path))
         hook = TrackingHook(tracker)
 
-        hook.run_before_node_execution(None, None, None)
-        hook.run_after_node_execution(None, None, None, None)
+        assert not hasattr(hook, "run_before_node_execution")
+        assert not hasattr(hook, "run_after_node_execution")
 
         assert not log_path.exists() or len(list(_read_events(log_path))) == 0
 

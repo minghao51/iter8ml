@@ -9,6 +9,7 @@ import numpy as np
 import polars as pl
 
 if TYPE_CHECKING:
+    from iter8ml.config import EmbeddingConfig
     from iter8ml.workspace import Workspace
 
 
@@ -47,6 +48,10 @@ def detect_high_cardinality_columns(
     return cols
 
 
+def _make_mapper(m: dict[Any, int]) -> Any:
+    return lambda v, _m=m: _m.get(v, 0)
+
+
 def extract_cat_codes(
     df: pl.DataFrame,
     cat_columns: list[str],
@@ -68,10 +73,7 @@ def extract_cat_codes(
         val_to_code: dict[Any, int] = {v: i for i, v in enumerate(unique_vals)}
         mapping = val_to_code
 
-        def _map_val(v: Any, _m: dict[Any, int] = mapping) -> int:
-            return _m.get(v, 0)
-
-        code_series = series.map_elements(_map_val, return_dtype=pl.Int64)
+        code_series = series.map_elements(_make_mapper(mapping), return_dtype=pl.Int64)
         codes[col] = code_series.to_numpy().astype(np.int64)
         vocab_sizes[col] = len(unique_vals)
         mappings[col] = val_to_code
@@ -120,28 +122,14 @@ class EmbeddingEngine:
         self,
         task: str,
         workspace: Workspace,
-        embedding_method: str = "entity",
-        embedding_dim: int = 16,
-        embedding_max_categories: int = 50,
-        embedding_epochs: int = 10,
-        embedding_lr: float = 1e-3,
-        embedding_mlp_width: int = 128,
-        embedding_mlp_depth: int = 2,
-        embedding_ae_latent_dim: int = 32,
-        embedding_ae_dropout: float = 0.2,
+        config: EmbeddingConfig | None = None,
         random_seed: int = 42,
     ):
+        from iter8ml.config import EmbeddingConfig
+
         self._task = task
         self._workspace_dir = workspace.root
-        self._embedding_method = embedding_method
-        self._embedding_dim = embedding_dim
-        self._embedding_max_categories = embedding_max_categories
-        self._embedding_epochs = embedding_epochs
-        self._embedding_lr = embedding_lr
-        self._embedding_mlp_width = embedding_mlp_width
-        self._embedding_mlp_depth = embedding_mlp_depth
-        self._embedding_ae_latent_dim = embedding_ae_latent_dim
-        self._embedding_ae_dropout = embedding_ae_dropout
+        self._config = config or EmbeddingConfig()
         self._random_seed = random_seed
         self._model: Any = None
         self._cat_columns: list[str] = []
@@ -164,7 +152,7 @@ class EmbeddingEngine:
 
         cat_columns = detect_high_cardinality_columns(
             df,
-            max_categories=self._embedding_max_categories,
+            max_categories=self._config.max_categories,
             target_col=target_col,
         )
         if not cat_columns:
@@ -175,7 +163,7 @@ class EmbeddingEngine:
         self._vocab_sizes = vocab_sizes
         self._mappings = mappings
 
-        method = self._embedding_method
+        method = self._config.method.value
         if method == "entity":
             model, embed_dim = self._train_entity(codes, y, vocab_sizes)
         elif method == "autoencoder":
@@ -187,7 +175,7 @@ class EmbeddingEngine:
         self._embed_dim = embed_dim
 
         embeddings_np = self._generate_embeddings(model, codes, method, embed_dim)
-        per_col_dim = self._embedding_dim if method == "entity" else None
+        per_col_dim = self._config.dim if method == "entity" else None
         X_aug, aug_names = augment_with_embeddings(
             X,
             embeddings_np,
@@ -222,14 +210,14 @@ class EmbeddingEngine:
 
         model = EntityEmbedding(
             vocab_sizes=vocab_sizes,
-            embedding_dim=self._embedding_dim,
-            mlp_width=self._embedding_mlp_width,
-            mlp_depth=self._embedding_mlp_depth,
+            embedding_dim=self._config.dim,
+            mlp_width=self._config.mlp_width,
+            mlp_depth=self._config.mlp_depth,
             task=task,
             n_classes=n_classes,
         )
 
-        device = torch.device("cpu")
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model.to(device)
 
         sorted_cols = sorted(codes.keys())
@@ -241,9 +229,9 @@ class EmbeddingEngine:
         dataset = torch_data.TensorDataset(y_tensor, *cat_tensors)
         loader = torch_data.DataLoader(dataset, batch_size=256, shuffle=True)
 
-        optimizer = torch.optim.Adam(model.parameters(), lr=self._embedding_lr)
+        optimizer = torch.optim.Adam(model.parameters(), lr=self._config.lr)
 
-        for _epoch in range(self._embedding_epochs):
+        for _epoch in range(self._config.epochs):
             model.train()
             for batch in loader:
                 batch_y = batch[0]
@@ -264,7 +252,7 @@ class EmbeddingEngine:
 
         model._update_oov_means()
         model.eval()
-        return model, len(sorted_cols) * self._embedding_dim
+        return model, len(sorted_cols) * self._config.dim
 
     def _train_autoencoder(
         self,
@@ -280,12 +268,12 @@ class EmbeddingEngine:
 
         model = TabularDAE(
             vocab_sizes=vocab_sizes,
-            embedding_dim=self._embedding_dim,
-            latent_dim=self._embedding_ae_latent_dim,
-            dropout=self._embedding_ae_dropout,
+            embedding_dim=self._config.dim,
+            latent_dim=self._config.ae_latent_dim,
+            dropout=self._config.ae_dropout,
         )
 
-        device = torch.device("cpu")
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model.to(device)
 
         sorted_cols = sorted(codes.keys())
@@ -294,9 +282,9 @@ class EmbeddingEngine:
         dataset = torch_data.TensorDataset(*cat_tensors)
         loader = torch_data.DataLoader(dataset, batch_size=256, shuffle=True)
 
-        optimizer = torch.optim.Adam(model.parameters(), lr=self._embedding_lr)
+        optimizer = torch.optim.Adam(model.parameters(), lr=self._config.lr)
 
-        for _epoch in range(self._embedding_epochs):
+        for _epoch in range(self._config.epochs):
             model.train()
             for batch in loader:
                 batch_cats = {c: batch[i] for i, c in enumerate(sorted_cols)}
@@ -308,7 +296,7 @@ class EmbeddingEngine:
 
         model._update_oov_means()
         model.eval()
-        return model, self._embedding_ae_latent_dim
+        return model, self._config.ae_latent_dim
 
     def _generate_embeddings(
         self,
@@ -319,7 +307,7 @@ class EmbeddingEngine:
     ) -> np.ndarray:
         import torch
 
-        device = torch.device("cpu")
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         sorted_cols = sorted(codes.keys())
 
         batch_size = 4096

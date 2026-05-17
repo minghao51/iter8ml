@@ -3,6 +3,7 @@
 import numpy as np
 
 from iter8ml.data.features import (
+    _effective_parallel_jobs,
     _safe_ratio,
     detect_target_skewness,
     discover_interactions,
@@ -78,14 +79,14 @@ class TestExtractTopKFeatures:
     def test_returns_correct_number_of_indices(self):
         X = np.random.randn(200, 20)
         y = (X[:, 0] + X[:, 1] > 0).astype(int)
-        indices = extract_top_k_features(None, X, y, k=5, task="classification")
+        indices, _ = extract_top_k_features(None, X, y, k=5, task="classification")
         assert len(indices) == 5
         assert all(isinstance(i, int) for i in indices)
 
     def test_returns_at_most_n_features(self):
         X = np.random.randn(100, 3)
         y = np.random.randint(0, 2, 100)
-        indices = extract_top_k_features(None, X, y, k=10, task="classification")
+        indices, _ = extract_top_k_features(None, X, y, k=10, task="classification")
         assert len(indices) == 3
 
 
@@ -100,6 +101,8 @@ class TestDiscoverInteractions:
         )
         assert result.n_candidates_tested > 0
         assert isinstance(X_new, np.ndarray)
+        assert result.effective_n_jobs >= 1
+        assert result.duration_seconds >= 0.0
 
     def test_no_interactions_kept_with_high_threshold(self):
         np.random.seed(42)
@@ -110,6 +113,38 @@ class TestDiscoverInteractions:
         )
         assert result.n_candidates_kept == 0
         assert X_new.shape[1] == 0
+
+    def test_default_parallel_jobs_is_one(self):
+        jobs = _effective_parallel_jobs(
+            requested_jobs=1,
+            n_tasks=10,
+            n_samples=120,
+            n_features=5,
+        )
+        assert jobs == 1
+
+    def test_candidate_pairs_are_capped(self):
+        np.random.seed(42)
+        X = np.random.randn(200, 12)
+        y = np.random.randint(0, 2, 200)
+        top_k = list(range(10))
+        _, result = discover_interactions(
+            X,
+            y,
+            top_k_indices=top_k,
+            task="classification",
+            max_candidate_pairs=5,
+        )
+        assert result.n_candidates_tested <= 5
+
+    def test_effective_parallel_jobs_caps_for_large_matrices(self):
+        jobs = _effective_parallel_jobs(
+            requested_jobs=8,
+            n_tasks=50,
+            n_samples=2_000,
+            n_features=1_000,
+        )
+        assert jobs == 2
 
 
 class TestSafeRatio:
@@ -124,6 +159,13 @@ class TestSafeRatio:
         b = np.array([0.0, 1e-12])
         result = _safe_ratio(a, b)
         assert result[0] == 0.0
+
+    def test_overflow_input_returns_finite_array(self):
+        a = np.array([8.98846567431158e307])
+        b = np.array([0.5])
+        result = _safe_ratio(a, b)
+        assert result is not None
+        assert np.isfinite(result).all()
 
 
 class TestPruneFeatures:

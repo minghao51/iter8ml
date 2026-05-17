@@ -26,10 +26,8 @@ class Trainer:
         config: ExperimentConfig,
         workspace: Workspace,
         tracker: Tracker | None = None,
-        run_leakage_audit: bool = True,
         resume_run_id: str | None = None,
     ):
-        """Initialize trainer with experiment config and optional resume support."""
         HardwareProfile.configure_omp_threads()
         self.config = config
         self.workspace = workspace
@@ -51,7 +49,6 @@ class Trainer:
             _tracker = JSONLTracker(log_path=str(workspace.experiments_path))
         self.tracker = _tracker
         self.hardware = HardwareProfile.detect()
-        self.run_leakage_audit = run_leakage_audit
 
     def run(self, df: pl.DataFrame) -> dict:
         """Run full experiment on a Polars DataFrame via Hamilton DAG."""
@@ -72,7 +69,6 @@ class Trainer:
             df=df,
             run_id=run_id,
             vram_gb=self.hardware.vram_gb,
-            run_leakage_audit=self.run_leakage_audit,
             completed_models=self._completed_models,
             workspace=self.workspace,
         )
@@ -123,11 +119,10 @@ class Trainer:
 
 
 def _load_completed_models(log_path: Path, run_id: str) -> set[str]:
-    from iter8ml.utils.io import load_events
+    from iter8ml.utils.io import iter_events
 
-    events = load_events(log_path)
-    return {
-        e["model"]
-        for e in events
-        if e.get("event") == "model_completed" and e.get("run_id") == run_id and "model" in e
-    }
+    completed: set[str] = set()
+    for e in iter_events(log_path):
+        if e.get("event") == "model_completed" and e.get("run_id") == run_id and "model" in e:
+            completed.add(e["model"])
+    return completed

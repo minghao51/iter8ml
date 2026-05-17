@@ -4,19 +4,15 @@ from typing import Any
 
 import numpy as np
 
+from iter8ml.constants import EmbeddingMethod
 from iter8ml.workspace import Workspace
 
 try:
-    from hamilton.function_modifiers import config
+    from hamilton.function_modifiers import config as _hamilton_config
 
     _HAS_HAMILTON = True
 except ImportError:
     _HAS_HAMILTON = False
-
-if not _HAS_HAMILTON:
-    from unittest.mock import MagicMock
-
-    config = MagicMock()
 
 
 def _passthrough(data_prep_result: Any) -> tuple[np.ndarray, list[str]]:
@@ -34,7 +30,9 @@ def _fit_importance_model(
     for name in ("catboost", "lightgbm", "xgboost"):
         if name in models_to_run:
             cls = get_model_class(name)
-            return cls(task=task).fit(X, y) or cls(task=task)
+            model = cls(task=task)
+            model.fit(X, y)
+            return model
 
     from iter8ml.engine.models.baselines import LinearBaseline
 
@@ -52,6 +50,8 @@ def _run_afe(
     afe_lift_threshold: float,
     afe_pruning: bool,
     afe_prune_min_importance: float,
+    afe_n_jobs: int,
+    afe_max_candidate_pairs: int,
     task: str,
     random_seed: int,
 ) -> tuple[np.ndarray, list[str]]:
@@ -62,7 +62,7 @@ def _run_afe(
     )
 
     imp_model = _fit_importance_model(X, y, models_to_run, task)
-    top_k_indices = extract_top_k_features(
+    top_k_indices, _perm_result = extract_top_k_features(
         imp_model,
         X,
         y,
@@ -79,6 +79,8 @@ def _run_afe(
         task=task,
         lift_threshold=afe_lift_threshold,
         random_seed=random_seed,
+        n_jobs=afe_n_jobs,
+        max_candidate_pairs=afe_max_candidate_pairs,
     )
 
     if X_new.shape[1] > 0:
@@ -120,20 +122,24 @@ def _run_embedding(
     embedding_ae_latent_dim: int = 32,
     embedding_ae_dropout: float = 0.2,
 ) -> tuple[np.ndarray, list[str]]:
+    from iter8ml.config import EmbeddingConfig
     from iter8ml.data.embedding import EmbeddingEngine
 
+    embedding_config = EmbeddingConfig(
+        method=EmbeddingMethod(embedding_method),
+        dim=embedding_dim,
+        max_categories=embedding_max_categories,
+        epochs=embedding_epochs,
+        lr=embedding_lr,
+        mlp_width=embedding_mlp_width,
+        mlp_depth=embedding_mlp_depth,
+        ae_latent_dim=embedding_ae_latent_dim,
+        ae_dropout=embedding_ae_dropout,
+    )
     engine = EmbeddingEngine(
         task=task,
         workspace=workspace,
-        embedding_method=embedding_method,
-        embedding_dim=embedding_dim,
-        embedding_max_categories=embedding_max_categories,
-        embedding_epochs=embedding_epochs,
-        embedding_lr=embedding_lr,
-        embedding_mlp_width=embedding_mlp_width,
-        embedding_mlp_depth=embedding_mlp_depth,
-        embedding_ae_latent_dim=embedding_ae_latent_dim,
-        embedding_ae_dropout=embedding_ae_dropout,
+        config=embedding_config,
         random_seed=random_seed,
     )
     return engine.fit_transform(
@@ -148,11 +154,11 @@ def _run_embedding(
 
 if _HAS_HAMILTON:
 
-    @config.when(feature_strategy="none")
+    @_hamilton_config.when(feature_strategy="none")
     def training_features__none(data_prep_result: Any) -> tuple[np.ndarray, list[str]]:
         return _passthrough(data_prep_result)
 
-    @config.when(feature_strategy="afe")
+    @_hamilton_config.when(feature_strategy="afe")
     def training_features__afe(
         data_prep_result: Any,
         models_to_run: list[str],
@@ -160,6 +166,8 @@ if _HAS_HAMILTON:
         afe_lift_threshold: float,
         afe_pruning: bool,
         afe_prune_min_importance: float,
+        afe_n_jobs: int,
+        afe_max_candidate_pairs: int,
         task: str,
         random_seed: int,
     ) -> tuple[np.ndarray, list[str]]:
@@ -172,11 +180,13 @@ if _HAS_HAMILTON:
             afe_lift_threshold,
             afe_pruning,
             afe_prune_min_importance,
+            afe_n_jobs,
+            afe_max_candidate_pairs,
             task,
             random_seed,
         )
 
-    @config.when(feature_strategy="embedding")
+    @_hamilton_config.when(feature_strategy="embedding")
     def training_features__embedding(
         data_prep_result: Any,
         task: str,
@@ -208,4 +218,20 @@ if _HAS_HAMILTON:
             embedding_mlp_depth,
             embedding_ae_latent_dim,
             embedding_ae_dropout,
+        )
+
+else:
+
+    def training_features__none(data_prep_result: Any) -> tuple[np.ndarray, list[str]]:
+        return _passthrough(data_prep_result)
+
+    def training_features__afe(**_kwargs: Any) -> None:
+        raise ImportError(
+            "Hamilton is required for feature_strategy='afe'. Install with: pip install sf-hamilton"
+        )
+
+    def training_features__embedding(**_kwargs: Any) -> None:
+        raise ImportError(
+            "Hamilton is required for feature_strategy='embedding'. "
+            "Install with: pip install sf-hamilton"
         )

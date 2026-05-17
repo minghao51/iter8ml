@@ -22,7 +22,10 @@ class LLMAgentConfig(BaseModel):
 
     enabled: bool = False
     model: str = Field(
-        default_factory=lambda: os.getenv("TABBLUEPRINT_LLM_MODEL", DEFAULT_LLM_MODEL)
+        default_factory=lambda: os.getenv(
+            "ITER8ML_LLM_MODEL", os.getenv("TABBLUEPRINT_LLM_MODEL", DEFAULT_LLM_MODEL)
+        ),
+        description="LLM model (env: ITER8ML_LLM_MODEL > TABBLUEPRINT_LLM_MODEL > default).",
     )
     api_key_env: str = ""
     api_base: str | None = None

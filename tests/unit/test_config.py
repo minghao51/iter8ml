@@ -7,7 +7,14 @@ from unittest.mock import patch
 import pytest
 from pydantic import ValidationError
 
-from iter8ml.config import DEFAULT_LLM_MODEL, ExperimentConfig, HardwareProfile
+from iter8ml.config import (
+    DEFAULT_LLM_MODEL,
+    ExperimentConfig,
+    HardwareProfile,
+    PipelineSpec,
+    PipelineStep,
+    StepName,
+)
 from iter8ml.constants import CVStrategy, EmbeddingMethod, TaskType
 
 
@@ -23,6 +30,9 @@ def test_default_config():
     assert config.run_hpo is False
     assert config.models == "auto"
     assert config.random_seed == 42
+    assert config.afe_n_jobs == 1
+    assert config.afe_max_candidate_pairs == 200
+    assert config.leakage_n_jobs == 1
 
 
 def test_regression_defaults():
@@ -160,6 +170,16 @@ def test_data_sample_accepts_valid():
         data_sample=0.5,
     )
     assert config.data_sample == 0.5
+
+
+def test_strict_thread_safety_default_true():
+    config = ExperimentConfig(
+        name="test",
+        task="classification",
+        target_col="target",
+        data_path="data.csv",
+    )
+    assert config.strict_thread_safety is True
 
 
 def test_hpo_n_trials_must_be_positive():
@@ -410,6 +430,224 @@ def test_nest_flat_config_fields():
     config = ExperimentConfig.model_validate(data)
     assert config.hpo.run is True
     assert config.hpo.n_trials == 100
+
+
+def test_legacy_pipeline_flat_keys_are_migrated():
+    data = {
+        "name": "test",
+        "task": "classification",
+        "target_col": "target",
+        "data_path": "data.csv",
+        "run_quality_audit": False,
+        "auto_clean_noise": True,
+        "noise_quality_threshold": 0.7,
+        "run_leakage_audit": False,
+        "target_transform": "log1p",
+        "target_skewness_threshold": 2.0,
+        "feature_strategy": "afe",
+        "calibration": "platt",
+    }
+    config = ExperimentConfig.model_validate(data)
+
+    assert config.pipeline.is_enabled(StepName.QUALITY_AUDIT) is False
+    assert config.pipeline.step_params(StepName.QUALITY_AUDIT) == {
+        "auto_clean_noise": True,
+        "noise_quality_threshold": 0.7,
+    }
+    assert config.pipeline.is_enabled(StepName.LEAKAGE_AUDIT) is False
+    assert config.pipeline.step_params(StepName.TARGET_TRANSFORM) == {
+        "method": "log1p",
+        "skewness_threshold": 2.0,
+    }
+    assert config.pipeline.step_params(StepName.FEATURE_ENGINEERING) == {"strategy": "afe"}
+    assert config.pipeline.step_params(StepName.CALIBRATION) == {"method": "platt"}
+
+
+def test_legacy_keys_do_not_override_explicit_pipeline_steps():
+    data = {
+        "name": "test",
+        "task": "classification",
+        "target_col": "target",
+        "data_path": "data.csv",
+        "run_quality_audit": False,
+        "pipeline": {
+            "steps": [
+                {
+                    "name": "quality_audit",
+                    "enabled": True,
+                    "params": {"auto_clean_noise": False},
+                }
+            ]
+        },
+    }
+    config = ExperimentConfig.model_validate(data)
+    assert config.pipeline.is_enabled(StepName.QUALITY_AUDIT) is False
+    assert config.pipeline.step_params(StepName.QUALITY_AUDIT) == {"auto_clean_noise": False}
+
+
+# --- PipelineSpec ---
+
+
+def test_pipeline_spec_defaults():
+    spec = PipelineSpec()
+    assert len(spec.steps) == 8
+    assert all(s.enabled for s in spec.steps)
+    assert spec.is_enabled(StepName.DATA_PREP)
+    assert spec.is_enabled(StepName.MODEL_TRAINING)
+
+
+def test_pipeline_spec_disabled_step():
+    spec = PipelineSpec(
+        steps=[
+            PipelineStep(name=StepName.DATA_PREP),
+            PipelineStep(name=StepName.QUALITY_AUDIT, enabled=False),
+            PipelineStep(name=StepName.LEAKAGE_AUDIT),
+        ]
+    )
+    assert spec.is_enabled(StepName.DATA_PREP) is True
+    assert spec.is_enabled(StepName.QUALITY_AUDIT) is False
+    assert spec.is_enabled(StepName.CALIBRATION) is False
+
+
+def test_pipeline_spec_step_params():
+    spec = PipelineSpec(
+        steps=[
+            PipelineStep(
+                name=StepName.TARGET_TRANSFORM,
+                params={"method": "log1p", "skewness_threshold": 2.0},
+            ),
+        ]
+    )
+    assert spec.step_params(StepName.TARGET_TRANSFORM) == {
+        "method": "log1p",
+        "skewness_threshold": 2.0,
+    }
+    assert spec.step_params(StepName.CALIBRATION) == {}
+
+
+def test_legacy_flat_keys_match_explicit_pipeline_resolution():
+    from iter8ml.engine.pipelines.executor import _resolve_hamilton_config
+
+    legacy_cfg = ExperimentConfig.model_validate(
+        {
+            "name": "legacy",
+            "task": "classification",
+            "target_col": "target",
+            "data_path": "data.csv",
+            "run_quality_audit": False,
+            "auto_clean_noise": True,
+            "noise_quality_threshold": 0.6,
+            "run_leakage_audit": False,
+            "target_transform": "auto",
+            "target_skewness_threshold": 2.0,
+            "feature_strategy": "afe",
+            "calibration": "isotonic",
+        }
+    )
+    step_cfg = ExperimentConfig.model_validate(
+        {
+            "name": "step",
+            "task": "classification",
+            "target_col": "target",
+            "data_path": "data.csv",
+            "pipeline": {
+                "steps": [
+                    {
+                        "name": "quality_audit",
+                        "enabled": False,
+                        "params": {"auto_clean_noise": True, "noise_quality_threshold": 0.6},
+                    },
+                    {"name": "leakage_audit", "enabled": False},
+                    {
+                        "name": "target_transform",
+                        "params": {"method": "auto", "skewness_threshold": 2.0},
+                    },
+                    {"name": "feature_engineering", "params": {"strategy": "afe"}},
+                    {"name": "calibration", "params": {"method": "isotonic"}},
+                ]
+            },
+        }
+    )
+    assert _resolve_hamilton_config(legacy_cfg) == _resolve_hamilton_config(step_cfg)
+
+
+def test_pipeline_spec_from_yaml():
+    import yaml
+
+    yaml_str = """
+    name: test
+    task: classification
+    target_col: target
+    data_path: data.csv
+    pipeline:
+      steps:
+        - name: data_prep
+        - name: quality_audit
+          enabled: false
+        - name: leakage_audit
+        - name: target_transform
+          params:
+            method: auto
+        - name: feature_engineering
+          params:
+            strategy: afe
+        - name: model_training
+        - name: calibration
+        - name: evaluation
+    """
+    data = yaml.safe_load(yaml_str)
+    config = ExperimentConfig.model_validate(data)
+    assert config.pipeline.is_enabled(StepName.QUALITY_AUDIT) is False
+    assert config.pipeline.step_params(StepName.TARGET_TRANSFORM) == {"method": "auto"}
+    assert config.pipeline.step_params(StepName.FEATURE_ENGINEERING) == {"strategy": "afe"}
+
+
+def test_describe_pipeline():
+    from iter8ml.engine.pipelines.executor import PipelineExecutor
+
+    spec = PipelineSpec(
+        steps=[
+            PipelineStep(name=StepName.DATA_PREP),
+            PipelineStep(name=StepName.QUALITY_AUDIT, enabled=False),
+            PipelineStep(name=StepName.MODEL_TRAINING),
+        ]
+    )
+    result = PipelineExecutor().describe_pipeline(spec)
+    assert len(result) == 3
+    assert result[0] == {"step": "data_prep", "enabled": True, "params": {}}
+    assert result[1] == {"step": "quality_audit", "enabled": False, "params": {}}
+    assert result[2]["step"] == "model_training"
+
+
+def test_mermaid_annotates_disabled():
+    from iter8ml.engine.pipelines.executor import PipelineExecutor
+
+    spec = PipelineSpec(
+        steps=[
+            PipelineStep(name=StepName.DATA_PREP),
+            PipelineStep(name=StepName.QUALITY_AUDIT, enabled=False),
+            PipelineStep(name=StepName.MODEL_TRAINING),
+        ]
+    )
+    graph = PipelineExecutor().get_mermaid_graph(spec=spec)
+    assert "quality_audit ~disabled~" in graph
+    assert "classDef disabled" in graph
+    assert "step_0 --> step_1" in graph
+    assert "step_1 --> step_2" in graph
+
+
+def test_mermaid_no_disabled_class_when_all_enabled():
+    from iter8ml.engine.pipelines.executor import PipelineExecutor
+
+    spec = PipelineSpec(
+        steps=[
+            PipelineStep(name=StepName.DATA_PREP),
+            PipelineStep(name=StepName.MODEL_TRAINING),
+        ]
+    )
+    graph = PipelineExecutor().get_mermaid_graph(spec=spec)
+    assert "classDef disabled" not in graph
+    assert "~disabled~" not in graph
 
 
 # --- Enum serialization ---

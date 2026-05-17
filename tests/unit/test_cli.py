@@ -1,7 +1,6 @@
 """Tests for CLI commands using typer CliRunner."""
 
 import os
-import tempfile
 from pathlib import Path
 
 import polars as pl
@@ -12,6 +11,17 @@ from typer.testing import CliRunner
 from iter8ml.cli import app
 
 runner = CliRunner()
+
+
+@pytest.fixture
+def isolated_cwd(tmp_path):
+    """Change to a temp directory for CLI commands that depend on CWD."""
+    orig = os.getcwd()
+    os.chdir(str(tmp_path))
+    try:
+        yield tmp_path
+    finally:
+        os.chdir(orig)
 
 
 @pytest.fixture
@@ -34,54 +44,39 @@ def sample_parquet(tmp_path):
     return str(path)
 
 
-def test_init_command():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        orig = os.getcwd()
-        os.chdir(tmpdir)
-        try:
-            result = runner.invoke(app, ["init"])
-            assert result.exit_code == 0
-            assert "Workspace initialized" in result.stdout
-            assert Path(tmpdir, "workspace").exists()
-            assert Path(tmpdir, "workspace", "artifacts").exists()
-            assert Path(tmpdir, "workspace", "experiments.jsonl").exists()
-            assert Path(tmpdir, "workspace", "registry.json").exists()
-        finally:
-            os.chdir(orig)
+def test_init_command(isolated_cwd):
+    tmpdir = isolated_cwd
+    result = runner.invoke(app, ["init"])
+    assert result.exit_code == 0
+    assert "Workspace initialized" in result.stdout
+    assert Path(tmpdir, "workspace").exists()
+    assert Path(tmpdir, "workspace", "artifacts").exists()
+    assert Path(tmpdir, "workspace", "experiments.jsonl").exists()
+    assert Path(tmpdir, "workspace", "registry.json").exists()
 
 
-def test_init_preserves_existing_registry_without_force_reset():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        orig = os.getcwd()
-        os.chdir(tmpdir)
-        try:
-            workspace = Path(tmpdir, "workspace")
-            workspace.mkdir(parents=True, exist_ok=True)
-            registry_path = workspace / "registry.json"
-            registry_path.write_text('{"existing":"champion"}')
+def test_init_preserves_existing_registry_without_force_reset(isolated_cwd):
+    tmpdir = isolated_cwd
+    workspace = Path(tmpdir, "workspace")
+    workspace.mkdir(parents=True, exist_ok=True)
+    registry_path = workspace / "registry.json"
+    registry_path.write_text('{"existing":"champion"}')
 
-            result = runner.invoke(app, ["init"])
-            assert result.exit_code == 0
-            assert registry_path.read_text() == '{"existing":"champion"}'
-        finally:
-            os.chdir(orig)
+    result = runner.invoke(app, ["init"])
+    assert result.exit_code == 0
+    assert registry_path.read_text() == '{"existing":"champion"}'
 
 
-def test_init_force_reset_registry_overwrites_existing_registry():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        orig = os.getcwd()
-        os.chdir(tmpdir)
-        try:
-            workspace = Path(tmpdir, "workspace")
-            workspace.mkdir(parents=True, exist_ok=True)
-            registry_path = workspace / "registry.json"
-            registry_path.write_text('{"existing":"champion"}')
+def test_init_force_reset_registry_overwrites_existing_registry(isolated_cwd):
+    tmpdir = isolated_cwd
+    workspace = Path(tmpdir, "workspace")
+    workspace.mkdir(parents=True, exist_ok=True)
+    registry_path = workspace / "registry.json"
+    registry_path.write_text('{"existing":"champion"}')
 
-            result = runner.invoke(app, ["init", "--force-reset-registry"])
-            assert result.exit_code == 0
-            assert registry_path.read_text() == "{}"
-        finally:
-            os.chdir(orig)
+    result = runner.invoke(app, ["init", "--force-reset-registry"])
+    assert result.exit_code == 0
+    assert registry_path.read_text() == "{}"
 
 
 def test_init_with_data(sample_csv):
@@ -98,40 +93,22 @@ def test_hardware_command():
     assert "CPU Cores" in result.stdout
 
 
-def test_leaderboard_empty():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        orig = os.getcwd()
-        os.chdir(tmpdir)
-        try:
-            result = runner.invoke(app, ["leaderboard"])
-            assert result.exit_code == 0
-            assert "No experiments" in result.stdout
-        finally:
-            os.chdir(orig)
+def test_leaderboard_empty(isolated_cwd):
+    result = runner.invoke(app, ["leaderboard"])
+    assert result.exit_code == 0
+    assert "No experiments" in result.stdout
 
 
-def test_registry_empty():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        orig = os.getcwd()
-        os.chdir(tmpdir)
-        try:
-            result = runner.invoke(app, ["registry", "show"])
-            assert result.exit_code == 0
-            assert "Registry is empty" in result.stdout
-        finally:
-            os.chdir(orig)
+def test_registry_empty(isolated_cwd):
+    result = runner.invoke(app, ["registry", "show"])
+    assert result.exit_code == 0
+    assert "Registry is empty" in result.stdout
 
 
-def test_state_empty():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        orig = os.getcwd()
-        os.chdir(tmpdir)
-        try:
-            result = runner.invoke(app, ["state"])
-            assert result.exit_code == 0
-            assert "No experiments run" in result.stdout
-        finally:
-            os.chdir(orig)
+def test_state_empty(isolated_cwd):
+    result = runner.invoke(app, ["state"])
+    assert result.exit_code == 0
+    assert "No experiments run" in result.stdout
 
 
 def test_run_missing_data():
@@ -252,31 +229,26 @@ def test_run_with_parquet(sample_parquet):
 
 
 @pytest.mark.slow
-def test_leaderboard_after_run(sample_csv, tmp_path):
-    orig = os.getcwd()
-    os.chdir(str(tmp_path))
-    try:
-        runner.invoke(app, ["init"])
-        runner.invoke(
-            app,
-            [
-                "run",
-                "--data",
-                sample_csv,
-                "--target",
-                "target",
-                "--models",
-                "catboost",
-            ],
-        )
+def test_leaderboard_after_run(sample_csv, isolated_cwd):
+    runner.invoke(app, ["init"])
+    runner.invoke(
+        app,
+        [
+            "run",
+            "--data",
+            sample_csv,
+            "--target",
+            "target",
+            "--models",
+            "catboost",
+        ],
+    )
 
-        result = runner.invoke(app, ["leaderboard"])
-        assert result.exit_code == 0
-        assert "Leaderboard" in result.stdout
-        assert "CatBoost" in result.stdout
-        assert "Primary Metric" in result.stdout
-    finally:
-        os.chdir(orig)
+    result = runner.invoke(app, ["leaderboard"])
+    assert result.exit_code == 0
+    assert "Leaderboard" in result.stdout
+    assert "CatBoost" in result.stdout
+    assert "Primary Metric" in result.stdout
 
 
 def test_drift_detection(sample_parquet, tmp_path):
@@ -348,138 +320,98 @@ def test_hpo_unknown_model_exits_gracefully(tmp_path, monkeypatch):
 # --- Export & Registry ---
 
 
-def test_registry_show_empty(tmp_path):
-    with tempfile.TemporaryDirectory() as tmpdir:
-        orig = os.getcwd()
-        os.chdir(tmpdir)
-        try:
-            result = runner.invoke(app, ["init"])
-            assert result.exit_code == 0
-            result = runner.invoke(app, ["registry", "show"])
-            assert result.exit_code == 0
-            assert "Registry is empty" in result.stdout
-        finally:
-            os.chdir(orig)
+def test_registry_show_empty(isolated_cwd):
+    result = runner.invoke(app, ["init"])
+    assert result.exit_code == 0
+    result = runner.invoke(app, ["registry", "show"])
+    assert result.exit_code == 0
+    assert "Registry is empty" in result.stdout
 
 
-def test_registry_show_with_data(tmp_path):
-    with tempfile.TemporaryDirectory() as tmpdir:
-        orig = os.getcwd()
-        os.chdir(tmpdir)
-        try:
-            runner.invoke(app, ["init"])
-            ws_path = Path(tmpdir) / "workspace"
-            registry_path = ws_path / "registry.json"
-            registry_path.write_text(
-                '{"best": {"model": "CatBoost", "run_id": "exp_1",'
-                ' "score": 0.85, "registered_at": "2026-01-01T00:00:00Z"}}'
-            )
-            result = runner.invoke(app, ["registry", "show"])
-            assert result.exit_code == 0
-            assert "CatBoost" in result.stdout
-            assert "exp_1" in result.stdout
-        finally:
-            os.chdir(orig)
+def test_registry_show_with_data(isolated_cwd):
+    tmpdir = isolated_cwd
+    runner.invoke(app, ["init"])
+    ws_path = Path(tmpdir) / "workspace"
+    registry_path = ws_path / "registry.json"
+    registry_path.write_text(
+        '{"best": {"model": "CatBoost", "run_id": "exp_1",'
+        ' "score": 0.85, "registered_at": "2026-01-01T00:00:00Z"}}'
+    )
+    result = runner.invoke(app, ["registry", "show"])
+    assert result.exit_code == 0
+    assert "CatBoost" in result.stdout
+    assert "exp_1" in result.stdout
 
 
-def test_registry_unknown_action(tmp_path):
-    with tempfile.TemporaryDirectory() as tmpdir:
-        orig = os.getcwd()
-        os.chdir(tmpdir)
-        try:
-            runner.invoke(app, ["init"])
-            ws_path = Path(tmpdir) / "workspace"
-            registry_path = ws_path / "registry.json"
-            registry_path.write_text(
-                '{"best": {"model": "CatBoost", "run_id": "exp_1", "score": 0.85}}'
-            )
-            result = runner.invoke(app, ["registry", "invalid_action"])
-            assert "Unknown action" in result.stdout
-        finally:
-            os.chdir(orig)
+def test_registry_unknown_action(isolated_cwd):
+    tmpdir = isolated_cwd
+    runner.invoke(app, ["init"])
+    ws_path = Path(tmpdir) / "workspace"
+    registry_path = ws_path / "registry.json"
+    registry_path.write_text('{"best": {"model": "CatBoost", "run_id": "exp_1", "score": 0.85}}')
+    result = runner.invoke(app, ["registry", "invalid_action"])
+    assert "Unknown action" in result.stdout
 
 
-def test_export_missing_key(tmp_path):
-    with tempfile.TemporaryDirectory() as tmpdir:
-        orig = os.getcwd()
-        os.chdir(tmpdir)
-        try:
-            runner.invoke(app, ["init"])
-            result = runner.invoke(app, ["export", "nonexistent:key"])
-            assert result.exit_code == 1
-            assert "Error" in result.stdout
-        finally:
-            os.chdir(orig)
+def test_export_missing_key(isolated_cwd):
+    runner.invoke(app, ["init"])
+    result = runner.invoke(app, ["export", "nonexistent:key"])
+    assert result.exit_code == 1
+    assert "Error" in result.stdout
 
 
-def test_state_with_events(tmp_path):
-    with tempfile.TemporaryDirectory() as tmpdir:
-        orig = os.getcwd()
-        os.chdir(tmpdir)
-        try:
-            result = runner.invoke(app, ["init"])
-            assert result.exit_code == 0
+def test_state_with_events(isolated_cwd):
+    tmpdir = isolated_cwd
+    result = runner.invoke(app, ["init"])
+    assert result.exit_code == 0
 
-            ws_path = Path(tmpdir) / "workspace"
-            exp_path = ws_path / "experiments.jsonl"
-            event = (
-                '{"event": "model_completed", "model": "CatBoost", "task": "classification",'
-                ' "dataset": "test", "n_rows": 100, "n_features": 5,'
-                ' "cv_scores": {"roc_auc": 0.85}, "duration_seconds": 3.0,'
-                ' "hardware": {"device": "cpu", "vram_used_gb": 0.0},'
-                ' "timestamp": "2026-01-01T00:00:00Z"}\n'
-            )
-            exp_path.write_text(event)
+    ws_path = Path(tmpdir) / "workspace"
+    exp_path = ws_path / "experiments.jsonl"
+    event = (
+        '{"event": "model_completed", "model": "CatBoost", "task": "classification",'
+        ' "dataset": "test", "n_rows": 100, "n_features": 5,'
+        ' "cv_scores": {"roc_auc": 0.85}, "duration_seconds": 3.0,'
+        ' "hardware": {"device": "cpu", "vram_used_gb": 0.0},'
+        ' "timestamp": "2026-01-01T00:00:00Z"}\n'
+    )
+    exp_path.write_text(event)
 
-            result = runner.invoke(app, ["state"])
-            assert result.exit_code == 0
-            assert "CatBoost" in result.stdout
-            assert "roc_auc" in result.stdout
-        finally:
-            os.chdir(orig)
+    result = runner.invoke(app, ["state"])
+    assert result.exit_code == 0
+    assert "CatBoost" in result.stdout
+    assert "roc_auc" in result.stdout
 
 
-def test_diff_command(tmp_path):
-    with tempfile.TemporaryDirectory() as tmpdir:
-        orig = os.getcwd()
-        os.chdir(tmpdir)
-        try:
-            runner.invoke(app, ["init"])
-            ws_path = Path(tmpdir) / "workspace"
-            exp_path = ws_path / "experiments.jsonl"
-            events = (
-                '{"event": "experiment_started", "run_id": "run_a", '
-                '"config": {"task": "classification", "models": "auto",'
-                ' "cv_folds": 5, "metrics": ["roc_auc"]}}\n'
-                '{"event": "model_completed", "run_id": "run_a",'
-                ' "model": "CatBoost",'
-                ' "cv_scores": {"roc_auc": 0.85}, "duration_seconds": 3.0}\n'
-                '{"event": "experiment_started", "run_id": "run_b", '
-                '"config": {"task": "classification", "models": "auto",'
-                ' "cv_folds": 5, "metrics": ["roc_auc"]}}\n'
-                '{"event": "model_completed", "run_id": "run_b",'
-                ' "model": "CatBoost",'
-                ' "cv_scores": {"roc_auc": 0.90}, "duration_seconds": 2.5}\n'
-            )
-            exp_path.write_text(events)
+def test_diff_command(isolated_cwd):
+    tmpdir = isolated_cwd
+    runner.invoke(app, ["init"])
+    ws_path = Path(tmpdir) / "workspace"
+    exp_path = ws_path / "experiments.jsonl"
+    events = (
+        '{"event": "experiment_started", "run_id": "run_a", '
+        '"config": {"task": "classification", "models": "auto",'
+        ' "cv_folds": 5, "metrics": ["roc_auc"]}}\n'
+        '{"event": "model_completed", "run_id": "run_a",'
+        ' "model": "CatBoost",'
+        ' "cv_scores": {"roc_auc": 0.85}, "duration_seconds": 3.0}\n'
+        '{"event": "experiment_started", "run_id": "run_b", '
+        '"config": {"task": "classification", "models": "auto",'
+        ' "cv_folds": 5, "metrics": ["roc_auc"]}}\n'
+        '{"event": "model_completed", "run_id": "run_b",'
+        ' "model": "CatBoost",'
+        ' "cv_scores": {"roc_auc": 0.90}, "duration_seconds": 2.5}\n'
+    )
+    exp_path.write_text(events)
 
-            result = runner.invoke(app, ["diff", "run_a", "run_b"])
-            assert result.exit_code == 0
-            assert "Experiment Diff" in result.stdout
-            assert "run_a" in result.stdout
-            assert "run_b" in result.stdout
-        finally:
-            os.chdir(orig)
+    result = runner.invoke(app, ["diff", "run_a", "run_b"])
+    assert result.exit_code == 0
+    assert "Experiment Diff" in result.stdout
+    assert "run_a" in result.stdout
+    assert "run_b" in result.stdout
 
 
-def test_diff_missing_run(tmp_path):
-    with tempfile.TemporaryDirectory() as tmpdir:
-        orig = os.getcwd()
-        os.chdir(tmpdir)
-        try:
-            runner.invoke(app, ["init"])
-            result = runner.invoke(app, ["diff", "nonexistent", "other"])
-            assert result.exit_code == 1
-            assert "Run ID not found" in result.stdout
-        finally:
-            os.chdir(orig)
+def test_diff_missing_run(isolated_cwd):
+    runner.invoke(app, ["init"])
+    result = runner.invoke(app, ["diff", "nonexistent", "other"])
+    assert result.exit_code == 1
+    assert "Run ID not found" in result.stdout

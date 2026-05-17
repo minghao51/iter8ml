@@ -3,6 +3,7 @@ import pytest
 
 from iter8ml.engine.pipelines.nodes.train import (
     ModelResult,
+    _effective_training_workers,
     _train_one,
     models_to_run,
     training_state,
@@ -253,3 +254,21 @@ class TestModelOverrides:
         )
         assert result.error is not None
         assert "Unsupported override keys" in result.error
+
+
+class TestWorkerSizing:
+    def test_caps_parallelism_for_gbdt_models(self):
+        workers = _effective_training_workers(4, ["catboost", "tabnet"])
+        assert workers == 1
+
+    def test_respects_requested_workers_for_non_gbdt(self):
+        workers = _effective_training_workers(4, ["tabnet", "ft_transformer"])
+        assert workers == 2
+
+    def test_can_opt_out_of_strict_thread_safety(self):
+        workers = _effective_training_workers(
+            4,
+            ["catboost", "tabnet"],
+            strict_thread_safety=False,
+        )
+        assert workers == 2

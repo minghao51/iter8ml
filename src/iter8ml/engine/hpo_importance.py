@@ -3,6 +3,7 @@
 from datetime import UTC, datetime
 from typing import Any
 
+import numpy as np
 import optuna
 from pydantic import BaseModel, ConfigDict
 
@@ -125,8 +126,7 @@ def suggest_refined_space(
 
         if isinstance(trial_values[0], float):
             sorted_vals = sorted([v for v in trial_values if v is not None])
-            q25 = sorted_vals[len(sorted_vals) // 4]
-            q75 = sorted_vals[3 * len(sorted_vals) // 4]
+            q25, q75 = np.percentile(sorted_vals, [25, 75])
             span = q75 - q25
             new_low = max(original[0], q25 - expansion_factor * span)
             new_high = min(original[1], q75 + expansion_factor * span)
@@ -137,8 +137,7 @@ def suggest_refined_space(
                 refined[param_name] = (new_low, new_high)
         elif isinstance(trial_values[0], int):
             sorted_vals = sorted([v for v in trial_values if v is not None])
-            q25 = sorted_vals[len(sorted_vals) // 4]
-            q75 = sorted_vals[3 * len(sorted_vals) // 4]
+            q25, q75 = (int(v) for v in np.percentile(sorted_vals, [25, 75]))
             span = max(1, q75 - q25)
             new_low = max(original[0], int(q25 - expansion_factor * span))
             new_high = min(original[1], int(q75 + expansion_factor * span))

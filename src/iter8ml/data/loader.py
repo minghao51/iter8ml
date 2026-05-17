@@ -1,6 +1,7 @@
 """Polars-based data ingestion from various sources."""
 
 import hashlib
+import re
 from pathlib import Path
 
 import numpy as np
@@ -61,34 +62,33 @@ def load_sqlite(db_path: str | Path, query: str) -> pl.DataFrame:
     if not query or not query.strip():
         raise ValueError("Query cannot be empty")
 
-    query_stripped = query.strip()
-    query_upper = query_stripped.upper()
+    query_text = query.strip()
+    query_upper = query_text.upper()
 
     if not query_upper.startswith("SELECT"):
         raise ValueError("Only SELECT queries are supported for security reasons")
 
-    if ";" in query_stripped:
-        stripped_query = query_stripped.rstrip(";").strip()
-        if ";" in stripped_query:
+    if ";" in query_text:
+        query_clean = query_text.rstrip(";").strip()
+        if ";" in query_clean:
             raise ValueError("Multiple statements are not supported for security reasons")
 
-    blocked_keywords = ("DROP", "DELETE", "INSERT", "UPDATE", "ALTER", "CREATE", "EXEC", "EXECUTE")
-    upper_no_select = query_upper.replace("SELECT", "").replace("FROM", "").replace("WHERE", "")
-    upper_no_select = upper_no_select.replace("AND", "").replace("OR", "").replace("NOT", "")
-    upper_no_select = upper_no_select.replace("JOIN", "").replace("LEFT", "").replace("RIGHT", "")
-    upper_no_select = upper_no_select.replace("INNER", "").replace("OUTER", "").replace("ON", "")
-    upper_no_select = upper_no_select.replace("GROUP", "").replace("ORDER", "").replace("BY", "")
-    upper_no_select = upper_no_select.replace("HAVING", "").replace("LIMIT", "").replace("AS", "")
-    upper_no_select = upper_no_select.replace("IN", "").replace("IS", "").replace("NULL", "")
-    upper_no_select = (
-        upper_no_select.replace("LIKE", "").replace("BETWEEN", "").replace("DISTINCT", "")
+    _BLOCKED_KEYWORDS = frozenset(
+        {
+            "DROP",
+            "DELETE",
+            "INSERT",
+            "UPDATE",
+            "ALTER",
+            "CREATE",
+            "EXEC",
+            "EXECUTE",
+        }
     )
-    for keyword in blocked_keywords:
-        if keyword in upper_no_select:
-            raise ValueError(f"Destructive keyword '{keyword}' is not allowed in queries")
-
-    if len(query_stripped) < 7:
-        raise ValueError("Invalid SELECT query")
+    tokens = set(re.findall(r"[A-Z]+", query_upper))
+    blocked = tokens & _BLOCKED_KEYWORDS
+    if blocked:
+        raise ValueError(f"Destructive keywords not allowed: {sorted(blocked)}")
 
     try:
         with sqlite3.connect(str(db_path)) as conn:

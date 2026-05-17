@@ -6,20 +6,18 @@ from typing import Any
 import polars as pl
 
 try:
-    from hamilton.function_modifiers import config
+    from hamilton.function_modifiers import config as _hamilton_config
 
     _HAS_HAMILTON = True
 except ImportError:
     _HAS_HAMILTON = False
-
-if not _HAS_HAMILTON:
     from unittest.mock import MagicMock
 
     config = MagicMock()
 
 
 @dataclass
-class DriftReport:
+class DriftNodeResult:
     drift_detected: bool
     psi_report: Any | None
     domain_report: Any | None
@@ -49,7 +47,7 @@ def live_features(live_df_input: pl.DataFrame) -> pl.DataFrame:
 
 if _HAS_HAMILTON:
 
-    @config.when(drift_method="psi")
+    @_hamilton_config.when(drift_method="psi")
     def psi_drift_report__psi(
         reference_features: pl.DataFrame,
         live_features: pl.DataFrame,
@@ -59,7 +57,7 @@ if _HAS_HAMILTON:
         detector = PSIDriftDetector(reference_features)
         return detector.detect(live_features)
 
-    @config.when(drift_method="domain_classifier")
+    @_hamilton_config.when(drift_method="domain_classifier")
     def domain_drift_report__domain(
         reference_features: pl.DataFrame,
         live_features: pl.DataFrame,
@@ -71,27 +69,27 @@ if _HAS_HAMILTON:
         detector = DomainClassifierDriftDetector(reference_features)
         return detector.detect(live_features)
 
-    @config.when(drift_method="psi")
+    @_hamilton_config.when(drift_method="psi")
     def drift_report__psi(
         psi_drift_report: Any,
-    ) -> DriftReport:
-        return DriftReport(
+    ) -> DriftNodeResult:
+        return DriftNodeResult(
             drift_detected=psi_drift_report.drift_detected,
             psi_report=psi_drift_report,
             domain_report=None,
         )
 
-    @config.when(drift_method="domain_classifier")
+    @_hamilton_config.when(drift_method="domain_classifier")
     def drift_report__domain(
         domain_drift_report: Any,
-    ) -> DriftReport:
-        return DriftReport(
+    ) -> DriftNodeResult:
+        return DriftNodeResult(
             drift_detected=domain_drift_report.drift_detected,
             psi_report=None,
             domain_report=domain_drift_report,
         )
 
-    @config.when(drift_method="both")
+    @_hamilton_config.when(drift_method="both")
     def psi_drift_report__both(
         reference_features: pl.DataFrame,
         live_features: pl.DataFrame,
@@ -101,7 +99,7 @@ if _HAS_HAMILTON:
         detector = PSIDriftDetector(reference_features)
         return detector.detect(live_features)
 
-    @config.when(drift_method="both")
+    @_hamilton_config.when(drift_method="both")
     def domain_drift_report__both(
         reference_features: pl.DataFrame,
         live_features: pl.DataFrame,
@@ -113,13 +111,50 @@ if _HAS_HAMILTON:
         detector = DomainClassifierDriftDetector(reference_features)
         return detector.detect(live_features)
 
-    @config.when(drift_method="both")
+    @_hamilton_config.when(drift_method="both")
     def drift_report__both(
         psi_drift_report: Any,
         domain_drift_report: Any,
-    ) -> DriftReport:
-        return DriftReport(
+    ) -> DriftNodeResult:
+        return DriftNodeResult(
             drift_detected=psi_drift_report.drift_detected or domain_drift_report.drift_detected,
             psi_report=psi_drift_report,
             domain_report=domain_drift_report,
+        )
+
+else:
+
+    def psi_drift_report__psi(**_kwargs: Any) -> None:
+        raise ImportError(
+            "Hamilton is required for drift detection. Install with: pip install sf-hamilton"
+        )
+
+    def domain_drift_report__domain(**_kwargs: Any) -> None:
+        raise ImportError(
+            "Hamilton is required for drift detection. Install with: pip install sf-hamilton"
+        )
+
+    def drift_report__psi(**_kwargs: Any) -> None:
+        raise ImportError(
+            "Hamilton is required for drift detection. Install with: pip install sf-hamilton"
+        )
+
+    def drift_report__domain(**_kwargs: Any) -> None:
+        raise ImportError(
+            "Hamilton is required for drift detection. Install with: pip install sf-hamilton"
+        )
+
+    def psi_drift_report__both(**_kwargs: Any) -> None:
+        raise ImportError(
+            "Hamilton is required for drift detection. Install with: pip install sf-hamilton"
+        )
+
+    def domain_drift_report__both(**_kwargs: Any) -> None:
+        raise ImportError(
+            "Hamilton is required for drift detection. Install with: pip install sf-hamilton"
+        )
+
+    def drift_report__both(**_kwargs: Any) -> None:
+        raise ImportError(
+            "Hamilton is required for drift detection. Install with: pip install sf-hamilton"
         )

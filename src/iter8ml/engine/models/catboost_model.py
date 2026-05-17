@@ -33,8 +33,10 @@ class CatBoostModel:
     def _build_model(self) -> CatBoostClassifier | CatBoostRegressor:
         seed = self.params.get("random_seed", 42)
         kwargs = {k: v for k, v in self.params.items() if k != "random_seed"}
-        if self._detect_gpu():
-            kwargs.setdefault("task_type", "GPU")
+        task_type = kwargs.pop("task_type", "auto")
+        if task_type == "auto":
+            task_type = "GPU" if self._detect_gpu() else "CPU"
+        kwargs.setdefault("task_type", task_type)
         if self.task == "classification":
             if self._n_classes and self._n_classes > 2:
                 kwargs.setdefault("classes_count", self._n_classes)

@@ -1,13 +1,20 @@
 """iter8ml — a high-velocity iteration framework for tabular ML."""
 
+from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _version
 
 try:
     __version__ = _version("iter8ml")
-except Exception:
+except PackageNotFoundError:
     __version__ = "0.0.0"
 
-from iter8ml.config import ExperimentConfig, HardwareProfile
+from iter8ml.config import (
+    ExperimentConfig,
+    HardwareProfile,
+    PipelineSpec,
+    PipelineStep,
+    StepName,
+)
 from iter8ml.constants import CVStrategy, EmbeddingMethod, FeatureStrategy, TaskType, TrackerType
 from iter8ml.data.loader import load_data
 from iter8ml.engine.evaluator import Evaluator
@@ -35,10 +42,13 @@ __all__ = [
     "JSONLTracker",
     "ModelFitError",
     "ModelSelector",
+    "PipelineSpec",
+    "PipelineStep",
     "PromotionResult",
     "RegistryError",
     "RegistryService",
     "ReportService",
+    "StepName",
     "TabularBlueprintError",
     "TaskType",
     "Tracker",

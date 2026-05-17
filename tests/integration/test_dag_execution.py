@@ -4,7 +4,7 @@ import polars as pl
 import pytest
 from sklearn.datasets import make_classification
 
-from iter8ml.config import ExperimentConfig
+from iter8ml.config import ExperimentConfig, PipelineSpec, PipelineStep, StepName
 from iter8ml.engine.pipelines.executor import PipelineExecutor, PipelineMode
 from iter8ml.engine.tracker import JSONLTracker
 from iter8ml.workspace import Workspace
@@ -35,7 +35,18 @@ def config(tmp_path):
         cv_folds=3,
         metrics=["roc_auc", "f1_macro"],
         models=["catboost"],
-        run_quality_audit=False,
+        pipeline=PipelineSpec(
+            steps=[
+                PipelineStep(name=StepName.DATA_PREP),
+                PipelineStep(name=StepName.QUALITY_AUDIT, enabled=False),
+                PipelineStep(name=StepName.LEAKAGE_AUDIT, enabled=False),
+                PipelineStep(name=StepName.TARGET_TRANSFORM),
+                PipelineStep(name=StepName.FEATURE_ENGINEERING),
+                PipelineStep(name=StepName.MODEL_TRAINING),
+                PipelineStep(name=StepName.CALIBRATION),
+                PipelineStep(name=StepName.EVALUATION),
+            ]
+        ),
     )
 
 
@@ -47,7 +58,6 @@ class TestDAGExecution:
             df=classification_data,
             run_id="test_dag_001",
             vram_gb=0.0,
-            run_leakage_audit=False,
             workspace=Workspace(root=tmp_path),
         )
 
@@ -63,7 +73,6 @@ class TestDAGExecution:
             df=classification_data,
             run_id="test_dag_002",
             vram_gb=0.0,
-            run_leakage_audit=False,
             workspace=Workspace(root=tmp_path),
         )
 
@@ -83,7 +92,6 @@ class TestDAGExecution:
             df=classification_data,
             run_id="test_dag_003",
             vram_gb=0.0,
-            run_leakage_audit=False,
             workspace=Workspace(root=tmp_path),
         )
 
@@ -98,7 +106,6 @@ class TestDAGExecution:
             df=classification_data,
             run_id="test_dag_004",
             vram_gb=0.0,
-            run_leakage_audit=False,
             workspace=Workspace(root=tmp_path),
         )
 
@@ -115,7 +122,6 @@ class TestDAGExecution:
             df=classification_data,
             run_id="test_dag_005",
             vram_gb=0.0,
-            run_leakage_audit=False,
             workspace=Workspace(root=tmp_path),
         )
 

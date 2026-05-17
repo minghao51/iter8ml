@@ -29,7 +29,7 @@ class DummyTrainer:
 
     @track_errors()
     def value_error_method(self):
-        raise ValueError("bad data")
+        raise ValueError("file not found: data.csv")
 
     @track_errors()
     def runtime_error_method(self):
@@ -65,7 +65,7 @@ def test_track_errors_success():
 
 def test_track_errors_value_error():
     t = DummyTrainer()
-    with pytest.raises(DataLoadError, match="bad data"):
+    with pytest.raises(DataLoadError, match="file not found"):
         t.value_error_method()
     assert len(t.tracker.events) == 1
     assert t.tracker.events[0]["error_type"] == "DataLoadError"

@@ -1,116 +1,116 @@
-# Tabular Blueprint — Overview
+# OVERVIEW
+
+Last updated: 2026-05-15
+
+## Project Identity
+
+iter8ml is a CLI-first, single-node framework for high-velocity iteration on tabular ML problems. It automates the full experiment loop — data loading, preprocessing, feature engineering, model training/selection, HPO, drift detection, explainability, and export — with a Hamilton DAG pipeline and config-driven workflow.
 
 ## Architecture
-**Pattern:** Single-node tabular ML framework, CLI-first, with Hamilton DAG orchestration and optional MCP server for LLM agents.
+
+**Pattern:** Library package with CLI + optional MCP server. No client-server split; everything runs in-process on a single node.
 
 ```
-CLI (typer) ──▶ Trainer ──▶ PipelineExecutor ──▶ Hamilton DAG
-                  │              │                     │
-                  │              │              ┌──────┴──────┐
-                  │              │              │ Node Modules │
-                  │              │              │ preprocessing│
-                  │              │              │ data_prep    │
-                  │              │              │ model_train  │
-                  │              │              │ state_gen    │
-                  │              │              └─────────────┘
-                  │              │
-                  ▼              ▼
-             JSONLTracker   TrackingHook
-                  │
-                  ▼
-         workspace/experiments.jsonl
-         workspace/registry.json
+CLI (typer)  ──►  Trainer  ──►  PipelineExecutor (Hamilton DAG)
+                      │                    │
+                      ▼                    ▼
+               ExperimentConfig       Node modules (prep, train, drift, features)
+                      │                    │
+                      ▼                    ▼
+               Data layer (Polars)  ◄──►  Models (8 families)
+                                          Engine (evaluator, HPO, calibration, tracker)
+                                          Services (registry, reporting, export, LLM, MCP)
 ```
 
-### Backend — Python (src layout)
-Layered architecture:
+**Data flow:**
+1. CLI or MCP builds `ExperimentConfig` (`src/iter8ml/config.py:134`)
+2. `Trainer.run()` dispatches to `PipelineExecutor` (`src/iter8ml/engine/trainer.py:21`)
+3. DAG nodes execute in dependency order — preprocessing → data prep → model selection → baselines → feature engineering → training → state generation
+4. Results persisted to `workspace/experiments.jsonl` (JSONL tracker) and optionally W&B/MLflow
+5. Champion model promoted in `workspace/registry.json` via file-locked `RegistryService`
 
-| Layer | Location | Pattern |
-|-------|----------|---------|
-| CLI | `src/tabular_blueprint/cli.py` | Typer app with commands: `run`, `init`, `hpo`, `drift`, `export`, `leaderboard`, `registry`, `diff`, `state`, `hardware` |
-| Config | `src/tabular_blueprint/config.py` | Pydantic `ExperimentConfig` + `HardwareProfile`, multi-format loading (YAML/TOML/JSON/PY) |
-| Orchestration | `src/tabular_blueprint/engine/trainer.py` | `Trainer.run()` → builds `PipelineExecutor` → delegates to Hamilton DAG |
-| DAG Pipeline | `src/tabular_blueprint/pipelines/executor.py` | `PipelineExecutor` wraps Hamilton `Builder` with mode-specific modules |
-| DAG Nodes | `src/tabular_blueprint/pipelines/nodes/` | Function-based nodes (preprocessing, data_preparation, model_selection, baselines, feature_engineering, model_training, state_generation, drift_detection) |
-| Data | `src/tabular_blueprint/data/` | Polars-based loaders, adapter, leakage detection, quality checks, feature engineering, embeddings |
-| Models | `src/tabular_blueprint/models/` | Lazy-imported registry (`factory.py`), Protocol-based `AbstractModel`, GBDT/deep/baseline wrappers |
-| Monitoring | `src/tabular_blueprint/monitoring/` | KS/Chi2 drift, PSI drift, domain classifier drift, SHAP explainability |
-| Services | `src/tabular_blueprint/services/` | Registry (file-locked champion tracking), Report (leaderboard, metric directionality), Export (portable predictor packages) |
-| HPO | `src/tabular_blueprint/engine/hpo.py` | Optuna-based optimization with warmstart from historical JSONL events |
-| MCP | `src/tabular_blueprint/mcp/tools.py` | FastMCP server exposing tools for LLM agents |
-| Benchmarks | `benchmarks/` | OpenML + synthetic benchmarks with sweep configs |
-
-**Entry point**: `tabblueprint run --data <path> --target <col>` → `src/tabular_blueprint/cli.py:47` (`run` command)
-
-## Key Data Flows
-
-1. **Training**: `cli.py run` → `Trainer.run()` → `PipelineExecutor.run_training()` → Hamilton DAG (7 modules) → `TrainingState` → `RegistryService.update_if_better()` → `workspace/experiments.jsonl` + `registry.json`
-2. **Drift Detection**: `cli.py drift` → `PipelineExecutor.run_drift()` → Hamilton DAG (preprocessing + drift_detection) → `DriftReport`
-3. **HPO**: `cli.py hpo` → `setup_hpo_components()` → `optimize_model()` with Optuna + warmstart → best params/score
-4. **Export**: `cli.py export` → `ExportService.export()` → packages model.artifact + preprocessing.py + predictor.py into portable directory
+**Key abstractions:**
+- `ExperimentConfig` — Pydantic model; single source of truth for all pipeline behavior (`src/iter8ml/config.py:134`)
+- `PipelineExecutor` — builds mode-specific Hamilton drivers from node modules (`src/iter8ml/engine/pipelines/executor.py`)
+- `PipelineMode` — 5 modes: TRAINING, DRIFT, EXPORT, HPO, INFERENCE (`src/iter8ml/engine/pipelines/executor.py:35`)
+- `Tracker` — protocol for experiment logging (JSONL, W&B, MLflow) (`src/iter8ml/engine/tracker.py:13`)
+- `ModelSelector` — hardware-aware model routing (`src/iter8ml/engine/models/selector.py:6`)
+- `Workspace` — dataclass pointing to workspace root, experiments.jsonl, registry.json (`src/iter8ml/workspace.py:18`)
 
 ## Tech Stack
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| Language | Python 3.11+ | Core runtime |
-| Package mgr | `uv` + setuptools | Dependency management, build |
-| CLI | Typer + Rich | User-facing commands |
-| Config | Pydantic v2 | Validation, serialization, multi-format loading |
-| Data | Polars | DataFrame operations, CSV/Parquet I/O |
-| ML | scikit-learn | Evaluation metrics, cross-validation, baselines |
-| GBDT Models | CatBoost, LightGBM, XGBoost | Gradient-boosted decision trees |
-| Deep Models | PyTorch, FT-Transformer, TabNet | Neural tabular models |
-| Foundation | TabPFN v2 | Foundation model for tabular data |
-| DAG | sf-hamilton | Function-based DAG orchestration |
-| HPO | Optuna | Hyperparameter optimization with warmstart |
-| Tracking | JSONL (built-in), wandb, mlflow | Experiment tracking |
-| Monitoring | SHAP, cleanlab | Explainability, data quality auditing |
-| MCP | FastMCP | LLM agent tool server |
-| LLM | LiteLLM | Multi-provider LLM commentary |
-| Docs | MkDocs Material + mkdocstrings + Quarto + mike | Documentation site with versioned notebooks |
-| Lint | Ruff | Formatting + linting |
-| Types | mypy | Static type checking |
-| Tests | pytest | Test runner with markers |
-| Container | Docker + docker-compose | GPU-enabled runtime, MLflow server |
+| Component | Technology | Version |
+|-----------|-----------|---------|
+| Language | Python | >=3.11 |
+| Package manager | uv + hatchling | hatchling>=1.25 |
+| CLI framework | typer | >=0.12 |
+| Dataframes | Polars | >=1.0 |
+| Validation | Pydantic v2 | >=2.0 |
+| ML (core) | scikit-learn, numpy | >=1.4, >=1.26 |
+| GBDT models | CatBoost, LightGBM, XGBoost | >=1.2, >=4.0, >=2.0 |
+| Deep learning | PyTorch, transformers, accelerate | >=2.3, >=4.40, >=0.30 |
+| Tabular foundation | TabPFN | >=2.0 |
+| Deep tabular | pytorch-tabular | >=1.0 |
+| HPO | Optuna | >=3.6 |
+| DAG orchestration | sf-hamilton | >=1.70 |
+| Explainability | SHAP | >=0.44 |
+| Data quality | cleanlab | >=2.6 |
+| Experiment tracking | MLflow, W&B | >=3.11.1, >=0.17 |
+| LLM integration | litellm | >=1.83.10 |
+| MCP server | mcp (FastMCP) | >=0.9 |
+| Testing | pytest, hypothesis | >=9.0.3, >=6.0 |
+| Linting | ruff | >=0.4 |
+| Type checking | mypy | >=1.10 |
+| Docs | MkDocs Material, mkdocstrings, mike | >=9.5 |
+| Terminal output | rich | >=13.0 |
+| Config formats | YAML, TOML, JSON, .py | PyYAML>=6.0 |
 
 ## Infrastructure
 
-```bash
-# Local dev
-uv sync                          # Install all deps
-uv run tabblueprint run --data data.csv --target label
-uv run pytest                    # Run tests
-uv run ruff check src/           # Lint
-uv run mypy src/                 # Type check
-
-# Docker (GPU + MLflow)
-docker-compose up                # NVIDIA CUDA 12.4 + MLflow v2.13.0 on :5000
-
-# Docs
-uv run mkdocs build              # Build docs site
-make docs                        # Render Quarto notebooks + build docs
-```
+| Component | Details |
+|-----------|---------|
+| Dockerfile | NVIDIA CUDA 12.4 runtime + Python 3.11 + uv (`Dockerfile:1`) |
+| docker-compose | 2 services: `app` (GPU passthrough) + `mlflow` server (v2.13.0, port 5000) (`docker-compose.yml`) |
+| CI | GitHub Actions: `ci.yml`, `docs.yml`, `benchmarks.yml` (`.github/workflows/`) |
+| Publishing | hatch-vcs for versioning from git tags |
+| Docs hosting | GitHub Pages via mike (versioned) |
 
 ## Integrations
 
-| Service | SDK | Purpose | Status |
-|---------|-----|---------|--------|
-| MLflow | `mlflow>=2.13` | Experiment tracking server | Optional (`[tracking]` extra) |
-| W&B | `wandb>=0.17` | Experiment tracking | Optional (`[tracking]` extra) |
-| Hamilton | `sf-hamilton>=1.70` | DAG orchestration | Optional (`[base]` extra), graceful fallback |
-| Optuna | `optuna>=3.6` | HPO with warmstart | Optional (`[base]` extra) |
-| TabPFN | `tabpfn>=2.0` | Foundation tabular model | Optional (`[deep]` extra), requires `TABPFN_TOKEN` |
-| SHAP | `shap>=0.44` | Model explainability | Optional (`[audit]` extra) |
-| cleanlab | `cleanlab>=2.6` | Data quality auditing | Optional (`[audit]` extra) |
-| FastMCP | `mcp>=0.9` | LLM agent tool server | Optional (`[agent]` extra) |
-| LiteLLM | `litellm>=1.40` | Multi-provider LLM calls | Optional (`[agent]` extra) |
-| PyTorch | `torch>=2.3` | Deep model backends | Optional (`[deep]` extra) |
+| Integration | Purpose | Status | Entry point |
+|-------------|---------|--------|-------------|
+| TabPFN | Foundation model for small datasets | Optional (requires token) | `src/iter8ml/engine/models/tabpfn_model.py` |
+| MLflow | Experiment tracking server | Optional | `src/iter8ml/engine/tracker.py` |
+| Weights & Biases | Experiment tracking | Optional | `src/iter8ml/engine/tracker.py` |
+| LiteLLM | LLM commentary on results | Optional | `src/iter8ml/services/llm.py` |
+| MCP (FastMCP) | Agentic ML via Claude Desktop | Optional | `src/iter8ml/services/mcp.py` |
+| Cleanlab | Label noise detection | Optional | `src/iter8ml/data/quality.py` |
+| SHAP | Model explainability | Optional | `src/iter8ml/analysis/explainability.py` |
+| Optuna | Hyperparameter optimization | Optional (base extra) | `src/iter8ml/engine/hpo.py` |
+| Hamilton | DAG pipeline orchestration | Optional (base extra) | `src/iter8ml/engine/pipelines/executor.py` |
+| SHAP + Optuna + Hamilton | Core ML pipeline | Installed via `--extra base` | — |
+| PyTorch + transformers | Deep learning models | Optional (opinion extra) | `src/iter8ml/engine/models/deep/` |
+
+## Auth Flow
+
+No user auth system. The framework is a local CLI tool.
+
+- **TabPFN:** License token via `TABPFN_TOKEN` env var or interactive browser login (`src/iter8ml/engine/models/tabpfn_model.py`)
+- **MLflow:** Connects to local or remote tracking server; auth handled by MLflow's own config
+- **W&B:** Uses `wandb.login()` / `WANDB_API_KEY` env var
+- **LLM (litellm):** API key via env var matching the provider (e.g. `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`)
+- **MCP:** No auth; runs as local stdio server for Claude Desktop
 
 ## Environment Variables
 
-| Variable | Context | Purpose |
-|----------|---------|---------|
-| `TABPFN_TOKEN` | `.env` / CI | TabPFN license token for headless environments |
-| `TABBLUEPRINT_LLM_MODEL` | Config override | LLM model for commentary (default: `claude-sonnet-4-20250514`) |
-| `OMP_NUM_THREADS` | Hardware | Auto-configured by `HardwareProfile.configure_omp_threads()` based on platform |
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `TABPFN_TOKEN` | For TabPFN in CI/headless | JWT license token from priorlabs.ai |
+| `ITER8ML_WORKSPACE` | No | Override workspace root directory (default: `workspace/`) |
+| `ITER8ML_LLM_MODEL` | No | Override LLM model for commentary (default: `claude-sonnet-4-20250514`) |
+| `TABBLUEPRINT_LLM_MODEL` | No | Legacy alias for `ITER8ML_LLM_MODEL` (`src/iter8ml/services/llm.py:25`) |
+| `WANDB_API_KEY` | For W&B tracking | Weights & Biases authentication |
+| `MLFLOW_TRACKING_URI` | For MLflow tracking | MLflow server URL |
+| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | For LLM commentary | LLM provider API key (via litellm) |
+| `OMP_NUM_THREADS` | No | Auto-configured by `HardwareProfile.configure_omp_threads()` (`src/iter8ml/config.py:350`) |
+| `DOTENV_PUBLIC_KEY` | No | dotenvx public key for encrypted .env (`encrypted`) |

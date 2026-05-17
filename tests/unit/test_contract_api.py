@@ -30,6 +30,14 @@ class TestPublicExports:
                 f"{exc_cls.__name__} is not a TabularBlueprintError"
             )
 
+    def test_all_exports_match_all(self):
+        for name in iml.__all__:
+            obj = getattr(iml, name)
+            if inspect.isclass(obj):
+                assert obj.__module__.startswith("iter8ml."), (
+                    f"{name} module {obj.__module__} not in iter8ml"
+                )
+
 
 class TestWorkspacePathContract:
     def test_all_path_properties_return_path(self):
@@ -85,4 +93,110 @@ class TestSessionSignatureContract:
         sig = inspect.signature(ExperimentSession.__init__)
         params = list(sig.parameters.keys())
         assert "self" in params
-        assert "workspace" in params or "root" in params
+        assert "workspace" in params
+
+
+class TestTrainerContract:
+    def test_trainer_init_signature(self):
+        from iter8ml.engine.trainer import Trainer
+
+        sig = inspect.signature(Trainer.__init__)
+        params = list(sig.parameters.keys())
+        assert "config" in params
+        assert "workspace" in params
+        assert "tracker" in params
+        assert "resume_run_id" in params
+
+    def test_trainer_run_signature(self):
+        from iter8ml.engine.trainer import Trainer
+
+        sig = inspect.signature(Trainer.run)
+        assert "df" in sig.parameters
+
+
+class TestEvaluatorContract:
+    def test_evaluator_init_signature(self):
+        from iter8ml.engine.evaluator import Evaluator
+
+        sig = inspect.signature(Evaluator.__init__)
+        assert "config" in sig.parameters
+
+    def test_evaluate_signature(self):
+        from iter8ml.engine.evaluator import Evaluator
+
+        sig = inspect.signature(Evaluator.evaluate)
+        assert "model_cls" in sig.parameters
+        assert "X" in sig.parameters
+        assert "y" in sig.parameters
+        assert "task" in sig.parameters
+
+    def test_compute_lift_signature(self):
+        from iter8ml.engine.evaluator import Evaluator
+
+        sig = inspect.signature(Evaluator.compute_lift)
+        assert "model_scores" in sig.parameters
+        assert "baseline_scores" in sig.parameters
+        assert "metric_name" in sig.parameters
+
+
+class TestDriftDetectorContract:
+    def test_drift_detector_init_signature(self):
+        from iter8ml.analysis.drift import DriftDetector
+
+        sig = inspect.signature(DriftDetector.__init__)
+        assert "reference_df" in sig.parameters
+        assert "alpha" in sig.parameters
+
+    def test_drift_detect_signature(self):
+        from iter8ml.analysis.drift import DriftDetector
+
+        sig = inspect.signature(DriftDetector.detect)
+        assert "new_df" in sig.parameters
+
+    def test_drift_report_fields(self):
+        from iter8ml.analysis.drift import DriftReport
+
+        assert "drift_detected" in DriftReport.model_fields
+        assert "n_columns_tested" in DriftReport.model_fields
+        assert "n_drifted" in DriftReport.model_fields
+        assert "column_results" in DriftReport.model_fields
+
+
+class TestPSIDriftDetectorContract:
+    def test_psi_init_signature(self):
+        from iter8ml.analysis.psi import PSIDriftDetector
+
+        sig = inspect.signature(PSIDriftDetector.__init__)
+        assert "reference_df" in sig.parameters
+        assert "n_bins" in sig.parameters
+
+    def test_psi_detect_signature(self):
+        from iter8ml.analysis.psi import PSIDriftDetector
+
+        sig = inspect.signature(PSIDriftDetector.detect)
+        assert "live_df" in sig.parameters
+
+    def test_psi_report_fields(self):
+        from iter8ml.analysis.psi import PSIDriftReport
+
+        assert "drift_detected" in PSIDriftReport.model_fields
+        assert "n_features_tested" in PSIDriftReport.model_fields
+        assert "n_moderate" in PSIDriftReport.model_fields
+        assert "n_severe" in PSIDriftReport.model_fields
+        assert "feature_psi" in PSIDriftReport.model_fields
+
+
+class TestConfigContract:
+    def test_experiment_config_init_signature(self):
+        from iter8ml.config import ExperimentConfig
+
+        assert "name" in ExperimentConfig.model_fields
+        assert "task" in ExperimentConfig.model_fields
+        assert "target_col" in ExperimentConfig.model_fields
+        assert "data_path" in ExperimentConfig.model_fields
+
+    def test_config_has_from_file_method(self):
+        from iter8ml.config import ExperimentConfig
+
+        assert hasattr(ExperimentConfig, "from_file")
+        assert callable(ExperimentConfig.from_file)

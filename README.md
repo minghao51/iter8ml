@@ -54,7 +54,7 @@ uv run iter8 run --config examples/credit_risk.yaml --models catboost lightgbm
 uv run iter8 run --config examples/credit_risk.toml
 uv run iter8 run --config examples/credit_risk.json
 
-# Quick iteration mode (2 folds, 20% data, skip SHAP/AFE/calibration)
+# Quick iteration mode (2 folds, 20% data, skip SHAP/AFE)
 uv run iter8 run --data data.csv --target label --quick
 
 # Resume a previous run (skip already-completed models)
@@ -111,7 +111,7 @@ The Hamilton DAG executor supports 5 pipeline modes:
 All pipeline behavior is controlled by `ExperimentConfig`. Key knobs:
 
 ```python
-from iter8ml.config import ExperimentConfig
+from iter8ml import ExperimentConfig, PipelineSpec, PipelineStep, StepName
 
 config = ExperimentConfig(
     name="credit_risk_v2",
@@ -127,14 +127,12 @@ config = ExperimentConfig(
     afe_top_k=15,
     afe_pruning=True,
 
-    # Target transformation (log1p, yeo-johnson, box-cox, auto)
-    target_transform="auto",
-
-    # Probability calibration (platt, isotonic)
-    calibration="platt",
-
-    # Drift detection (psi, domain_classifier, both)
-    drift_detection="both",
+    # Pipeline step configuration
+    pipeline=PipelineSpec(steps=[
+        PipelineStep(name=StepName.TARGET_TRANSFORM, params={"method": "auto"}),
+        PipelineStep(name=StepName.CALIBRATION, params={"method": "platt"}),
+        PipelineStep(name=StepName.LEAKAGE_AUDIT, enabled=False),
+    ]),
 
     # SHAP explainability
     shap_enabled=True,

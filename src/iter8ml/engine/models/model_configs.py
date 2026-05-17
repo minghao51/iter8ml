@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 
 class CatBoostConfig(BaseModel):
@@ -18,17 +18,6 @@ class CatBoostConfig(BaseModel):
         description="'auto' resolves to GPU if available, else CPU",
     )
     random_seed: int = 42
-
-    @model_validator(mode="after")
-    def resolve_task_type(self) -> "CatBoostConfig":
-        if self.task_type == "auto":
-            try:
-                from catboost.utils import get_gpu_count
-
-                self.task_type = "GPU" if get_gpu_count() > 0 else "CPU"
-            except (ImportError, RuntimeError):
-                self.task_type = "CPU"
-        return self
 
     def hpo_search_space(self) -> dict[str, Any]:
         return {

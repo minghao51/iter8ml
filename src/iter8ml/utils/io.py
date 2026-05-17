@@ -1,11 +1,22 @@
-"""File and serialization utilities: JSONL + safe pickle."""
+"""File and serialization utilities: JSONL + safe pickle.
 
+Pickle integrity uses HMAC-SHA256 to detect accidental file corruption
+(truncated writes, bit rot, partial transfers).  The key is embedded in
+source and is NOT a security measure — an attacker with source access
+can forge valid signatures.  For tamper-resistant storage, use
+encryption at the application layer.
+"""
+
+import hashlib
+import hmac
 import io
 import json
 import pickle
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
+
+_INTEGRITY_KEY = b"iter8ml_safe_dump_v1"
 
 
 def load_events(path: str | Path) -> list[dict[str, Any]]:
@@ -82,9 +93,25 @@ class RestrictedUnpickler(pickle.Unpickler):
         raise pickle.UnpicklingError(f"Blocked deserialization of '{fqn}'.")
 
 
+def _strip_hmac_header(data: bytes) -> bytes:
+    newline = data.find(b"\n")
+    if newline == -1:
+        return data
+    header = data[: newline + 1]
+    payload = data[newline + 1 :]
+    if header.startswith(b"HMAC-SHA256:"):
+        expected = header[len("HMAC-SHA256:") : -1]
+        computed = hmac.new(_INTEGRITY_KEY, payload, hashlib.sha256).hexdigest().encode()
+        if not hmac.compare_digest(expected, computed):
+            raise ValueError("Integrity check failed: data may have been tampered with")
+        return payload
+    return data
+
+
 def safe_load(data: bytes | io.BufferedIOBase) -> Any:
     if isinstance(data, (bytes, bytearray)):
-        return RestrictedUnpickler(io.BytesIO(data)).load()
+        stripped = _strip_hmac_header(data)
+        return RestrictedUnpickler(io.BytesIO(stripped)).load()
     return RestrictedUnpickler(data).load()
 
 
@@ -94,10 +121,17 @@ def safe_loads(data: str) -> Any:
 
 def safe_load_file(path: str) -> Any:
     with open(path, "rb") as f:
-        return safe_load(f)
+        raw = f.read()
+    data = _strip_hmac_header(raw)
+    return RestrictedUnpickler(io.BytesIO(data)).load()
 
 
 def safe_dump(obj: Any, path: str) -> None:
     Path(path).parent.mkdir(parents=True, exist_ok=True)
+    buf = io.BytesIO()
+    pickle.dump(obj, buf, protocol=pickle.HIGHEST_PROTOCOL)
+    data = buf.getvalue()
+    mac = hmac.new(_INTEGRITY_KEY, data, hashlib.sha256).hexdigest()
     with open(path, "wb") as f:
-        pickle.dump(obj, f, protocol=pickle.HIGHEST_PROTOCOL)
+        f.write(f"HMAC-SHA256:{mac}\n".encode())
+        f.write(data)

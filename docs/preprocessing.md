@@ -78,6 +78,8 @@ This converts each categorical value to its integer representation. No one-hot e
 
 **Source:** `src/iter8ml/data/features.py:57`
 
+> **Configuration:** Target transform is configured via `PipelineStep(name=StepName.TARGET_TRANSFORM, params={...})` on `ExperimentConfig.pipeline`. The executor reads `method` and `skewness_threshold` from step params and passes them as Hamilton config to the `@config.when` variants in `prep.py`.
+
 ### Skewness Detection
 
 **Function:** `detect_target_skewness(y)` → `float`

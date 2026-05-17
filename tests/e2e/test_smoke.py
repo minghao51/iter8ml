@@ -4,7 +4,7 @@ import polars as pl
 import pytest
 from sklearn.datasets import make_classification
 
-from iter8ml.config import ExperimentConfig
+from iter8ml.config import ExperimentConfig, PipelineSpec, PipelineStep, StepName
 from iter8ml.constants import CVStrategy, TaskType, TrackerType
 from iter8ml.engine.trainer import Trainer
 from iter8ml.workspace import Workspace
@@ -26,12 +26,23 @@ def test_trainer_runs_end_to_end(tmp_workspace):
         cv_folds=2,
         cv_strategy=CVStrategy.KFOLD,
         tracker=TrackerType.JSONL,
-        run_quality_audit=False,
+        pipeline=PipelineSpec(
+            steps=[
+                PipelineStep(name=StepName.DATA_PREP),
+                PipelineStep(name=StepName.QUALITY_AUDIT, enabled=False),
+                PipelineStep(name=StepName.LEAKAGE_AUDIT, enabled=False),
+                PipelineStep(name=StepName.TARGET_TRANSFORM),
+                PipelineStep(name=StepName.FEATURE_ENGINEERING),
+                PipelineStep(name=StepName.MODEL_TRAINING),
+                PipelineStep(name=StepName.CALIBRATION),
+                PipelineStep(name=StepName.EVALUATION),
+            ]
+        ),
         max_workers=1,
     )
 
     ws = Workspace(root=tmp_workspace)
-    trainer = Trainer(config=config, workspace=ws, run_leakage_audit=False)
+    trainer = Trainer(config=config, workspace=ws)
     results = trainer.run(df)
 
     assert isinstance(results, dict)

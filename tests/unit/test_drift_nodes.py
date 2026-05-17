@@ -3,7 +3,7 @@ import polars as pl
 import pytest
 
 from iter8ml.engine.pipelines.nodes.drift_detection import (
-    DriftReport,
+    DriftNodeResult,
     live_features,
     reference_features,
 )
@@ -39,9 +39,9 @@ class TestDriftNodes:
         assert "val" in result.columns
 
 
-class TestDriftReport:
+class TestDriftNodeResult:
     def test_dataclass(self):
-        report = DriftReport(drift_detected=True, psi_report=None, domain_report=None)
+        report = DriftNodeResult(drift_detected=True, psi_report=None, domain_report=None)
         assert report.drift_detected is True
         assert report.psi_report is None
 

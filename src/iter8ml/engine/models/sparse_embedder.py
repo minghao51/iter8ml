@@ -22,7 +22,26 @@ def _check_torch() -> None:
         )
 
 
-class EntityEmbedding(nn.Module):  # type: ignore[misc]
+class _OOVEmbeddingMixin:
+    """Shared OOV buffer management for embedding models."""
+
+    _column_order: list[str]
+    embedding_dim: int
+
+    def _init_oov_buffers(self) -> None:
+        for col in self._column_order:
+            self.register_buffer(  # type: ignore[attr-defined]
+                f"_oov_mean_{col}",
+                torch.zeros(self.embedding_dim),
+            )
+
+    def _update_oov_means(self) -> None:
+        for col in self._column_order:
+            buf = getattr(self, f"_oov_mean_{col}")
+            buf.data.copy_(self.embeddings[col].weight.data.mean(dim=0))  # type: ignore[attr-defined, operator]
+
+
+class EntityEmbedding(nn.Module, _OOVEmbeddingMixin):  # type: ignore[misc]
     """Per-column embedding tables with a configurable MLP training head.
 
     Each high-cardinality column gets its own ``nn.Embedding`` lookup table.
@@ -65,19 +84,6 @@ class EntityEmbedding(nn.Module):  # type: ignore[misc]
 
         self._init_oov_buffers()
 
-    def _init_oov_buffers(self) -> None:
-        self._oov_means: dict[str, torch.Tensor] = {}
-        for col in self._column_order:
-            self.register_buffer(
-                f"_oov_mean_{col}",
-                torch.zeros(self.embedding_dim),
-            )
-
-    def _update_oov_means(self) -> None:
-        for col in self._column_order:
-            buf = getattr(self, f"_oov_mean_{col}")
-            buf.data.copy_(self.embeddings[col].weight.data.mean(dim=0))  # type: ignore[operator]
-
     def forward(self, cat_codes: dict[str, torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
         emb_list = [self.embeddings[col](cat_codes[col]) for col in self._column_order]
         concatenated = torch.cat(emb_list, dim=1)
@@ -96,7 +102,7 @@ class EntityEmbedding(nn.Module):  # type: ignore[misc]
         return mean.unsqueeze(0).expand(batch_size, -1)
 
 
-class TabularDAE(nn.Module):  # type: ignore[misc]
+class TabularDAE(nn.Module, _OOVEmbeddingMixin):  # type: ignore[misc]
     """Denoising autoencoder for sparse high-cardinality categorical features.
 
     Architecture:
@@ -141,18 +147,6 @@ class TabularDAE(nn.Module):  # type: ignore[misc]
         )
 
         self._init_oov_buffers()
-
-    def _init_oov_buffers(self) -> None:
-        for col in self._column_order:
-            self.register_buffer(
-                f"_oov_mean_{col}",
-                torch.zeros(self.embedding_dim),
-            )
-
-    def _update_oov_means(self) -> None:
-        for col in self._column_order:
-            buf = getattr(self, f"_oov_mean_{col}")
-            buf.data.copy_(self.embeddings[col].weight.data.mean(dim=0))  # type: ignore[operator]
 
     def _embed_and_concat(self, cat_codes: dict[str, torch.Tensor]) -> torch.Tensor:
         emb_list = [self.embeddings[col](cat_codes[col]) for col in self._column_order]

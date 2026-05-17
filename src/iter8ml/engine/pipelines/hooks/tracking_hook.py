@@ -10,23 +10,6 @@ class TrackingHook:
         self._tracker = tracker
         self._run_id = run_id
 
-    def run_before_node_execution(
-        self,
-        node: Any,
-        context: Any,
-        execution_context: Any,
-    ) -> None:
-        pass
-
-    def run_after_node_execution(
-        self,
-        node: Any,
-        result: Any,
-        context: Any,
-        execution_context: Any,
-    ) -> None:
-        pass
-
     def run_on_node_error(
         self,
         node: Any,

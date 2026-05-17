@@ -20,7 +20,6 @@ def test_trainer_init(tmp_path):
     )
     trainer = Trainer(config, workspace=Workspace(root=tmp_path))
     assert trainer.config is config
-    assert trainer.run_leakage_audit is True
 
 
 def test_omp_threads_configurable(monkeypatch):

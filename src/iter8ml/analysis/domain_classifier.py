@@ -28,10 +28,12 @@ class DomainClassifierDriftDetector:
         reference_df: pl.DataFrame,
         threshold: float = DOMAIN_AUC_THRESHOLD,
         random_seed: int = 42,
+        max_rows: int = 10000,
     ):
         self.reference_df = reference_df
         self.threshold = threshold
         self.random_seed = random_seed
+        self.max_rows = max_rows
 
     def detect(self, live_df: pl.DataFrame) -> DomainDriftReport:
         common_cols = sorted(
@@ -51,6 +53,14 @@ class DomainClassifierDriftDetector:
 
         ref_np = self.reference_df.select(common_cols).drop_nulls().to_numpy()
         live_np = live_df.select(common_cols).drop_nulls().to_numpy()
+
+        rng = np.random.default_rng(self.random_seed)
+        if len(ref_np) > self.max_rows:
+            idx = rng.choice(len(ref_np), self.max_rows, replace=False)
+            ref_np = ref_np[idx]
+        if len(live_np) > self.max_rows:
+            idx = rng.choice(len(live_np), self.max_rows, replace=False)
+            live_np = live_np[idx]
 
         X = np.vstack([ref_np, live_np])
         y = np.concatenate([np.zeros(len(ref_np)), np.ones(len(live_np))])

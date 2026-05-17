@@ -10,6 +10,13 @@ from polars import selectors as cs
 from iter8ml.data.adapter import DataAdapter
 from iter8ml.data.leakage import LeakageReport, detect_leakage
 
+try:
+    from hamilton.function_modifiers import config as _hamilton_config
+
+    _HAS_HAMILTON = True
+except ImportError:
+    _HAS_HAMILTON = False
+
 
 @dataclass
 class DataPrepResult:
@@ -134,26 +141,136 @@ def validate_target(
     return processed_dataframe
 
 
-def quality_cleaned_df(
-    validate_target: pl.DataFrame,
-    target_col: str,
-    run_quality_audit: bool,
-    auto_clean_noise: bool,
-    noise_quality_threshold: float,
-) -> tuple[pl.DataFrame, bool, int]:
-    if not (run_quality_audit and auto_clean_noise):
+if _HAS_HAMILTON:
+
+    @_hamilton_config.when(run_quality_audit=True)
+    def quality_cleaned_df__audit(
+        validate_target: pl.DataFrame,
+        target_col: str,
+        auto_clean_noise: bool,
+        noise_quality_threshold: float,
+    ) -> tuple[pl.DataFrame, bool, int]:
+        if not auto_clean_noise:
+            return validate_target, False, 0
+
+        from iter8ml.data.quality import audit_data_quality, clean_noise
+
+        quality_report = audit_data_quality(validate_target, target_col, enabled=True)
+        if not quality_report.get("enabled") or quality_report.get("n_issues", 0) == 0:
+            return validate_target, False, 0
+
+        cleaned_df, summary = clean_noise(
+            validate_target, quality_report, target_col, quality_threshold=noise_quality_threshold
+        )
+        return cleaned_df, True, summary.get("n_dropped", 0)
+
+    @_hamilton_config.when_not(run_quality_audit=True)
+    def quality_cleaned_df__skip(
+        validate_target: pl.DataFrame,
+    ) -> tuple[pl.DataFrame, bool, int]:
         return validate_target, False, 0
 
-    from iter8ml.data.quality import audit_data_quality, clean_noise
+    @_hamilton_config.when(run_leakage_audit=True)
+    def leakage_report__enabled(
+        adapter_result: tuple[np.ndarray, np.ndarray],
+        task: str,
+        leakage_n_jobs: int,
+    ) -> LeakageReport | None:
+        X, y = adapter_result
+        return detect_leakage(X, y, task=task, n_jobs=leakage_n_jobs)
 
-    quality_report = audit_data_quality(validate_target, target_col, enabled=True)
-    if not quality_report.get("enabled") or quality_report.get("n_issues", 0) == 0:
-        return validate_target, False, 0
+    @_hamilton_config.when_not(run_leakage_audit=True)
+    def leakage_report__skip(
+        adapter_result: tuple[np.ndarray, np.ndarray],
+        task: str,
+    ) -> LeakageReport | None:
+        return None
 
-    cleaned_df, summary = clean_noise(
-        validate_target, quality_report, target_col, quality_threshold=noise_quality_threshold
-    )
-    return cleaned_df, True, summary.get("n_dropped", 0)
+    @_hamilton_config.when(target_transform="none")
+    def target_transform_result__none(
+        adapter_result: tuple[np.ndarray, np.ndarray],
+    ) -> tuple[np.ndarray, Any | None, str, float, float, bool]:
+        _, y = adapter_result
+        return y, None, "none", 0.0, 0.0, False
+
+    @_hamilton_config.when_not(target_transform="none")
+    def target_transform_result__transform(
+        adapter_result: tuple[np.ndarray, np.ndarray],
+        target_transform: str,
+        target_skewness_threshold: float,
+    ) -> tuple[np.ndarray, Any | None, str, float, float, bool]:
+        from iter8ml.data.features import transform_target
+
+        _, y_raw = adapter_result
+        y, transform_result, transformer = transform_target(
+            y_raw,
+            method=target_transform,  # type: ignore[arg-type]
+            skewness_threshold=target_skewness_threshold,
+        )
+        return (
+            y,
+            transformer,
+            transform_result.method,
+            transform_result.original_skewness,
+            transform_result.transformed_skewness,
+            transform_result.applied,
+        )
+
+else:
+
+    def quality_cleaned_df(
+        validate_target: pl.DataFrame,
+        target_col: str,
+        run_quality_audit: bool,
+        auto_clean_noise: bool,
+        noise_quality_threshold: float,
+    ) -> tuple[pl.DataFrame, bool, int]:
+        if not (run_quality_audit and auto_clean_noise):
+            return validate_target, False, 0
+
+        from iter8ml.data.quality import audit_data_quality, clean_noise
+
+        quality_report = audit_data_quality(validate_target, target_col, enabled=True)
+        if not quality_report.get("enabled") or quality_report.get("n_issues", 0) == 0:
+            return validate_target, False, 0
+
+        cleaned_df, summary = clean_noise(
+            validate_target, quality_report, target_col, quality_threshold=noise_quality_threshold
+        )
+        return cleaned_df, True, summary.get("n_dropped", 0)
+
+    def leakage_report(
+        adapter_result: tuple[np.ndarray, np.ndarray],
+        run_leakage_audit: bool,
+        task: str,
+        leakage_n_jobs: int,
+    ) -> LeakageReport | None:
+        if not run_leakage_audit:
+            return None
+        X, y = adapter_result
+        return detect_leakage(X, y, task=task, n_jobs=leakage_n_jobs)
+
+    def target_transform_result(
+        adapter_result: tuple[np.ndarray, np.ndarray],
+        target_transform: str,
+        target_skewness_threshold: float,
+    ) -> tuple[np.ndarray, Any | None, str, float, float, bool]:
+        from iter8ml.data.features import transform_target
+
+        _, y_raw = adapter_result
+        y, transform_result, transformer = transform_target(
+            y_raw,
+            method=target_transform,  # type: ignore[arg-type]
+            skewness_threshold=target_skewness_threshold,
+        )
+        return (
+            y,
+            transformer,
+            transform_result.method,
+            transform_result.original_skewness,
+            transform_result.transformed_skewness,
+            transform_result.applied,
+        )
 
 
 def adapter_result(
@@ -170,40 +287,6 @@ def feature_names(
     target_col: str,
 ) -> list[str]:
     return [c for c in quality_cleaned_df[0].columns if c != target_col]
-
-
-def leakage_report(
-    adapter_result: tuple[np.ndarray, np.ndarray],
-    run_leakage_audit: bool,
-    task: str,
-) -> LeakageReport | None:
-    if not run_leakage_audit:
-        return None
-    X, y = adapter_result
-    return detect_leakage(X, y, task=task)
-
-
-def target_transform_result(
-    adapter_result: tuple[np.ndarray, np.ndarray],
-    target_transform: str,
-    target_skewness_threshold: float,
-) -> tuple[np.ndarray, Any | None, str, float, float, bool]:
-    from iter8ml.data.features import transform_target
-
-    _, y_raw = adapter_result
-    y, transform_result, transformer = transform_target(
-        y_raw,
-        method=target_transform,  # type: ignore[arg-type]
-        skewness_threshold=target_skewness_threshold,
-    )
-    return (
-        y,
-        transformer,
-        transform_result.method,
-        transform_result.original_skewness,
-        transform_result.transformed_skewness,
-        transform_result.applied,
-    )
 
 
 def data_prep_result(

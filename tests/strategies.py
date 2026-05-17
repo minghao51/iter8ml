@@ -14,7 +14,7 @@ def dataframes(draw, min_rows=1, max_rows=50, min_cols=1, max_cols=8):
     n_cols = draw(st.integers(min_cols, max_cols))
     cols = {}
     for i in range(n_cols):
-        dtype = draw(st.sampled_from(["float", "int", "str", "null"]))
+        dtype = draw(st.sampled_from(["float", "int", "str", "null", "bool"]))
         if dtype == "float":
             cols[f"f_{i}"] = draw(
                 st.lists(
@@ -31,8 +31,29 @@ def dataframes(draw, min_rows=1, max_rows=50, min_cols=1, max_cols=8):
             )
         elif dtype == "str":
             cols[f"f_{i}"] = draw(st.lists(st.text(max_size=5), min_size=n_rows, max_size=n_rows))
+        elif dtype == "bool":
+            cols[f"f_{i}"] = draw(st.lists(st.booleans(), min_size=n_rows, max_size=n_rows))
         else:
             cols[f"f_{i}"] = [None] * n_rows
+    return pl.DataFrame(cols)
+
+
+@st.composite
+def polars_with_all_dtypes(draw, min_rows=1, max_rows=30):
+    n_rows = draw(st.integers(min_rows, max_rows))
+    cols = {
+        "float_col": draw(
+            st.lists(
+                st.floats(allow_nan=True, allow_infinity=True), min_size=n_rows, max_size=n_rows
+            )
+        ),
+        "int_col": draw(
+            st.lists(st.integers(min_value=-1000, max_value=1000), min_size=n_rows, max_size=n_rows)
+        ),
+        "str_col": draw(st.lists(st.text(max_size=5), min_size=n_rows, max_size=n_rows)),
+        "bool_col": draw(st.lists(st.booleans(), min_size=n_rows, max_size=n_rows)),
+        "null_col": [None] * n_rows,
+    }
     return pl.DataFrame(cols)
 
 
@@ -61,6 +82,41 @@ def classification_problem(draw, min_rows=20, max_rows=200):
         ).map(lambda rows: np.array(rows))
     )
     y = draw(st.lists(st.integers(0, 1), min_size=n, max_size=n).map(lambda v: np.array(v)))
+    return X, y
+
+
+@st.composite
+def multiclass_problem(draw, min_rows=30, max_rows=200, max_classes=5):
+    n = draw(st.integers(min_rows, max_rows))
+    m = draw(st.integers(1, 6))
+    n_classes = draw(st.integers(3, max_classes))
+    X = draw(
+        st.lists(
+            st.lists(st.floats(allow_nan=False, allow_infinity=False), min_size=m, max_size=m),
+            min_size=n,
+            max_size=n,
+        ).map(lambda rows: np.array(rows))
+    )
+    y = draw(
+        st.lists(st.integers(0, n_classes - 1), min_size=n, max_size=n).map(lambda v: np.array(v))
+    )
+    return X, y
+
+
+@st.composite
+def regression_problem(draw, min_rows=20, max_rows=200):
+    n = draw(st.integers(min_rows, max_rows))
+    m = draw(st.integers(1, 6))
+    X = draw(
+        st.lists(
+            st.lists(st.floats(allow_nan=False, allow_infinity=False), min_size=m, max_size=m),
+            min_size=n,
+            max_size=n,
+        ).map(lambda rows: np.array(rows))
+    )
+    coeffs = draw(st.lists(st.floats(-2, 2), min_size=m, max_size=m).map(lambda v: np.array(v)))
+    noise = draw(st.floats(0.01, 1.0))
+    y = X @ coeffs + np.random.RandomState(42).randn(n) * noise
     return X, y
 
 
@@ -94,6 +150,7 @@ def picklable_object(draw):
                 st.integers(min_value=-100, max_value=100),
                 max_size=3,
             ),
+            st.tuples(st.integers(), st.text(max_size=5)),
         )
     )
 
@@ -109,10 +166,25 @@ def whitelisted_pickle_bytes(draw):
 
 
 @st.composite
-def blocked_pickle_bytes(draw):
-    class _Arbitrary:
-        def __init__(self, x):
-            self.x = x
-
-    obj = _Arbitrary(draw(st.integers()))
-    return pickle.dumps(obj)
+def config_dict(draw):
+    return (
+        st.fixed_dictionaries(
+            {
+                "name": st.text(min_size=1, max_size=20),
+                "task": st.sampled_from(["classification", "regression"]),
+                "target_col": st.text(min_size=1, max_size=10),
+                "data_path": st.text(min_size=1, max_size=50),
+            }
+        )
+        .and_then(
+            lambda base: st.fixed_dictionaries(
+                {
+                    **base,
+                    "cv_folds": st.integers(2, 10),
+                    "random_seed": st.integers(0, 1000),
+                    "data_sample": st.floats(0.01, 1.0, allow_nan=False, allow_infinity=False),
+                }
+            )
+        )()
+        .filter(lambda d: isinstance(d, dict))
+    )

@@ -29,11 +29,11 @@ dependencies = [
     "filelock>=3.12",
     "pyyaml>=6.0",
     "psutil>=5.9",
-    "litellm[train]>=1.83.10",
-    "mlflow[train]>=3.11.1",
-    "cryptography[train]>=46.0.7",
-    "gitpython[train]>=3.1.50",
-    "python-multipart[train]>=0.0.27",
+    "litellm>=1.83.10",
+    "mlflow>=3.11.1",
+    "cryptography>=46.0.7",
+    "gitpython>=3.1.50",
+    "python-multipart>=0.0.27",
 ]
 
 [project.optional-dependencies]
@@ -155,6 +155,9 @@ fixable = ["ALL"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts   = ["--strict-markers", "-ra", "--durations=10", "--import-mode=importlib"]
+filterwarnings = [
+    "ignore:scipy\\.optimize:DeprecationWarning",
+]
 markers = [
     "slow: >1s tests",
     "integration: external services or slow tests",

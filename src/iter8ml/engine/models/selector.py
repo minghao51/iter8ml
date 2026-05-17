@@ -8,13 +8,12 @@ class ModelSelector:
     Given a dataset profile and hardware profile, returns an ordered list
     of models to run, from fastest/cheapest to most expensive.
 
-    Routing logic per spec:
-      n_rows < 50k + GPU   -> [TabPFN, CatBoost, LightGBM]
-      n_rows < 50k no GPU  -> [CatBoost, LightGBM, XGBoost]
-      50k <= n_rows < 500k -> [CatBoost, LightGBM, XGBoost]
-      n_rows >= 500k       -> [LightGBM, XGBoost]
-      vram_gb > 12         -> append FT-Transformer (n_rows > 50k)
-      vram_gb > 8          -> append TabNet/NODE as DL alternatives
+    Routing logic:
+      GPU present           -> TabPFN always included (row limit enforced inside model.fit())
+      n_rows < 500k         -> [CatBoost, LightGBM, XGBoost]
+      n_rows >= 500k        -> [LightGBM, XGBoost]
+      vram_gb > 12 & n>=50k -> + FT-Transformer
+      vram_gb > 8           -> + TabNet
     """
 
     TABPFN_ROW_LIMIT = 50_000

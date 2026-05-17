@@ -37,14 +37,12 @@ class ExperimentSession:
         df: pl.DataFrame,
         *,
         resume_run_id: str | None = None,
-        run_leakage_audit: bool = True,
     ) -> dict:
         trainer = Trainer(
             config=config,
             workspace=self.workspace,
             tracker=self.tracker,
             resume_run_id=resume_run_id,
-            run_leakage_audit=run_leakage_audit,
         )
         return trainer.run(df)
 

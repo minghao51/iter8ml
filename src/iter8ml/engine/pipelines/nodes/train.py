@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Any
 
@@ -9,6 +10,8 @@ import numpy as np
 from iter8ml.services.registry import RegistryService
 from iter8ml.services.reporting import metric_sort_value, metric_value_is_better
 from iter8ml.workspace import Workspace
+
+_GBDT_MODEL_NAMES = frozenset({"catboost", "lightgbm", "xgboost"})
 
 
 @dataclass
@@ -234,15 +237,47 @@ def training_results(
     workspace: Workspace,
     run_id: str,
     model_overrides: dict[str, dict[str, Any]] | None = None,
+    max_workers: int = 1,
+    strict_thread_safety: bool = True,
 ) -> list[ModelResult]:
     X, _ = training_features
     y = data_prep_result.y
-    results: list[ModelResult] = []
-    for name in models_to_run:
-        if name in ("naive_baseline", "linear_baseline"):
-            continue
-        results.append(
-            _train_one(
+    non_baseline = [
+        name for name in models_to_run if name not in ("naive_baseline", "linear_baseline")
+    ]
+
+    effective_workers = _effective_training_workers(
+        max_workers,
+        non_baseline,
+        strict_thread_safety=strict_thread_safety,
+    )
+
+    if effective_workers <= 1 or len(non_baseline) <= 1:
+        results: list[ModelResult] = []
+        for name in non_baseline:
+            results.append(
+                _train_one(
+                    name,
+                    X,
+                    y,
+                    task,
+                    cv_folds,
+                    cv_strategy,
+                    metrics,
+                    calibration,
+                    workspace,
+                    run_id,
+                    baseline_scores,
+                    model_overrides=model_overrides,
+                )
+            )
+        return results
+
+    results_dict: dict[str, ModelResult] = {}
+    with ThreadPoolExecutor(max_workers=effective_workers) as executor:
+        futures = {
+            executor.submit(
+                _train_one,
                 name,
                 X,
                 y,
@@ -255,9 +290,26 @@ def training_results(
                 run_id,
                 baseline_scores,
                 model_overrides=model_overrides,
-            )
-        )
-    return results
+            ): name
+            for name in non_baseline
+        }
+        for future in as_completed(futures):
+            results_dict[futures[future]] = future.result()
+
+    return [results_dict[name] for name in non_baseline]
+
+
+def _effective_training_workers(
+    max_workers: int,
+    model_names: list[str],
+    *,
+    strict_thread_safety: bool = True,
+) -> int:
+    if max_workers <= 1 or len(model_names) <= 1:
+        return 1
+    if strict_thread_safety and any(name in _GBDT_MODEL_NAMES for name in model_names):
+        return 1
+    return min(int(max_workers), len(model_names))
 
 
 # ── state generation node ────────────────────────────────────────────────

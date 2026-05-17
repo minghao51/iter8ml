@@ -19,17 +19,11 @@ class TestCatBoostConfig:
         assert config.learning_rate == 0.05
         assert config.l2_leaf_reg == 3.0
         assert config.early_stopping_rounds == 50
-        assert config.task_type in ("CPU", "GPU")
+        assert config.task_type == "auto"
         assert config.random_seed == 42
-
-    def test_resolve_task_type_auto_falls_back_to_cpu(self):
-        """On systems without catboost get_gpu_count, "auto" resolves to CPU."""
-        config = CatBoostConfig(task_type="auto")
-        assert config.task_type == "CPU"
 
     def test_explicit_task_type_unchanged(self):
         config = CatBoostConfig(task_type="GPU")
-        config.resolve_task_type()
         assert config.task_type == "GPU"
 
     def test_hpo_search_space_structure(self):

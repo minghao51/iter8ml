@@ -52,10 +52,3 @@ class TrackerType(Enum):
     JSONL = "jsonl"
     WANDB = "wandb"
     MLFLOW = "mlflow"
-
-
-def from_task_type(value: str | TaskType) -> TaskType:
-    """Convert string or TaskType to TaskType enum."""
-    if isinstance(value, TaskType):
-        return value
-    return TaskType(value)

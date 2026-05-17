@@ -1,88 +1,103 @@
-# Tabular Blueprint — Current State
+# iter8ml — Current State
 
-Last updated: 2026-05-13
+Last updated: 2026-05-16
 
 ## What's Implemented
 
-| Feature | Backend | Frontend |
-|---------|---------|----------|
-| CLI (`init`, `run`, `leaderboard`, `registry`, `hardware`, `drift`, `state`, `hpo`, `diff`, `export`) | Full | N/A (CLI-only) |
-| Data loading (CSV, Parquet, SQLite) | Full | N/A |
-| Preprocessing (null fill, date decomposition, categorical encoding) | Full | N/A |
-| Model suite (CatBoost, LightGBM, XGBoost, TabPFN, FT-Transformer, TabNet, Naive/Linear baselines) | Full | N/A |
-| Cross-validation (KFold, Stratified, TimeSeries) | Full | N/A |
-| Evaluation metrics (roc_auc, f1_macro, accuracy, log_loss, rmse, mae, r2) | Full | N/A |
-| Hardware-aware model selection (ModelSelector) | Full | N/A |
-| Hyperparameter optimization (Optuna + warmstart + importance) | Full | N/A |
-| Automated feature engineering (interaction discovery + pruning) | Full | N/A |
-| Target transformation (log1p, box-cox, yeo-johnson, auto) | Full | N/A |
-| Probability calibration (Platt, Isotonic) | Full | N/A |
-| Drift detection (KS/Chi2, PSI, Domain Classifier) | Full | N/A |
-| SHAP explainability (TreeExplainer, KernelExplainer + plots) | Full | N/A |
-| Data quality audit (Cleanlab label noise) | Partial | N/A |
-| Leakage detection (permutation-based audit) | Full | N/A |
-| Embedding engine (Entity, Autoencoder for high-cardinality features) | Full | N/A |
-| Model registry (file-locked, atomic writes, auto-promote) | Full | N/A |
-| Export service (portable prediction packages) | Full | N/A |
-| Experiment tracking (JSONL + W&B + MLflow) | Full | N/A |
-| Hamilton DAG pipeline orchestration | Full | N/A |
-| LLM commentary (litellm integration) | Full | N/A |
-| MCP server (10 tools for LLM agents) | Full | N/A |
-| Preprocessing cache (NumPy .npy) | Full | N/A |
-| Experiment resume (skip completed models) | Full | N/A |
+| Feature | Backend | Frontend/CLI |
+|---------|---------|--------------|
+| Data loading (CSV, Parquet, SQLite) | Full (`data/loader.py`) | CLI via `--data` flag |
+| Data preprocessing (null fill, date decomp, encoding) | Full (`engine/pipelines/nodes/prep.py`) | N/A (pipeline node) |
+| Data quality audit (Cleanlab) | Full (`data/quality.py`) | Config-gated |
+| Leakage detection (permutation importance) | Full (`data/leakage.py`) | Config-gated |
+| Target transform (log1p, box-cox, yeo-johnson) | Full (`data/features.py:57-104`) | Config-gated |
+| Model: CatBoost | Full (`engine/models/catboost_model.py`) | Auto/routed |
+| Model: LightGBM | Full (`engine/models/lightgbm_model.py`) | Auto/routed |
+| Model: XGBoost | Full (`engine/models/xgboost_model.py`) | Auto/routed |
+| Model: TabPFN v2 | Full (`engine/models/tabpfn_model.py`) | Auto/routed (GPU-gated) |
+| Model: FT-Transformer | Full (`engine/models/ft_transformer.py`) | VRAM-gated (>12GB) |
+| Model: TabNet | Full (`engine/models/tabnet_model.py`) | VRAM-gated (>8GB) |
+| Model: Naive/Linear baselines | Full (`engine/models/baselines.py`) | Auto-included |
+| Model selection (hardware-aware routing) | Full (`engine/models/selector.py`) | Automatic |
+| Model factory (plugin discovery) | Full (`engine/models/factory.py`) | Entry-point based |
+| Cross-validation (KFold, Stratified, TimeSeries) | Full (`engine/evaluator.py`) | Configurable |
+| Probability calibration (Platt, Isotonic) | Full (`engine/calibration.py`) | Config-gated |
+| HPO (Optuna) | Full (`engine/hpo.py`) | CLI `hpo` command |
+| HPO warmstart (historical trial injection) | Full (`engine/hpo_warmstart.py`) | CLI `--log` flag |
+| HPO param importance (PedAnova) | Full (`engine/hpo_importance.py`) | Automatic |
+| AFE (interaction discovery + pruning) | Full (`data/features.py:204-367`) | `feature_strategy=afe` |
+| Entity embedding (high-cardinality) | Full (`data/embedding.py`) | `feature_strategy=embedding` |
+| DAE embedding | Full (`data/embedding.py:269-311`) | `embedding_method=autoencoder` |
+| Drift: KS/Chi2 | Full (`analysis/drift.py`) | CLI `drift --method ks` |
+| Drift: PSI | Full (`analysis/psi.py`) | CLI `drift --method psi` |
+| Drift: Domain classifier | Full (`analysis/domain_classifier.py`) | CLI `drift --method domain` |
+| SHAP explainability | Full (`analysis/explainability.py`) | `shap_enabled=True` |
+| Model registry (file-locking) | Full (`services/registry.py`) | CLI `registry show` |
+| Model export (portable package) | Full (`services/export.py`) | CLI `export` command |
+| JSONL experiment tracking + rotation | Full (`engine/tracker.py`) | Default tracker |
+| W&B tracking | Full (`engine/tracker.py:98-125`) | `tracker=wanDB` |
+| MLflow tracking | Full (`engine/tracker.py:128-160`) | `tracker=mlflow` |
+| LLM agent (SHAP + performance commentary) | Full (`services/llm.py`) | `llm_enabled=True` |
+| MCP server (8 tools for LLM agents) | Full (`services/mcp.py`) | Lazy-loaded |
+| State observer (current_state.md) | Full (`engine/state_observer.py`) | CLI `state` |
+| Report service (leaderboard) | Full (`services/reporting.py`) | CLI `leaderboard` |
+| CLI: init, hardware, run, hpo, drift, state, leaderboard, diff, export, registry | Full (`cli/`) | Typer-based |
+| ExperimentSession (Python API) | Full (`session.py`) | Programmatic |
+| Preprocessing cache | Full (`data/cache.py`) | Workspace-based |
+| Safe pickle (RestrictedUnpickler) | Full (`utils/io.py:74-97`) | Internal |
+| Pipeline DAG (Hamilton) | Full (`engine/pipelines/`) | Config-driven |
 
 ## Stubbed / Unimplemented
 
-All files below raise `NotImplementedError` or return `501`:
+No `NotImplementedError` or 501 responses found in the codebase. All features are fully implemented.
 
-- None found. All registered modules contain working implementations.
+However, there are no-op `pass` bodies in abstract/protocol methods that are expected to be overridden:
+
+- `engine/models/factory.py:30` — `_discover_models()` fallback `pass` (expected; entry point not found)
+- `engine/models/gbdt_base.py:27,32,72,77,87,98,104` — Abstract method `pass` bodies (required by ABC pattern)
+- `engine/models/tabpfn_model.py:12,16` — Custom exception class `pass` bodies (empty by design)
+- `engine/models/tabpfn_model.py:35` — `except ImportError: pass` (graceful CPU fallback)
+- `engine/models/ft_transformer.py:39` — `_ModuleBase` placeholder `pass` when torch absent
+- `engine/pipelines/hooks/tracking_hook.py:19,28` — `run_before_node_execution` / `run_after_node_execution` are no-op hooks (by design)
 
 ## Known Bugs
 
 | Severity | Issue | Location |
 |----------|-------|----------|
-| High | `WandbTracker` and `MLflowTracker` missing `current_run_id` attribute, violating the `Tracker` Protocol. Will raise `AttributeError` if accessed. | `src/tabular_blueprint/engine/tracker.py:91` (WandbTracker), `src/tabular_blueprint/engine/tracker.py:121` (MLflowTracker) |
-| High | `XGBoostModel._build_params` calls `self.params.pop("random_seed", 42)` which mutates `self.params` in place. Subsequent calls lose the `random_seed` key. | `src/tabular_blueprint/models/conventional/xgboost_model.py:26` |
-| Medium | `LightGBMModel.fit` calls `self._build_params()` via `self._build_params()` inside `_train_model`, duplicating params and potentially overriding `_model` state set by `_create_model`. | `src/tabular_blueprint/models/conventional/lightgbm_model.py:40-44` |
-| Medium | `feature_engineering.py` Hamilton `@config` variants (`training_features__afe_enabled`, `training_features__embedding_enabled`) are never registered when Hamilton is not installed. Falls through silently with `MagicMock` — no fallback path exists. | `src/tabular_blueprint/pipelines/nodes/feature_engineering.py:148-211` |
-| Medium | `DriftReport` dataclass in `drift_detection.py` shadows the `DriftReport` Pydantic model from `monitoring/drift.py`. Importing both in the same namespace is ambiguous. | `src/tabular_blueprint/pipelines/nodes/drift_detection.py:22` |
-| Low | `PipelineExecutor.run_training` always returns `None` when Hamilton is not installed, with no warning or fallback. | `src/tabular_blueprint/pipelines/executor.py:181-182` |
-| Low | `_fit_importance_model` in `feature_engineering.py` calls `cls(task=task).fit(X, y) or cls(task=task)`. The `or` branch is dead code — `fit()` returns `None` for all models, so the second `cls(task=task)` always executes, creating an unfitted model. | `src/tabular_blueprint/pipelines/nodes/feature_engineering.py:36` |
-| Low | `TabPFNModel` always selects CPU when no CUDA GPU detected, even when MPS (Apple Silicon) is available. | `src/tabular_blueprint/models/tabular_foundation/tabpfn_model.py:28-37` |
+| Low | `cli/run.py:101` — `results.items()` contains `ModelResult`-like dicts with nested structure, not simple scores; output is messy | `cli/run.py:101` |
 
 ## Security Concerns
 
 | Severity | Issue | Location |
 |----------|-------|----------|
-| High | `safe_pickle.py` uses `pickle.dump` without restriction — `safe_dump` serializes arbitrary objects. Only deserialization is restricted via whitelist. A malicious actor with write access could craft a valid `.pkl` file that bypasses the whitelisted prefixes (e.g., any `sklearn.*` class is allowed). | `src/tabular_blueprint/utils/safe_pickle.py:61-66` |
-| Medium | `load_sqlite` uses keyword-blocklist approach for SQL injection prevention. This is fragile — edge cases with comments (`--`), hex-encoded keywords, or Unicode bypasses could evade detection. Parameterized queries would be safer. | `src/tabular_blueprint/data/loaders.py:66-88` |
-| Medium | `config.py` allows executing arbitrary Python files as config when `--allow-unsafe-config` is passed. The flag is user-facing with no additional sandboxing. | `src/tabular_blueprint/config.py:171-185` |
-| Low | `NaiveBaseline.load` calls `np.load(path + ".npz", allow_pickle=False)` which is safe, but the `.npz` extension is appended automatically — if a user passes a path ending in `.npz`, it becomes `.npz.npz`. | `src/tabular_blueprint/models/baselines.py:52` |
-| Low | Export service embeds all model class paths in `allowlisted_model_classes` metadata. This leaks internal module structure to anyone with access to the export package. | `src/tabular_blueprint/services/export_service.py:208` |
+| Medium | `safe_dump` uses `pickle.dump` with no MAC/signature — tampered files pass `RestrictedUnpickler` if classes are allowlisted | `utils/io.py:100-103` |
+| Medium | `load_sqlite` query validation strips SQL keywords from uppercase, but creative bypass is possible via encoding tricks or subqueries | `data/loader.py:76-88` |
+| Medium | `Config.from_file` with `allow_unsafe_python=True` executes arbitrary `.py` files via `exec_module` | `config.py:281-295` |
+| Low | `baselines.py:52` — `np.load(path + ".npz", allow_pickle=False)` is safe, but `.npz` extension must be manually appended by caller — mismatch risk | `engine/models/baselines.py:52` |
+| Low | `ft_transformer.py:166` — `torch.load(path, ..., weights_only=True)` is safe, but only enforced in this one model | `engine/models/ft_transformer.py:166` |
+| Low | `__init__.py:7` — Bare `except Exception` silently swallows all errors during version detection | `__init__.py:7` |
 
 ## Performance Issues
 
 | Issue | Location |
 |-------|----------|
-| `discover_interactions` runs `cross_val_score` for every candidate pair × operation, making it O(top_k² × n_ops × cv_folds) model fits. With `afe_top_k=10`, this is ~90 CV evaluations — very slow on large datasets. | `src/tabular_blueprint/data/feature_engine.py:164-254` |
-| `detect_leakage` runs one `cross_val_score` per feature (n_features × cv_folds fits). No parallelism. | `src/tabular_blueprint/data/leakage.py:56-84` |
-| `DomainClassifierDriftDetector` runs `cross_val_score` with `LogisticRegression` synchronously. No GPU or parallelism support. | `src/tabular_blueprint/monitoring/domain_classifier.py:62-69` |
-| `quality.py` runs `cross_val_predict` + `find_label_issues` on the full dataset in memory. No chunking for large datasets. | `src/tabular_blueprint/data/quality.py:42-46` |
-| `EmbeddingEngine` always trains on CPU (`device = torch.device("cpu")`), ignoring available GPU. | `src/tabular_blueprint/data/embedding_engine.py:228,283` |
-| `PreprocessingCache` has no size-based eviction. `clear()` is the only way to free space. | `src/tabular_blueprint/data/cache.py:67-74` |
-| `MLflowTracker.log_event` iterates all dict keys and calls `mlflow.log_param` per key — O(n) individual API calls per event. | `src/tabular_blueprint/engine/tracker.py:145-151` |
-| `JSONLTracker.log_event` opens and closes the file on every single event. No buffering. | `src/tabular_blueprint/engine/tracker.py:74-83` |
+| `detect_leakage` runs full cross-validation per feature (O(n_features * cv_folds) model fits) — extremely slow for wide datasets | `data/leakage.py:52-83` |
+| `discover_interactions` runs cross-validation for every candidate pair × operation — O(top_k^2 * cv_folds) evaluations | `data/features.py:234-261` |
+| `extract_top_k_features` uses `permutation_importance` with `n_repeats=10` — expensive for large datasets | `data/features.py:189-201` |
+| `prune_features` runs a second `permutation_importance` pass — redundant if already computed during AFE | `data/features.py:348-350` |
+| `audit_data_quality` runs `cross_val_predict` on `LogisticRegression` — no GPU or parallel support | `data/quality.py:43` |
+| `DomainClassifierDriftDetector.detect` runs `cross_val_score` on combined ref+live data — memory scales with both datasets | `analysis/domain_classifier.py:55-69` |
+| `_train_one` trains models sequentially; `max_workers` config field exists but is never used for parallelism | `engine/pipelines/nodes/train.py:150-221` |
+| `EmbeddingEngine._train_entity` and `_train_autoencoder` hardcode `device="cpu"` even when GPU is available | `data/embedding.py:232,288` |
+| `_build_model` in `TabNetModel` creates full `TabularModel` config on every `fit()` call — wasteful if called repeatedly | `engine/models/tabnet_model.py:24-57` |
 
 ## Maintenance Issues
 
 | Issue | Detail |
 |-------|--------|
-| Inconsistent model base classes | `CatBoostModel` (`src/tabular_blueprint/models/conventional/catboost_model.py:10`) does not use `BaseGBDTModel`, while `LightGBMModel` and `XGBoostModel` do. Duplication of `apply_overrides`, `save`, and `predict_proba` logic. |
-| 14 bare `except Exception` clauses | Spread across 10 files. Most silently swallow errors with no logging: `model_training.py:134`, `explainability.py:136`, `baselines.py:46`, `model_configs.py:29`, `domain_classifier.py:70`, `catboost_model.py:30`, `exceptions.py:60`, `mcp/tools.py:172`, `llm/__init__.py:100`, `hpo.py:221,253`, `hpo_warmstart.py:156,207`, `feature_engine.py:220` |
-| DriftReport name collision | `DriftReport` is defined as both a Pydantic model (`monitoring/drift.py:17`) and a dataclass (`pipelines/nodes/drift_detection.py:22`). Same name, different types. |
-| `Tracker` Protocol not fully implemented | `WandbTracker` and `MLflowTracker` lack `current_run_id` attribute required by the `Tracker` Protocol at `engine/tracker.py:10`. |
-| Hamilton conditional import with MagicMock fallback | `feature_engineering.py:14-17` and `drift_detection.py:15-17` use `unittest.mock.MagicMock` as a stand-in for Hamilton's `@config` decorator when Hamilton is not installed. This silently produces broken DAG nodes instead of raising an error. |
-| No type checking for `data_prep_result` | Pipeline nodes (`model_selection.py`, `model_training.py`, `state_generation.py`, `baselines.py`) accept `data_prep_result: Any` instead of `DataPrepResult`, losing type safety across the DAG. |
-| Dead code in `_fit_importance_model` | The `or cls(task=task)` fallback at `feature_engineering.py:36` always executes because `fit()` returns `None`, creating an unfitted model that gets used for `permutation_importance`. |
-| Export template uses f-string `{{` escaping | `export_service.py:67` uses `{{` in the template for Python dict literal, which is correct but fragile — any changes to the template risk breaking the double-brace escaping. |
-| CatBoost `classes_count` parameter | `catboost_model.py:39-40` sets `classes_count` for multiclass but this parameter was renamed to `class_count` in newer CatBoost versions, potentially causing runtime errors. |
+| `max_workers` config field unused | `config.py:163` defines `max_workers` but `train.py` trains sequentially — dead config |
+| Broad `except Exception` handlers | `__init__.py:7`, `services/mcp.py:188`, `engine/hpo.py:232,264`, `services/llm.py:100`, `engine/models/catboost_model.py:30`, `exceptions.py:60` — all catch `Exception` broadly |
+| `TrackingHook` before/after hooks are no-ops | `engine/pipelines/hooks/tracking_hook.py:13-19,21-28` — registered but do nothing, only error hook logs |
+| `ExperimentConfig.__getattr__` can confuse Pydantic | `config.py:183-187` — custom `__getattr__` for flat delegates may cause issues with `hasattr()` checks |
+| `pyproject.toml` has `[train]` extras but models are core deps | `catboost`, `lightgbm`, `xgboost`, `optuna` are in `[train]` optional deps but imported unconditionally in model wrappers |
+| `Tracker` is a Protocol but `JSONLTracker` doesn't inherit it | `engine/tracker.py:13,23` — structural subtyping works but explicit inheritance would clarify intent |

@@ -1856,7 +1856,7 @@ wheels = [
 
 [[package]]
 name = "iter8ml"
-version = "0.1.dev64+g220f7316b.d20260515"
+version = "0.1.dev65+g7d4a1d9d0.d20260517"
 source = { editable = "." }
 dependencies = [
     { name = "cryptography" },
@@ -1951,14 +1951,14 @@ requires-dist = [
     { name = "catboost", marker = "extra == 'train'", specifier = ">=1.2" },
     { name = "cleanlab", marker = "extra == 'full'", specifier = ">=2.6" },
     { name = "cleanlab", marker = "extra == 'train'", specifier = ">=2.6" },
-    { name = "cryptography", extras = ["train"], specifier = ">=46.0.7" },
+    { name = "cryptography", specifier = ">=46.0.7" },
     { name = "filelock", specifier = ">=3.12" },
-    { name = "gitpython", extras = ["train"], specifier = ">=3.1.50" },
+    { name = "gitpython", specifier = ">=3.1.50" },
     { name = "lightgbm", marker = "extra == 'full'", specifier = ">=4.0" },
     { name = "lightgbm", marker = "extra == 'train'", specifier = ">=4.0" },
+    { name = "litellm", specifier = ">=1.83.10" },
     { name = "litellm", marker = "extra == 'full'", specifier = ">=1.40" },
     { name = "litellm", marker = "extra == 'train'", specifier = ">=1.40" },
-    { name = "litellm", extras = ["train"], specifier = ">=1.83.10" },
     { name = "matplotlib", marker = "extra == 'docs'", specifier = ">=3.7" },
     { name = "matplotlib", marker = "extra == 'full'", specifier = ">=3.7" },
     { name = "mcp", marker = "extra == 'full'", specifier = ">=0.9" },
@@ -1969,9 +1969,9 @@ requires-dist = [
     { name = "mkdocs-material", marker = "extra == 'full'", specifier = ">=9.5" },
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.25" },
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'full'", specifier = ">=0.25" },
+    { name = "mlflow", specifier = ">=3.11.1" },
     { name = "mlflow", marker = "extra == 'full'", specifier = ">=2.13" },
     { name = "mlflow", marker = "extra == 'train'", specifier = ">=2.13" },
-    { name = "mlflow", extras = ["train"], specifier = ">=3.11.1" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "optuna", marker = "extra == 'full'", specifier = ">=3.6" },
     { name = "optuna", marker = "extra == 'train'", specifier = ">=3.6" },
@@ -1980,7 +1980,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pymdown-extensions", marker = "extra == 'docs'", specifier = ">=10.0" },
     { name = "pymdown-extensions", marker = "extra == 'full'", specifier = ">=10.0" },
-    { name = "python-multipart", extras = ["train"], specifier = ">=0.0.27" },
+    { name = "python-multipart", specifier = ">=0.0.27" },
     { name = "pytorch-tabular", marker = "extra == 'full'", specifier = ">=1.0" },
     { name = "pytorch-tabular", marker = "extra == 'train'", specifier = ">=1.0" },
     { name = "pyyaml", specifier = ">=6.0" },

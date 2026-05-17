@@ -6,6 +6,8 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
+from iter8ml.config import EmbeddingConfig  # noqa: E402
+from iter8ml.constants import EmbeddingMethod  # noqa: E402
 from iter8ml.data.embedding import EmbeddingEngine  # noqa: E402
 from iter8ml.workspace import Workspace  # noqa: E402
 
@@ -24,17 +26,31 @@ def high_card_df():
     )
 
 
-def _make_engine(tmp_path, **overrides):
-    params = {
-        "task": "classification",
-        "workspace": Workspace(root=tmp_path / "workspace"),
-        "embedding_method": "entity",
-        "embedding_dim": 4,
-        "embedding_epochs": 2,
-        "embedding_max_categories": 10,
-    }
-    params.update(overrides)
-    return EmbeddingEngine(**params)
+def _make_engine(tmp_path, **config_overrides):
+    config = EmbeddingConfig(
+        method=EmbeddingMethod.ENTITY,
+        dim=4,
+        epochs=2,
+        max_categories=10,
+    )
+    for key, value in config_overrides.items():
+        if key == "task":
+            continue
+        if key == "embedding_method":
+            config = config.model_copy(update={"method": EmbeddingMethod(value)})
+        elif key == "embedding_dim":
+            config = config.model_copy(update={"dim": value})
+        elif key == "embedding_epochs":
+            config = config.model_copy(update={"epochs": value})
+        elif key == "embedding_max_categories":
+            config = config.model_copy(update={"max_categories": value})
+        elif key == "embedding_ae_latent_dim":
+            config = config.model_copy(update={"ae_latent_dim": value})
+    return EmbeddingEngine(
+        task=config_overrides.get("task", "classification"),
+        workspace=Workspace(root=tmp_path / "workspace"),
+        config=config,
+    )
 
 
 class TestEmbeddingEngineEntity:

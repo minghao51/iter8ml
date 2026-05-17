@@ -12,10 +12,6 @@ class DataSizeError(ValueError):
     pass
 
 
-class GPUUnavailableError(RuntimeError):
-    pass
-
-
 class TabPFNModel:
     DEFAULT_MAX_ROWS = 50_000
 

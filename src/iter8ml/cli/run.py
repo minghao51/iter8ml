@@ -5,25 +5,11 @@ from pathlib import Path
 import typer
 
 from iter8ml.config import ExperimentConfig
-from iter8ml.constants import from_task_type
+from iter8ml.constants import TaskType
 from iter8ml.data.loader import load_data
 from iter8ml.session import ExperimentSession
-from iter8ml.utils.io import load_events
 
 from .main import app
-
-
-def _find_last_run_id(config: ExperimentConfig) -> str | None:
-    from iter8ml.workspace import Workspace
-
-    ws = Workspace()
-    events = load_events(ws.experiments_path)
-    run_ids = [
-        e.get("run_id")
-        for e in events
-        if e.get("event") == "experiment_started" and e.get("run_id")
-    ]
-    return run_ids[-1] if run_ids else None
 
 
 @app.command()
@@ -64,7 +50,7 @@ def run(
     if experiment_config is None:
         experiment_config = ExperimentConfig(
             name="experiment",
-            task=from_task_type(task),
+            task=TaskType(task),
             target_col=target_col or "target",
             data_path=data_path or "",
         )
@@ -87,9 +73,8 @@ def run(
     if quick:
         experiment_config.cv_folds = 2
         experiment_config.shap_enabled = False
-        experiment_config.calibration = "none"
         experiment_config.data_sample = 0.2
-        typer.echo("[quick mode] 2 folds, 20% data, SHAP/calibration disabled")
+        typer.echo("[quick mode] 2 folds, 20% data, SHAP disabled")
 
     typer.echo(f"Loaded {len(df)} rows, {len(df.columns)} columns")
     typer.echo(f"Task: {experiment_config.task}, Target: {experiment_config.target_col}")
@@ -98,5 +83,12 @@ def run(
     results = session.run(experiment_config, df)
 
     typer.echo("\nResults:")
-    for model, scores in results.items():
-        typer.echo(f"  {model}: {scores}")
+    for model, entry in results.items():
+        if isinstance(entry, dict) and "error" in entry:
+            typer.echo(f"  {model}: ERROR - {entry['error']}")
+        elif isinstance(entry, dict) and "cv_scores" in entry:
+            scores = entry["cv_scores"]
+            score_str = ", ".join(f"{k}={v:.4f}" for k, v in scores.items()) if scores else "N/A"
+            typer.echo(f"  {model}: {score_str}")
+        else:
+            typer.echo(f"  {model}: {entry}")

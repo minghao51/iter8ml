@@ -49,7 +49,8 @@ class NaiveBaseline:
         )
 
     def load(self, path: str) -> None:
-        data = np.load(path + ".npz", allow_pickle=False)
+        normalized = path if path.endswith(".npz") else path + ".npz"
+        data = np.load(normalized, allow_pickle=False)
         self._value = data["value"][0]
         self.task = str(data["task"][0])
         cls_arr = data.get("classes")
@@ -71,7 +72,7 @@ class LinearBaseline:
         if self.task == "classification":
             self._model = LogisticRegression(max_iter=1000, random_state=42)
         else:
-            self._model = Ridge(alpha=1.0, random_state=42)
+            self._model = Ridge(alpha=1.0)
         self._model.fit(X, y)
 
     def predict(self, X: np.ndarray) -> np.ndarray:

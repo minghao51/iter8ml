@@ -1,91 +1,86 @@
-# Tabular Blueprint — Code Style & Conventions
+# iter8ml — Code Style & Conventions
 
 ## File Organization
 
 ### Where Things Go
 
 ```
-src/tabular_blueprint/
-  __init__.py           # Package root, __all__, __typed__
-  cli.py                # Typer CLI commands
-  config.py             # Pydantic ExperimentConfig, HardwareProfile
-  constants.py          # Enums (TaskType, CVStrategy, ModelName, TrackerType, EmbeddingMethod)
-  exceptions.py         # Custom exception hierarchy + @track_errors decorator
-  data/                 # Data loading, quality, leakage detection, embedding, feature engineering
-    loaders.py          # load_csv, load_parquet, load_sqlite, load_data, get_data_hash
-    quality.py          # Data quality audit
-    leakage.py          # Permutation-based leakage detection → LeakageReport (Pydantic)
-    feature_engine.py   # Feature engineering utilities
-    embedding_engine.py # Entity/autoencoder embeddings
-    cache.py            # Data caching
-    adapter.py          # Data adapters
-  engine/               # Training orchestration and evaluation
-    trainer.py          # Trainer class (slim orchestrator)
-    evaluator.py        # Cross-validation, metrics, lift computation
-    tracker.py          # Tracker protocol + JSONLTracker, WandbTracker, MLflowTracker
-    calibration.py      # Platt/isotonic calibration
-    hpo.py              # Hyperparameter optimization via Optuna
-    hpo_importance.py   # HPO parameter importance
-    hpo_warmstart.py    # Warmstart HPO from historical JSONL runs
-    state_observer.py   # Generate current_state.md and leaderboard.md
-  models/               # Model wrappers and factory
-    base.py             # AbstractModel Protocol (structural subtyping)
-    factory.py          # _MODEL_REGISTRY dict, get_model_class(), lazy imports
-    selector.py         # ModelSelector — hardware-aware model routing
-    gbdt_base.py        # BaseGBDTModel ABC for gradient boosting models
-    baselines.py        # NaiveBaseline, LinearBaseline
-    model_configs.py    # Pydantic configs per model (CatBoostConfig, LightGBMConfig, etc.)
-    conventional/       # GBDT model wrappers
-      catboost_model.py
-      lightgbm_model.py
-      xgboost_model.py
-    deep/               # Deep learning model wrappers
-      ft_transformer.py
-      tabnet_model.py
-      sparse_embedder.py
-    tabular_foundation/ # Foundation model wrappers
-      tabpfn_model.py
-  pipelines/            # Hamilton DAG pipelines
-    executor.py         # PipelineExecutor (builds/executes Hamilton DAGs)
-    preprocessing.py    # Standalone preprocessing (non-Hamilton)
-    hooks/
-      tracking_hook.py  # Hamilton lifecycle hook for event tracking
-    nodes/              # Hamilton node functions (one function = one DAG node)
-      preprocessing.py
-      data_preparation.py
-      model_selection.py
-      baselines.py
-      feature_engineering.py
-      model_training.py
-      state_generation.py
-      drift_detection.py
-  monitoring/           # Drift detection and explainability
-    drift.py            # KS/Chi2 drift detection
-    psi_drift.py        # PSI-based drift detection
-    domain_classifier.py# Domain classifier drift
-    explainability.py   # SHAP explanations
-  services/             # Business logic services
-    registry_service.py # Thread-safe model registry (FileLock, atomic writes)
-    report_service.py   # Leaderboard/report generation
-    export_service.py   # Export champion models as portable packages
-  utils/                # Shared utilities
-    jsonl.py            # load_events, iter_events
-    safe_pickle.py      # Restricted pickle load/dump
-  llm/                  # LLM integration (stub)
-  mcp/                  # MCP server tools
-    tools.py
+src/iter8ml/
+  __init__.py            # Public API re-exports + __version__
+  config.py              # Pydantic settings/models for experiment configuration
+  constants.py           # Enums (TaskType, CVStrategy, ModelName, TrackerType, etc.)
+  exceptions.py          # Custom exception hierarchy + @track_errors decorator
+  session.py             # ExperimentSession — primary programmatic API
+  workspace.py           # Workspace dataclass — paths to artifacts, registry, logs
+  cli/
+    main.py              # Typer app assembly + init/hardware commands
+    run.py               # `iter8 run` command
+    optimize.py          # `iter8 hpo` command
+    analyze.py           # `iter8 analyze` command
+    export.py            # `iter8 export` command
+  data/
+    loader.py            # Polars-based CSV/Parquet ingestion
+    quality.py           # Data quality auditing
+    leakage.py           # Target leakage detection
+    features.py          # Feature engineering engine
+    embedding.py         # High-cardinality embedding engine
+    adapter.py           # Data adaptation layer
+    cache.py             # Data caching utilities
+  engine/
+    trainer.py           # Trainer — thin orchestrator tying config+data+model
+    evaluator.py         # Cross-validation + metric computation
+    tracker.py           # Tracker Protocol + JSONLTracker implementation
+    hpo.py               # Optuna study factory + optimize_model
+    hpo_importance.py    # Hyperparameter importance (PedAnova)
+    hpo_warmstart.py     # Warmstart from historical trials
+    calibration.py       # Platt/isotonic calibration
+    state_observer.py    # State snapshot generation (optionally LLM-enriched)
+    models/
+      base.py            # AbstractModel Protocol (fit/predict/predict_proba/save/load)
+      factory.py         # Plugin-based model class factory with lazy imports
+      model_configs.py   # Per-model Pydantic config + HPO search spaces
+      catboost_model.py  # CatBoostModel wrapper
+      lightgbm_model.py  # LightGBMModel wrapper
+      xgboost_model.py   # XGBoostModel wrapper
+      tabpfn_model.py    # TabPFNModel wrapper
+      tabnet_model.py    # TabNetModel wrapper
+      baselines.py       # NaiveBaseline + LinearBaseline
+      sparse_embedder.py # Sparse feature embedding
+    pipelines/
+      executor.py        # PipelineExecutor — Hamilton DAG driver (train/drift modes)
+      preprocessing.py   # Pipeline preprocessing steps
+      nodes/
+        prep.py          # Data preparation DAG nodes
+        features.py      # Feature engineering DAG nodes
+        train.py         # Training DAG nodes
+        drift_detection.py # Drift detection DAG nodes
+      hooks/
+        tracking_hook.py # Tracker integration hook for DAG nodes
+  analysis/
+    drift.py             # Statistical drift detection (KS, chi-squared)
+    psi.py               # Population Stability Index
+    domain_classifier.py # Domain classifier drift method
+    explainability.py    # SHAP-based feature importance
+  services/
+    registry.py          # RegistryService — thread-safe model promotion
+    reporting.py         # ReportService — leaderboard + experiment reports
+    export.py            # ExportService — artifact packaging
+    llm.py               # LLM service for AI commentary
+    mcp.py               # MCP server integration
+  utils/
+    io.py                # JSONL I/O + safe pickle utilities
 
 tests/
-  conftest.py           # Shared fixtures (classification_data, regression_data, tmp_workspace)
-  unit/                 # Fast, isolated, no external deps
-  integration/          # Multi-component tests, may require optional deps
-  e2e/                  # Full workflow smoke tests
+  conftest.py            # Shared fixtures (classification_data, regression_data, tmp_workspace)
+  strategies.py          # Shared Hypothesis strategy generators
+  unit/                  # Fast, isolated tests (57 files)
+  integration/           # Multi-component tests (8 files)
+  e2e/                   # Full workflow smoke tests (1 file)
 
-notebooks/              # Quarto .qmd tutorials
-docs/                   # MkDocs static site (generated from notebooks + mkdocs.yml)
-scripts/                # Build/utility scripts
-benchmarks/             # Performance benchmarks
-workspace/              # Runtime workspace (experiments.jsonl, registry.json, artifacts/)
+benchmarks/              # Performance benchmarks + OpenML sweeps
+scripts/                 # Dev scripts (check_legacy_namespace, generate_notebook_docs)
+docs/                    # MkDocs documentation source
+notebooks/               # Quarto .qmd notebooks
 ```
 
 ## Naming Conventions
@@ -94,141 +89,159 @@ workspace/              # Runtime workspace (experiments.jsonl, registry.json, a
 
 | Element | Convention | Example |
 |---------|-----------|---------|
-| Package | `snake_case` | `tabular_blueprint` |
-| Module | `snake_case` | `model_configs.py`, `feature_engine.py` |
-| Class | `PascalCase` | `ExperimentConfig`, `CatBoostModel`, `PipelineExecutor` |
-| Pydantic model | `PascalCase` | `LeakageReport`, `PromotionResult`, `HardwareProfile` |
-| Enum | `PascalCase` enum, `UPPER_SNAKE` members | `TaskType.CLASSIFICATION`, `CVStrategy.STRATIFIED` |
-| Function | `snake_case` | `load_data()`, `get_cv_split()`, `detect_leakage()` |
-| Private function | `_leading_underscore` | `_load_completed_models()`, `_get_module()` |
-| Method | `snake_case` | `model.fit()`, `trainer.run()`, `selector.select()` |
-| Private method | `_leading_underscore` | `self._build_model()`, `self._rotate_log()` |
-| Protocol | `PascalCase` | `Tracker`, `AbstractModel` |
-| Constant (module-level) | `UPPER_SNAKE` or `snake_case` | `METRICS_REGISTRY`, `DEFAULT_LLM_MODEL`, `_MODEL_REGISTRY` |
-| Dataclass | `PascalCase` | `ModelResult` |
-| CLI command | `snake_case` (Typer) | `tabblueprint run`, `tabblueprint hpo`, `tabblueprint drift` |
-| Pydantic field | `snake_case` | `cv_folds`, `target_col`, `data_path` |
-| Fixture | `snake_case` | `classification_data`, `regression_data`, `tmp_workspace` |
-| Test function | `test_` prefix, `snake_case` | `test_default_config()`, `test_load_csv()` |
+| Package dirs | `snake_case` | `engine/`, `data/`, `analysis/` |
+| Module files | `snake_case.py` | `model_configs.py`, `hpo_warmstart.py` |
+| Classes (models/configs) | `PascalCase` | `ExperimentConfig`, `CatBoostModel`, `LeaderboardEntry` |
+| Classes (services) | `PascalCase` + `Service` suffix | `RegistryService`, `ExportService`, `ReportService` |
+| Classes (protocols) | `PascalCase` | `AbstractModel`, `Tracker` |
+| Classes (exceptions) | `PascalCase` + `Error` suffix | `DataLoadError`, `ModelFitError`, `TabularBlueprintError` |
+| Enums | `PascalCase` | `TaskType`, `CVStrategy`, `ModelName` |
+| Enum members | `UPPER_SNAKE_CASE` | `STRATIFIED`, `KFOLD`, `CLASSIFICATION` |
+| Functions | `snake_case` | `load_data()`, `get_model_class()`, `validate_model_name()` |
+| Private helpers | `_leading_underscore` | `_raise_if_unknown_model_names()`, `_build_pruner()` |
+| Constants (module-level) | `UPPER_SNAKE_CASE` | `DEFAULT_LLM_MODEL`, `METRICS_REGISTRY`, `LOWER_IS_BETTER_METRICS` |
+| Config fields | `snake_case` | `cv_folds`, `target_col`, `run_hpo` |
+| Test files | `test_<module>.py` | `test_config.py`, `test_model_factory.py`, `test_drift.py` |
+| Test functions | `test_<description>` | `test_default_config()`, `test_get_model_class_known_model()` |
+| Fixtures | `snake_case` | `classification_data`, `tmp_workspace` |
 
 ## Python Patterns
 
 ### Pydantic Models
-- Use `BaseModel` for all structured data: config (`ExperimentConfig`), reports (`LeakageReport`), service results (`PromotionResult`), hardware profiles (`HardwareProfile`)
-- Validation via `@field_validator` and `@model_validator` decorators
-- Serialization via `@field_serializer` with `when_used="json"`
-- Config loading via `@classmethod` factory methods (`ExperimentConfig.from_file()`)
-- Per-model hyperparameter configs use separate Pydantic models with `hpo_search_space()` method
+- Config models use `BaseModel` with typed fields + `Field(default_factory=...)` for mutable defaults
+- Nested configs composed as sub-models (`HPOConfig`, `QualityConfig`, `EmbeddingConfig`)
+- Validation via `@field_validator`, `@model_validator(mode="before"|"after")`
+- Enums as field types for constrained choices (`TaskType`, `CVStrategy`)
+- `@field_serializer` for custom JSON serialization of enums
+- Result/data models use `BaseModel` (e.g., `LeaderboardEntry`, `PromotionResult`, `DriftReport`)
 
-### Protocols vs ABCs
-- Use `typing.Protocol` for structural subtyping (duck typing): `AbstractModel`, `Tracker`
-- Use `abc.ABC` / `@abstractmethod` for inheritance-based extension: `BaseGBDTModel`
-- Models conform to `AbstractModel` Protocol implicitly (no inheritance required)
+### Protocols
+- Use `typing.Protocol` for structural subtyping (e.g., `AbstractModel`, `Tracker`)
+- `TYPE_CHECKING` guard for imports only needed for type annotations
+- `if TYPE_CHECKING: from iter8ml.workspace import Workspace`
 
-### Model Factory Pattern
-- `_MODEL_REGISTRY` dict maps model name strings to `(module_path, class_name)` tuples
-- `get_model_class()` uses `importlib.import_module()` for lazy loading
-- Model classes cached in `_MODEL_CLASS_CACHE` after first import
-- Enum `ModelName` defines canonical names but registry uses string keys
+### Model Wrappers
+- Each model is a plain class conforming to `AbstractModel` Protocol (no inheritance)
+- Constructor accepts `task: str`, model-specific kwargs, and `**kwargs: Any`
+- Internal state prefixed with `_` (`_model`, `_n_classes`, `_value`)
+- `save()`/`load()` for serialization; `model_name` as `@property`
 
-### Hamilton DAG Nodes
-- Each function in `pipelines/nodes/` is a Hamilton node
-- Function parameter names = DAG dependencies (resolved by name)
-- Return value name = node output name
-- `PipelineExecutor` builds driver with `Builder().with_modules(*modules).with_config({...}).build()`
-- `PipelineMode` enum selects which nodes to include (TRAINING, DRIFT, EXPORT, HPO, INFERENCE)
-- Hamilton adapters used for cross-cutting concerns (`TrackingHook`)
+### Plugin Discovery
+- Entry points declared in `pyproject.toml` under `[project.entry-points."iter8ml.models"]`
+- `factory.py` merges built-in registry with `importlib.metadata.entry_points()`
+- Lazy imports: `importlib.import_module()` on first access, cached in `_MODEL_CLASS_CACHE`
 
-### Exception Hierarchy
-- `TabularBlueprintError` is the base exception, accepts `context: dict[str, Any]`
-- Domain-specific subclasses: `DataLoadError`, `ModelFitError`, `RegistryError`
-- `@track_errors()` decorator catches exceptions and re-raises as typed errors with tracker logging
-- Exception chaining with `raise ... from e` throughout
+### CLI
+- Built with `typer` — single `app = typer.Typer()` in `cli/main.py`
+- Subcommands as separate modules importing `from .main import app`
+- Options via `typer.Option(...)` with `--long` / `-s`hort flags
+- Errors reported via `typer.echo()` + `raise typer.Exit(1)`
 
-### Tracker Pattern
-- `Tracker` Protocol defines: `log_metrics`, `log_params`, `log_artifact`, `log_event`, `finish`
-- `JSONLTracker` is default; `WandbTracker` and `MLflowTracker` are optional extras
-- All events are dicts with `"event"` key (e.g., `"experiment_started"`, `"model_completed"`)
-- `JSONLTracker` includes log rotation (size-based, with backup files)
+### Services
+- Service classes take `workspace: Workspace` in `__init__`
+- File locking via `filelock.FileLock` for thread/process safety
+- `classmethod` constructors for alternate construction (`from_workspace()`)
 
-### Lazy Imports
-- Optional heavy dependencies imported inside functions: `import torch`, `import wandb`, `import mlflow`
-- `ImportError` caught and handled gracefully (feature disabled or raised with install instructions)
-- `TYPE_CHECKING` guard for type-only imports
+### Error Handling
+- Hierarchy: `TabularBlueprintError` → `DataLoadError` / `ModelFitError` / `RegistryError`
+- `@track_errors()` decorator catches bare exceptions, logs to tracker, re-raises typed errors
+- `context: dict` parameter on base exception for structured error metadata
 
-### CLI (Typer)
-- Single `app = typer.Typer()` in `cli.py`, entry point registered in `pyproject.toml` as `tabblueprint`
-- Commands are decorated `@app.command()` functions
-- `typer.Option()` for flags with `--long-form` names
-- `typer.Exit(1)` for error exits, `typer.echo()` for output
+### Data Layer
+- Polars (not Pandas) as the DataFrame library throughout
+- `load_data()` dispatches on file suffix (`.csv` → `load_csv`, `.parquet` → `load_parquet`)
+- Config loading dispatches on suffix (`.yaml`, `.toml`, `.json`, `.py`) via `ExperimentConfig.from_file()`
 
-### Thread Safety
-- `FileLock` (from `filelock` package) for process-safe registry operations
-- `threading.Lock` in `JSONLTracker` for thread-safe writes
-- Atomic file writes via `tempfile.mkstemp()` + `os.replace()`
-
-### Type Annotations
-- Modern union syntax: `str | None` (not `Optional[str]`)
-- `from __future__ import annotations` in pipeline nodes
-- `type: ignore[...]` comments for untyped third-party libs
-- `py.typed` marker file included in package
+### Workspace Pattern
+- `Workspace` is a `@dataclass` with `Path` properties for each artifact location
+- `workspace.init()` creates directories and touches files idempotently
+- Env var `ITER8ML_WORKSPACE` overrides default root (`workspace/`)
 
 ## Testing
 
-### Python (pytest)
-- **Runner**: `uv run pytest` from project root
-- **Async**: No async tests (synchronous codebase)
-- **File naming**: `test_<module_name>.py` mirroring source module names (e.g., `test_config.py` tests `config.py`)
-- **Test organization**: Three-tier directory structure:
-  - `tests/unit/` — isolated, fast, no optional deps (46 files)
-  - `tests/integration/` — multi-component, may need optional deps (8 files)
-  - `tests/e2e/` — full workflow smoke tests
-- **Markers**: Auto-applied by `conftest.py:pytest_collection_modifyitems` based on directory:
-  - `unit` — auto-applied to `tests/unit/`
-  - `integration` + `slow` — auto-applied to `tests/integration/`
-  - `e2e` + `slow` — auto-applied to `tests/e2e/`
-  - `smoke` — manually applied with `@pytest.mark.smoke`
-  - Registered in `pyproject.toml` with `--strict-markers`
-- **Fixtures**: Session-scoped for expensive data (`classification_data`, `regression_data`); function-scoped for temp dirs (`tmp_workspace` using `tmp_path`)
-- **Mocking**: `unittest.mock.patch` for environment variables and external deps; no mocking framework
-- **Config**: `pythonpath = ["src"]`, `--import-mode=importlib`
-- **Test data**: Generated via `sklearn.datasets.make_classification` / `make_regression`, wrapped in `polars.DataFrame`
+### Framework & Runner
+- **pytest** with `--strict-markers`, `--import-mode=importlib`
+- **hypothesis** for property-based tests
+- Run via `uv run pytest`
+
+### File Organization
+```
+tests/
+  conftest.py         # Session-scoped fixtures (classification_data, regression_data)
+  strategies.py       # Shared @st.composite generators (dataframes, numpy_arrays, jsonl_events)
+  unit/               # ~57 files, fast isolated tests
+  integration/        # 8 files, multi-component tests, session-scoped conftest
+  e2e/                # Full pipeline smoke tests
+```
+
+### Markers
+Defined in `pyproject.toml`:
+- `unit`, `integration`, `e2e` — test tier
+- `slow` — >1s tests
+- `serial` — cannot run in parallel
+- `network` — needs internet/auth
+- `smoke` — critical path tests
+- `property` — hypothesis property-based tests
+- `metamorphic`, `contract`, `differential` — AI/ML testing strategies
+
+### Auto-marking
+`conftest.py:pytest_collection_modifyitems` auto-adds markers based on directory:
+- `unit/` → `@pytest.mark.unit`
+- `integration/` → `@pytest.mark.integration` + `@pytest.mark.slow`
+- `e2e/` → `@pytest.mark.e2e` + `@pytest.mark.slow`
+
+### Test Patterns
+- Fixtures use `scope="session"` for expensive data generation (`make_classification`, `make_regression`)
+- `tmp_workspace` fixture provides `tmp_path / "workspace"` for isolation
+- Hypothesis strategies in `tests/strategies.py` shared across property tests
+- Tests import from `iter8ml.*` (not relative) due to `pythonpath = ["src"]`
+
+### CI Commands
+```bash
+uv run pytest tests/unit/ -v --tb=short
+uv run pytest tests/integration/ -v --tb=short
+uv run pytest tests/e2e/ -v --tb=short
+uv run pytest tests/unit/ tests/integration/ tests/e2e/ \
+  --cov=src/iter8ml/engine --cov=src/iter8ml/services --cov=src/iter8ml/config.py \
+  --cov-report=xml --cov-report=term-missing --cov-fail-under=70
+```
 
 ## Linting & Formatting
 
-### Python
-- **Ruff** (v0.15.9) — linter + formatter, configured in `pyproject.toml`
-  - `line-length = 100`, `target-version = "py311"`
-  - Rule selection: `E, F, I, UP, B, SIM, C4, PT, RUF`
-  - Auto-fix enabled (`fixable = ["ALL"]`)
-  - Notebooks excluded from linting (`exclude: ^notebooks/`)
-- **mypy** — strict type checking (`disallow_untyped_defs = true` for `src/`)
-  - `tests/`, `benchmarks/`, `notebooks/`, `workspace/` excluded
-  - Missing imports ignored for third-party libs via overrides
-- **pre-commit** — runs ruff (fix + format), mypy, uv-lock, and quarto-render
-  - Notebooks excluded from ruff hooks
+### Ruff
+- `line-length = 100`, `target-version = "py311"`
+- Rule selection: `E, F, I, UP, B, SIM, C4, PT, RUF` (pycodestyle, pyflakes, isort, pyupgrade, flake8-bugbear, simplify, comprehensions, pytest, ruff-specific)
+- All rules fixable (`fixable = ["ALL"]`)
+- CLI commands exempted from `B008` (function-call-in-default-arg)
+- Notebooks exempted from `E402, I001, B018, E501, RUF001, F841`
+
+### mypy
+- `python_version = "3.11"`, `disallow_untyped_defs = true`
+- Excluded: `tests/`, `benchmarks/`, `notebooks/`, `workspace/`
+- `ignore_missing_imports = true` for ML/data libraries (sklearn, polars, torch, optuna, etc.)
+
+### pre-commit hooks
+1. **trailing-whitespace**, **end-of-file-fixer**, **check-yaml**, **check-merge-conflict**, **debug-statements** (pre-commit-hooks)
+2. **check-added-large-files** (max 1024 KB, excludes docs/notebooks)
+3. **ruff-check --fix** + **ruff-format** (excludes notebooks)
+4. **pip-audit** (`uv run pip-audit --skip-editable`)
+5. **mypy** (`uv run mypy .`)
+6. **quarto-render** (renders staged `.qmd` notebooks via `make notebooks-staged`)
 
 ## Build/Dev Commands
 
 ```
-uv sync                        → Install all dependencies from uv.lock
-uv run pytest                  → Run all tests
-uv run pytest tests/unit/      → Run unit tests only
-uv run pytest tests/integration/ → Run integration tests only
-uv run pytest -m smoke         → Run smoke tests only
-uv run pytest -m "not slow"    → Skip slow tests
-uv run ruff check .            → Lint with ruff
-uv run ruff format .           → Format with ruff
-uv run mypy .                  → Type-check
-uv run tabblueprint run --help → CLI help
-uv run tabblueprint run -d data.csv -t target --task classification  → Run experiment
-uv run tabblueprint run --quick -d data.csv -t target  → Quick experiment (2 folds, 20% data)
-uv run tabblueprint hpo -d data.csv -t target -m catboost  → Run HPO
-uv run tabblueprint leaderboard → Show experiment leaderboard
-uv run tabblueprint drift -r ref.csv -n new.csv  → Drift detection
-uv run tabblueprint export experiment:classification  → Export champion model
-uv run tabblueprint hardware   → Show hardware profile
-make notebooks                 → Render all Quarto notebooks
-make docs                      → Build MkDocs site
-pre-commit run --all-files     → Run all pre-commit hooks
+uv sync                          → Install all dependencies (prod + dev)
+uv sync --extra full             → Install with all optional deps (train + docs)
+uv run ruff check .              → Lint with ruff
+uv run ruff format .             → Format with ruff
+uv run mypy .                    → Type-check with mypy
+uv run pytest tests/unit/        → Run unit tests
+uv run pytest tests/             → Run all tests
+uv run pytest -m property        → Run property-based tests only
+uv run pytest -m "not slow"      → Skip slow tests
+pre-commit run --all-files       → Run all pre-commit hooks
+make docs                        → Render notebooks + build MkDocs site
+make check-legacy-namespace      → Verify no legacy namespace imports
+uv run iter8 run -c config.yaml  → Run experiment via CLI
 ```

@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 import polars as pl
 
+from iter8ml.config import PipelineSpec, StepName
 from iter8ml.workspace import Workspace
 
 if TYPE_CHECKING:
@@ -14,17 +15,14 @@ _DIRECT_FIELDS: tuple[str, ...] = (
     "target_col",
     "cv_folds",
     "metrics",
-    "calibration",
     "afe_top_k",
     "afe_lift_threshold",
     "afe_pruning",
     "afe_prune_min_importance",
+    "afe_n_jobs",
+    "afe_max_candidate_pairs",
+    "leakage_n_jobs",
     "random_seed",
-    "run_quality_audit",
-    "auto_clean_noise",
-    "noise_quality_threshold",
-    "target_transform",
-    "target_skewness_threshold",
     "embedding_dim",
     "embedding_max_categories",
     "embedding_epochs",
@@ -34,6 +32,7 @@ _DIRECT_FIELDS: tuple[str, ...] = (
     "embedding_ae_latent_dim",
     "embedding_ae_dropout",
     "model_overrides",
+    "strict_thread_safety",
 )
 
 
@@ -55,10 +54,35 @@ def _get_module(mode: PipelineMode) -> Any:
     return [prep]
 
 
-def _get_training_modules() -> list[Any]:
-    from iter8ml.engine.pipelines.nodes import features, prep, train
+def _get_training_modules(spec: PipelineSpec | None = None) -> list[Any]:
+    from iter8ml.engine.pipelines.nodes import prep, train
 
-    return [prep, features, train]
+    modules = [prep]
+    if spec is None or spec.is_enabled(StepName.FEATURE_ENGINEERING):
+        from iter8ml.engine.pipelines.nodes import features
+
+        modules.append(features)
+    modules.append(train)
+    return modules
+
+
+def _resolve_hamilton_config(config: ExperimentConfig) -> dict[str, Any]:
+    spec = config.pipeline
+    quality_params = spec.step_params(StepName.QUALITY_AUDIT)
+    transform_params = spec.step_params(StepName.TARGET_TRANSFORM)
+    cal_params = spec.step_params(StepName.CALIBRATION)
+    feat_params = spec.step_params(StepName.FEATURE_ENGINEERING)
+    cfg: dict[str, Any] = {
+        "run_quality_audit": spec.is_enabled(StepName.QUALITY_AUDIT),
+        "run_leakage_audit": spec.is_enabled(StepName.LEAKAGE_AUDIT),
+        "target_transform": transform_params.get("method", "none"),
+        "target_skewness_threshold": transform_params.get("skewness_threshold", 1.0),
+        "calibration": cal_params.get("method", "none"),
+        "feature_strategy": feat_params.get("strategy", "none"),
+        "auto_clean_noise": quality_params.get("auto_clean_noise", False),
+        "noise_quality_threshold": quality_params.get("noise_quality_threshold", 0.5),
+    }
+    return cfg
 
 
 _MODE_FINAL_VARS: dict[PipelineMode, list[str]] = {
@@ -84,7 +108,6 @@ def _config_to_inputs(
     df: pl.DataFrame,
     run_id: str,
     vram_gb: float,
-    run_leakage_audit: bool,
     completed_models: set[str] | None = None,
     workspace: Workspace | None = None,
 ) -> dict[str, Any]:
@@ -92,7 +115,6 @@ def _config_to_inputs(
         "df": df,
         "run_id": run_id,
         "vram_gb": vram_gb,
-        "run_leakage_audit": run_leakage_audit,
         "task": config.task.value,
         "config_models": config.models,
         "experiment_name": config.name,
@@ -142,7 +164,32 @@ class PipelineExecutor:
         targets = final_vars or _MODE_FINAL_VARS.get(self._mode, ["processed_dataframe"])
         return self._dr.execute(targets, inputs=inputs, overrides=overrides)  # type: ignore[no-any-return]
 
-    def get_mermaid_graph(self) -> str:
+    def describe_pipeline(self, spec: PipelineSpec) -> list[dict[str, Any]]:
+        return [
+            {
+                "step": s.name.value,
+                "enabled": s.enabled,
+                "params": s.params,
+            }
+            for s in spec.steps
+        ]
+
+    def get_mermaid_graph(self, spec: PipelineSpec | None = None) -> str:
+        if spec is not None:
+            lines = ["graph TD"]
+            for i, s in enumerate(spec.steps):
+                label = s.name.value
+                disabled = not s.enabled
+                if disabled:
+                    label = f"{label} ~disabled~"
+                lines.append(f"    step_{i}[{label}]")
+                if disabled:
+                    lines.append(f"    class step_{i} disabled")
+                if i > 0:
+                    lines.append(f"    step_{i - 1} --> step_{i}")
+            if any(not s.enabled for s in spec.steps):
+                lines.append("    classDef disabled fill:#eee,stroke:#999,color:#999")
+            return "\n".join(lines)
         if self._dr is None:
             return "graph TD\n    A[Raw Data] --> B[Processed Data]"
         result = self._dr.display_all_functions()
@@ -162,17 +209,15 @@ class PipelineExecutor:
         df: pl.DataFrame,
         run_id: str,
         vram_gb: float = 0.0,
-        run_leakage_audit: bool = True,
         completed_models: set[str] | None = None,
         workspace: Workspace | None = None,
     ) -> Any:
         if self._driver_mod is None:
             return None
 
-        modules = _get_training_modules()
-        builder = self._driver_mod.Builder().with_modules(*modules)
-        hamilton_config: dict[str, Any] = {"feature_strategy": config.feature_strategy.value}
-        builder = builder.with_config(hamilton_config)
+        modules = _get_training_modules(config.pipeline)
+        hamilton_config = _resolve_hamilton_config(config)
+        builder = self._driver_mod.Builder().with_modules(*modules).with_config(hamilton_config)
         if self._tracker is not None:
             from iter8ml.engine.pipelines.hooks.tracking_hook import TrackingHook
 
@@ -185,7 +230,6 @@ class PipelineExecutor:
             df,
             run_id,
             vram_gb,
-            run_leakage_audit,
             completed_models=completed_models,
             workspace=workspace,
         )

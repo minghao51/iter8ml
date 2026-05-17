@@ -23,7 +23,7 @@ class XGBoostModel(BaseGBDTModel):
             "objective": objective,
             "eval_metric": eval_metric,
             "verbosity": 0,
-            "seed": self.params.pop("random_seed", 42),
+            "seed": self.params.get("random_seed", 42),
             "tree_method": "hist",
         }
         if objective == "multi:softprob":
