@@ -4,10 +4,12 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import polars as pl
+import pytest
 
 from iter8ml.config import ExperimentConfig
 from iter8ml.constants import TaskType
 from iter8ml.engine.trainer import Trainer
+from iter8ml.exceptions import TrainerStatePublishError
 from iter8ml.workspace import Workspace
 
 
@@ -95,3 +97,74 @@ def test_trainer_emits_ordered_events_with_run_ids(tmp_path):
     assert '"event": "model_failed"' in lines[1]
     assert f'"run_id": "{run_id}"' in lines[0]
     assert f'"run_id": "{run_id}"' in lines[1]
+
+
+def test_trainer_state_publish_failure_raises_typed_error(tmp_path):
+    config = ExperimentConfig(
+        name="state_failure",
+        task=TaskType.CLASSIFICATION,
+        target_col="target",
+        data_path="test.csv",
+    )
+    trainer = Trainer(config=config, workspace=Workspace(root=tmp_path))
+    df = pl.DataFrame({"x": [1.0, 2.0], "target": [0, 1]})
+
+    class FailingStateAdapter:
+        def publish(self) -> str:
+            raise RuntimeError("observer down")
+
+    trainer._state_adapter = FailingStateAdapter()
+
+    def _fake_run_training(self, **kwargs):
+        return SimpleNamespace(results={})
+
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(
+            "iter8ml.engine.pipelines.executor.PipelineExecutor.run_training",
+            _fake_run_training,
+        )
+        with pytest.raises(TrainerStatePublishError) as exc_info:
+            trainer.run(df)
+
+    exc = exc_info.value
+    assert exc.context["adapter"] == "FailingStateAdapter"
+    assert exc.context["original_type"] == "RuntimeError"
+    assert "observer down" in exc.context["original_message"]
+    assert exc.context["run_id"].startswith("exp_")
+
+
+def test_trainer_event_publish_failure_is_best_effort(tmp_path, caplog):
+    config = ExperimentConfig(
+        name="event_best_effort",
+        task=TaskType.CLASSIFICATION,
+        target_col="target",
+        data_path="test.csv",
+    )
+    trainer = Trainer(config=config, workspace=Workspace(root=tmp_path))
+    df = pl.DataFrame({"x": [1.0, 2.0], "target": [0, 1]})
+
+    class FlakyEventAdapter:
+        def publish(self, event):
+            if event.get("event") == "model_completed":
+                raise RuntimeError("sink unavailable")
+
+    class NoopStateAdapter:
+        def publish(self) -> str:
+            return ""
+
+    trainer._event_adapter = FlakyEventAdapter()
+    trainer._state_adapter = NoopStateAdapter()
+
+    def _fake_run_training(self, **kwargs):
+        return SimpleNamespace(results={"catboost": {"model_name": "catboost"}})
+
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(
+            "iter8ml.engine.pipelines.executor.PipelineExecutor.run_training",
+            _fake_run_training,
+        )
+        result = trainer.run(df)
+
+    assert "catboost" in result
+    assert "Trainer event publication failed" in caplog.text
+    assert "adapter=FlakyEventAdapter" in caplog.text

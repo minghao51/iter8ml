@@ -14,6 +14,9 @@ format:
 training, leaderboard, export, registry, drift detection, and state into a
 single object so you can go from raw data to a deployed model in a few lines.
 
+Under the hood, `session.run(...)` uses Trainer's Hamilton DAG execution path.
+Trainer event publication is best-effort, while state publication is required.
+
 This notebook covers:
 
 1. Creating a session and running an experiment

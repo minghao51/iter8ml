@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-05-15">
+<meta name="dcterms.date" content="2026-05-31">
 <meta name="description" content="The simplest way to use iter8ml — one object to configure, run, compare, promote, export, and monitor experiments.">
 
 <title>The iter8ml Session API</title>
@@ -2225,7 +2225,7 @@ vertical-align: -.125em;
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">May 15, 2026</p>
+      <p class="date">May 31, 2026</p>
     </div>
   </div>
   
@@ -2238,6 +2238,7 @@ vertical-align: -.125em;
 
 
 <p><strong><code>ExperimentSession</code></strong> is the recommended entry point for iter8ml. It wraps training, leaderboard, export, registry, drift detection, and state into a single object so you can go from raw data to a deployed model in a few lines.</p>
+<p>Under the hood, <code>session.run(...)</code> uses Trainer’s Hamilton DAG execution path. Trainer event publication is best-effort, while state publication is required.</p>
 <p>This notebook covers:</p>
 <ol type="1">
 <li>Creating a session and running an experiment</li>
@@ -2341,9 +2342,9 @@ vertical-align: -.125em;
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;  </span><span class="sc">{</span>model<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>scores<span class="sc">}</span><span class="ss">&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>  catboost: {&#39;model_name&#39;: &#39;CatBoost&#39;, &#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.9498291623540588, &#39;f1_macro&#39;: 0.8804498036424786, &#39;accuracy&#39;: 0.8805}, &#39;artifact_path&#39;: &#39;workspace/artifacts/catboost_exp_1778808507_a64ae1&#39;, &#39;duration_seconds&#39;: 3.95, &#39;lift_over_baselines&#39;: {&#39;lift_over_naive_baseline&#39;: 0.8997, &#39;lift_over_linear_baseline&#39;: 0.2078}, &#39;params&#39;: {}}
-  lightgbm: {&#39;model_name&#39;: &#39;LightGBM&#39;, &#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.9444290398509964, &#39;f1_macro&#39;: 0.875416848178548, &#39;accuracy&#39;: 0.8755000000000001}, &#39;artifact_path&#39;: &#39;workspace/artifacts/lightgbm_exp_1778808507_a64ae1&#39;, &#39;duration_seconds&#39;: 2.05, &#39;lift_over_baselines&#39;: {&#39;lift_over_naive_baseline&#39;: 0.8889, &#39;lift_over_linear_baseline&#39;: 0.2009}, &#39;params&#39;: {}}
-  xgboost: {&#39;model_name&#39;: &#39;XGBoost&#39;, &#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.9390939629740744, &#39;f1_macro&#39;: 0.8694232578748304, &#39;accuracy&#39;: 0.8695}, &#39;artifact_path&#39;: &#39;workspace/artifacts/xgboost_exp_1778808507_a64ae1&#39;, &#39;duration_seconds&#39;: 0.98, &#39;lift_over_baselines&#39;: {&#39;lift_over_naive_baseline&#39;: 0.8782, &#39;lift_over_linear_baseline&#39;: 0.1941}, &#39;params&#39;: {}}
+<pre><code>  catboost: {&#39;model_name&#39;: &#39;CatBoost&#39;, &#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.9498291623540588, &#39;f1_macro&#39;: 0.8804498036424786, &#39;accuracy&#39;: 0.8805}, &#39;artifact_path&#39;: &#39;workspace/artifacts/catboost_exp_1780156842_21c2fe&#39;, &#39;duration_seconds&#39;: 3.96, &#39;lift_over_baselines&#39;: {&#39;lift_over_naive_baseline&#39;: 0.8997, &#39;lift_over_linear_baseline&#39;: 0.2078}, &#39;params&#39;: {}}
+  lightgbm: {&#39;model_name&#39;: &#39;LightGBM&#39;, &#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.9444290398509964, &#39;f1_macro&#39;: 0.875416848178548, &#39;accuracy&#39;: 0.8755000000000001}, &#39;artifact_path&#39;: &#39;workspace/artifacts/lightgbm_exp_1780156842_21c2fe&#39;, &#39;duration_seconds&#39;: 2.0, &#39;lift_over_baselines&#39;: {&#39;lift_over_naive_baseline&#39;: 0.8889, &#39;lift_over_linear_baseline&#39;: 0.2009}, &#39;params&#39;: {}}
+  xgboost: {&#39;model_name&#39;: &#39;XGBoost&#39;, &#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.9390939629740744, &#39;f1_macro&#39;: 0.8694232578748304, &#39;accuracy&#39;: 0.8695}, &#39;artifact_path&#39;: &#39;workspace/artifacts/xgboost_exp_1780156842_21c2fe&#39;, &#39;duration_seconds&#39;: 0.98, &#39;lift_over_baselines&#39;: {&#39;lift_over_naive_baseline&#39;: 0.8782, &#39;lift_over_linear_baseline&#39;: 0.1941}, &#39;params&#39;: {}}
   naive_baseline: {&#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.5, &#39;f1_macro&#39;: 0.3339988907376594, &#39;accuracy&#39;: 0.5015}, &#39;is_baseline&#39;: True}
   linear_baseline: {&#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.7864417476686917, &#39;f1_macro&#39;: 0.7137206842171452, &#39;accuracy&#39;: 0.714}, &#39;is_baseline&#39;: True}</code></pre>
 </div>
@@ -2358,13 +2359,19 @@ vertical-align: -.125em;
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(lb)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>shape: (38, 7)
+<pre><code>shape: (57, 7)
 ┌──────────┬──────────────┬──────────────┬──────────────┬──────────────┬─────────────┬─────────────┐
 │ model    ┆ run_id       ┆ primary_metr ┆ primary_scor ┆ duration_sec ┆ timestamp   ┆ task        │
 │ ---      ┆ ---          ┆ ic           ┆ e            ┆ onds         ┆ ---         ┆ ---         │
 │ str      ┆ str          ┆ ---          ┆ ---          ┆ ---          ┆ str         ┆ str         │
 │          ┆              ┆ str          ┆ f64          ┆ f64          ┆             ┆             │
 ╞══════════╪══════════════╪══════════════╪══════════════╪══════════════╪═════════════╪═════════════╡
+│ CatBoost ┆ exp_17788263 ┆ roc_auc      ┆ 0.98353      ┆ 4.49         ┆ 2026-05-15T ┆ classificat │
+│          ┆ 33_60a427    ┆              ┆              ┆              ┆ 06:25:41.65 ┆ ion         │
+│          ┆              ┆              ┆              ┆              ┆ 4118+00:…   ┆             │
+│ CatBoost ┆ exp_17788260 ┆ roc_auc      ┆ 0.98353      ┆ 4.47         ┆ 2026-05-15T ┆ classificat │
+│          ┆ 53_7a688c    ┆              ┆              ┆              ┆ 06:21:01.58 ┆ ion         │
+│          ┆              ┆              ┆              ┆              ┆ 4767+00:…   ┆             │
 │ CatBoost ┆ exp_17788083 ┆ roc_auc      ┆ 0.98353      ┆ 4.05         ┆ 2026-05-15T ┆ classificat │
 │          ┆ 62_edb95f    ┆              ┆              ┆              ┆ 01:26:09.53 ┆ ion         │
 │          ┆              ┆              ┆              ┆              ┆ 3901+00:…   ┆             │
@@ -2374,16 +2381,7 @@ vertical-align: -.125em;
 │ CatBoost ┆ exp_17788082 ┆ roc_auc      ┆ 0.98353      ┆ 4.18         ┆ 2026-05-15T ┆ classificat │
 │          ┆ 08_c33bb4    ┆              ┆              ┆              ┆ 01:23:36.34 ┆ ion         │
 │          ┆              ┆              ┆              ┆              ┆ 1630+00:…   ┆             │
-│ CatBoost ┆ exp_17785866 ┆ roc_auc      ┆ 0.98353      ┆ 18.85        ┆ 2026-05-12T ┆ classificat │
-│          ┆ 77_25bb5c    ┆              ┆              ┆              ┆ 11:51:41.79 ┆ ion         │
-│          ┆              ┆              ┆              ┆              ┆ 5476+00:…   ┆             │
-│ CatBoost ┆ exp_17785865 ┆ roc_auc      ┆ 0.98353      ┆ 16.71        ┆ 2026-05-12T ┆ classificat │
-│          ┆ 89_2e8a59    ┆              ┆              ┆              ┆ 11:50:12.63 ┆ ion         │
-│          ┆              ┆              ┆              ┆              ┆ 3189+00:…   ┆             │
 │ …        ┆ …            ┆ …            ┆ …            ┆ …            ┆ …           ┆ …           │
-│ LightGBM ┆ exp_17786798 ┆ roc_auc      ┆ 0.939638     ┆ 1.27         ┆ 2026-05-13T ┆ classificat │
-│          ┆ 88_291cf5    ┆              ┆              ┆              ┆ 13:44:50.49 ┆ ion         │
-│          ┆              ┆              ┆              ┆              ┆ 3288+00:…   ┆             │
 │ XGBoost  ┆ exp_17788085 ┆ roc_auc      ┆ 0.939094     ┆ 0.98         ┆ 2026-05-15T ┆ classificat │
 │          ┆ 07_a64ae1    ┆              ┆              ┆              ┆ 01:28:35.30 ┆ ion         │
 │          ┆              ┆              ┆              ┆              ┆ 2981+00:…   ┆             │
@@ -2393,6 +2391,9 @@ vertical-align: -.125em;
 │ XGBoost  ┆ exp_17786798 ┆ roc_auc      ┆ 0.939094     ┆ 0.97         ┆ 2026-05-13T ┆ classificat │
 │          ┆ 27_86b47c    ┆              ┆              ┆              ┆ 13:43:55.05 ┆ ion         │
 │          ┆              ┆              ┆              ┆              ┆ 5951+00:…   ┆             │
+│ XGBoost  ┆ exp_17788085 ┆ roc_auc      ┆ 0.936497     ┆ 0.61         ┆ 2026-05-15T ┆ classificat │
+│          ┆ 15_80ff6b    ┆              ┆              ┆              ┆ 01:28:37.47 ┆ ion         │
+│          ┆              ┆              ┆              ┆              ┆ 4360+00:…   ┆             │
 │ XGBoost  ┆ exp_17786798 ┆ roc_auc      ┆ 0.936497     ┆ 0.61         ┆ 2026-05-13T ┆ classificat │
 │          ┆ 88_291cf5    ┆              ┆              ┆              ┆ 13:44:50.49 ┆ ion         │
 │          ┆              ┆              ┆              ┆              ┆ 3368+00:…   ┆             │
@@ -2584,38 +2585,38 @@ PSI moderate: 1, severe: 1</code></pre>
 **Task:** Classification
 **Dataset:** unknown
 **Rows / Features:** ? / ?
-**Latest Run ID:** exp_1778808507_a64ae1
+**Latest Run ID:** exp_1780156842_21c2fe
 
 ## Leaderboard
 
 | Rank | Model | Run ID | Primary Metric | Score | Duration |
 |---|---|---|---|---|---|
-| 1 | CatBoost | exp_1778808362_edb95f | roc_auc | 0.9835 | 4.05s |
-| 2 | CatBoost | exp_1778808278_912160 | roc_auc | 0.9835 | 4.17s |
-| 3 | CatBoost | exp_1778808208_c33bb4 | roc_auc | 0.9835 | 4.18s |
-| 4 | CatBoost | exp_1778586677_25bb5c | roc_auc | 0.9835 | 18.85s |
-| 5 | CatBoost | exp_1778586589_2e8a59 | roc_auc | 0.9835 | 16.71s |
-| 6 | CatBoost | exp_1778586475_4d8c61 | roc_auc | 0.9835 | 16.11s |
-| 7 | CatBoost | exp_1777826342_b98a79 | roc_auc | 0.9835 | 5.07s |
-| 8 | CatBoost | exp_1778808199_7cc4d6 | roc_auc | 0.9809 | 2.79s |
-| 9 | LightGBM | exp_1778808362_edb95f | roc_auc | 0.9806 | 1.71s |
-| 10 | LightGBM | exp_1778808278_912160 | roc_auc | 0.9806 | 1.74s |
-| 11 | LightGBM | exp_1778808208_c33bb4 | roc_auc | 0.9806 | 1.74s |
-| 12 | LightGBM | exp_1778586677_25bb5c | roc_auc | 0.9806 | 3.25s |
-| 13 | LightGBM | exp_1778586589_2e8a59 | roc_auc | 0.9806 | 3.77s |
-| 14 | LightGBM | exp_1778586475_4d8c61 | roc_auc | 0.9806 | 4.02s |
-| 15 | LightGBM | exp_1777826342_b98a79 | roc_auc | 0.9806 | 1.86s |
-| 16 | CatBoost | exp_1778679910_f95871 | roc_auc | 0.9792 | 2.45s |
-| 17 | LightGBM | exp_1778808199_7cc4d6 | roc_auc | 0.9774 | 1.11s |
-| 18 | XGBoost | exp_1778808362_edb95f | roc_auc | 0.9767 | 0.86s |
-| 19 | XGBoost | exp_1778808278_912160 | roc_auc | 0.9767 | 0.88s |
-| 20 | XGBoost | exp_1778808208_c33bb4 | roc_auc | 0.9767 | 0.89s |
-| 21 | XGBoost | exp_1778586677_25bb5c | roc_auc | 0.9767 | 1.73s |
-| 22 | XGBoost | exp_1778586589_2e8a59 | roc_auc | 0.9767 | 2.11s |
-| 23 | XGBoost | exp_1778586475_4d8c61 | roc_auc | 0.9767 | 1.84s |
-| 24 | XGBoost | exp_1777826342_b98a79 | roc_auc | 0.9767 | 0.92s |
-| 25 | LightGBM | exp_1778679910_f95871 | roc_auc | 0.9742 | 0.67s |
-| 26 | LightGBM | exp_1778679906_73ee0e |</code></pre>
+| 1 | CatBoost | exp_1778826333_60a427 | roc_auc | 0.9835 | 4.49s |
+| 2 | CatBoost | exp_1778826053_7a688c | roc_auc | 0.9835 | 4.47s |
+| 3 | CatBoost | exp_1778808362_edb95f | roc_auc | 0.9835 | 4.05s |
+| 4 | CatBoost | exp_1778808278_912160 | roc_auc | 0.9835 | 4.17s |
+| 5 | CatBoost | exp_1778808208_c33bb4 | roc_auc | 0.9835 | 4.18s |
+| 6 | CatBoost | exp_1778586677_25bb5c | roc_auc | 0.9835 | 18.85s |
+| 7 | CatBoost | exp_1778586589_2e8a59 | roc_auc | 0.9835 | 16.71s |
+| 8 | CatBoost | exp_1778586475_4d8c61 | roc_auc | 0.9835 | 16.11s |
+| 9 | CatBoost | exp_1777826342_b98a79 | roc_auc | 0.9835 | 5.07s |
+| 10 | CatBoost | exp_1778826322_9c1fb4 | roc_auc | 0.9809 | 3.89s |
+| 11 | CatBoost | exp_1778826043_30794e | roc_auc | 0.9809 | 2.88s |
+| 12 | CatBoost | exp_1778808199_7cc4d6 | roc_auc | 0.9809 | 2.79s |
+| 13 | LightGBM | exp_1778826333_60a427 | roc_auc | 0.9806 | 1.8s |
+| 14 | LightGBM | exp_1778826053_7a688c | roc_auc | 0.9806 | 1.83s |
+| 15 | LightGBM | exp_1778808362_edb95f | roc_auc | 0.9806 | 1.71s |
+| 16 | LightGBM | exp_1778808278_912160 | roc_auc | 0.9806 | 1.74s |
+| 17 | LightGBM | exp_1778808208_c33bb4 | roc_auc | 0.9806 | 1.74s |
+| 18 | LightGBM | exp_1778586677_25bb5c | roc_auc | 0.9806 | 3.25s |
+| 19 | LightGBM | exp_1778586589_2e8a59 | roc_auc | 0.9806 | 3.77s |
+| 20 | LightGBM | exp_1778586475_4d8c61 | roc_auc | 0.9806 | 4.02s |
+| 21 | LightGBM | exp_1777826342_b98a79 | roc_auc | 0.9806 | 1.86s |
+| 22 | CatBoost | exp_1778808528_48419a | roc_auc | 0.9792 | 2.45s |
+| 23 | CatBoost | exp_1778679910_f95871 | roc_auc | 0.9792 | 2.45s |
+| 24 | LightGBM | exp_1778826322_9c1fb4 | roc_auc | 0.9774 | 1.19s |
+| 25 | LightGBM | exp_1778826043_30794e | roc_auc | 0.9774 | 1.18s |
+| 26 | LightGBM | exp_1778808199_7c</code></pre>
 </div>
 </div>
 </section>
@@ -2658,8 +2659,8 @@ Loaded config: yaml_session_demo | task=TaskType.CLASSIFICATION | models=[&#39;l
 <span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;  </span><span class="sc">{</span>model<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>scores<span class="sc">}</span><span class="ss">&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>  lightgbm: {&#39;model_name&#39;: &#39;LightGBM&#39;, &#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.9396383208155635, &#39;f1_macro&#39;: 0.8683879292092902}, &#39;artifact_path&#39;: &#39;workspace/artifacts/lightgbm_exp_1778808515_80ff6b&#39;, &#39;duration_seconds&#39;: 1.3, &#39;lift_over_baselines&#39;: {&#39;lift_over_naive_baseline&#39;: 0.8793, &#39;lift_over_linear_baseline&#39;: 0.1945}, &#39;params&#39;: {}}
-  xgboost: {&#39;model_name&#39;: &#39;XGBoost&#39;, &#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.9364968245776312, &#39;f1_macro&#39;: 0.8624632431747635}, &#39;artifact_path&#39;: &#39;workspace/artifacts/xgboost_exp_1778808515_80ff6b&#39;, &#39;duration_seconds&#39;: 0.61, &#39;lift_over_baselines&#39;: {&#39;lift_over_naive_baseline&#39;: 0.873, &#39;lift_over_linear_baseline&#39;: 0.1906}, &#39;params&#39;: {}}
+<pre><code>  lightgbm: {&#39;model_name&#39;: &#39;LightGBM&#39;, &#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.9396383208155635, &#39;f1_macro&#39;: 0.8683879292092902}, &#39;artifact_path&#39;: &#39;workspace/artifacts/lightgbm_exp_1780156850_bb02fa&#39;, &#39;duration_seconds&#39;: 1.28, &#39;lift_over_baselines&#39;: {&#39;lift_over_naive_baseline&#39;: 0.8793, &#39;lift_over_linear_baseline&#39;: 0.1945}, &#39;params&#39;: {}}
+  xgboost: {&#39;model_name&#39;: &#39;XGBoost&#39;, &#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.9364968245776312, &#39;f1_macro&#39;: 0.8624632431747635}, &#39;artifact_path&#39;: &#39;workspace/artifacts/xgboost_exp_1780156850_bb02fa&#39;, &#39;duration_seconds&#39;: 0.61, &#39;lift_over_baselines&#39;: {&#39;lift_over_naive_baseline&#39;: 0.873, &#39;lift_over_linear_baseline&#39;: 0.1906}, &#39;params&#39;: {}}
   naive_baseline: {&#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.5, &#39;f1_macro&#39;: 0.3339992236638944}, &#39;is_baseline&#39;: True}
   linear_baseline: {&#39;cv_scores&#39;: {&#39;roc_auc&#39;: 0.7866064255626886, &#39;f1_macro&#39;: 0.7141094496449072}, &#39;is_baseline&#39;: True}</code></pre>
 </div>
@@ -3190,304 +3191,307 @@ Loaded config: yaml_session_demo | task=TaskType.CLASSIFICATION | models=[&#39;l
 <span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>training, leaderboard, export, registry, drift detection, and state into a</span>
 <span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a>single object so you can go from raw data to a deployed model in a few lines.</span>
 <span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a>This notebook covers:</span>
-<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Creating a session and running an experiment</span>
-<span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>Inspecting the leaderboard</span>
-<span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>Promoting the best run to champion</span>
-<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>Exporting the champion model</span>
-<span id="cb26-23"><a href="#cb26-23" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>Running a drift check</span>
-<span id="cb26-24"><a href="#cb26-24" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>Generating experiment state</span>
-<span id="cb26-25"><a href="#cb26-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-26"><a href="#cb26-26" aria-hidden="true" tabindex="-1"></a><span class="fu">## 1. Generate Synthetic Data</span></span>
-<span id="cb26-27"><a href="#cb26-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-30"><a href="#cb26-30" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb26-31"><a href="#cb26-31" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: generate-data</span></span>
-<span id="cb26-32"><a href="#cb26-32" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
-<span id="cb26-33"><a href="#cb26-33" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
-<span id="cb26-34"><a href="#cb26-34" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb26-35"><a href="#cb26-35" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
-<span id="cb26-36"><a href="#cb26-36" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.datasets <span class="im">import</span> make_classification</span>
-<span id="cb26-37"><a href="#cb26-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-38"><a href="#cb26-38" aria-hidden="true" tabindex="-1"></a>X, y <span class="op">=</span> make_classification(</span>
-<span id="cb26-39"><a href="#cb26-39" aria-hidden="true" tabindex="-1"></a>    n_samples<span class="op">=</span><span class="dv">2000</span>,</span>
-<span id="cb26-40"><a href="#cb26-40" aria-hidden="true" tabindex="-1"></a>    n_features<span class="op">=</span><span class="dv">15</span>,</span>
-<span id="cb26-41"><a href="#cb26-41" aria-hidden="true" tabindex="-1"></a>    n_informative<span class="op">=</span><span class="dv">8</span>,</span>
-<span id="cb26-42"><a href="#cb26-42" aria-hidden="true" tabindex="-1"></a>    n_redundant<span class="op">=</span><span class="dv">2</span>,</span>
-<span id="cb26-43"><a href="#cb26-43" aria-hidden="true" tabindex="-1"></a>    random_state<span class="op">=</span><span class="dv">42</span>,</span>
-<span id="cb26-44"><a href="#cb26-44" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb26-45"><a href="#cb26-45" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pl.DataFrame({<span class="ss">f&quot;feat_</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span>: X[:, i] <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(X.shape[<span class="dv">1</span>])})</span>
-<span id="cb26-46"><a href="#cb26-46" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df.with_columns(target<span class="op">=</span>pl.Series(y))</span>
-<span id="cb26-47"><a href="#cb26-47" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Dataset: </span><span class="sc">{</span>df<span class="sc">.</span>shape[<span class="dv">0</span>]<span class="sc">}</span><span class="ss"> rows x </span><span class="sc">{</span>df<span class="sc">.</span>shape[<span class="dv">1</span>]<span class="sc">}</span><span class="ss"> columns  |  Positive rate: </span><span class="sc">{</span>df[<span class="st">&#39;target&#39;</span>]<span class="sc">.</span>mean()<span class="sc">:.2%}</span><span class="ss">&quot;</span>)</span>
-<span id="cb26-48"><a href="#cb26-48" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb26-49"><a href="#cb26-49" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-52"><a href="#cb26-52" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb26-53"><a href="#cb26-53" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: data-overview</span></span>
-<span id="cb26-54"><a href="#cb26-54" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: &quot;Class distribution and feature summary&quot;</span></span>
-<span id="cb26-55"><a href="#cb26-55" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-width: 8</span></span>
-<span id="cb26-56"><a href="#cb26-56" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-height: 3.5</span></span>
-<span id="cb26-57"><a href="#cb26-57" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="fl">3.5</span>))</span>
-<span id="cb26-58"><a href="#cb26-58" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-59"><a href="#cb26-59" aria-hidden="true" tabindex="-1"></a>counts <span class="op">=</span> np.bincount(y)</span>
-<span id="cb26-60"><a href="#cb26-60" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].bar([<span class="st">&quot;Class 0&quot;</span>, <span class="st">&quot;Class 1&quot;</span>], counts, color<span class="op">=</span>[<span class="st">&quot;#4C72B0&quot;</span>, <span class="st">&quot;#DD8452&quot;</span>])</span>
-<span id="cb26-61"><a href="#cb26-61" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_title(<span class="st">&quot;Class Distribution&quot;</span>)</span>
-<span id="cb26-62"><a href="#cb26-62" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_ylabel(<span class="st">&quot;Count&quot;</span>)</span>
-<span id="cb26-63"><a href="#cb26-63" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, c <span class="kw">in</span> <span class="bu">enumerate</span>(counts):</span>
-<span id="cb26-64"><a href="#cb26-64" aria-hidden="true" tabindex="-1"></a>    axes[<span class="dv">0</span>].text(i, c <span class="op">+</span> <span class="dv">15</span>, <span class="bu">str</span>(c), ha<span class="op">=</span><span class="st">&quot;center&quot;</span>, fontsize<span class="op">=</span><span class="dv">10</span>)</span>
-<span id="cb26-65"><a href="#cb26-65" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-66"><a href="#cb26-66" aria-hidden="true" tabindex="-1"></a>corrs <span class="op">=</span> np.corrcoef(X, y.reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>), rowvar<span class="op">=</span><span class="va">False</span>)[<span class="op">-</span><span class="dv">1</span>, :<span class="op">-</span><span class="dv">1</span>]</span>
-<span id="cb26-67"><a href="#cb26-67" aria-hidden="true" tabindex="-1"></a>top_idx <span class="op">=</span> np.argsort(np.<span class="bu">abs</span>(corrs))[::<span class="op">-</span><span class="dv">1</span>][:<span class="dv">8</span>]</span>
-<span id="cb26-68"><a href="#cb26-68" aria-hidden="true" tabindex="-1"></a>colors <span class="op">=</span> [<span class="st">&quot;#C44E52&quot;</span> <span class="cf">if</span> corrs[i] <span class="op">&lt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="st">&quot;#55A868&quot;</span> <span class="cf">for</span> i <span class="kw">in</span> top_idx]</span>
-<span id="cb26-69"><a href="#cb26-69" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].barh([<span class="ss">f&quot;feat_</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span> <span class="cf">for</span> i <span class="kw">in</span> top_idx], corrs[top_idx], color<span class="op">=</span>colors)</span>
-<span id="cb26-70"><a href="#cb26-70" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_title(<span class="st">&quot;Top Feature Correlations with Target&quot;</span>)</span>
-<span id="cb26-71"><a href="#cb26-71" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_xlabel(<span class="st">&quot;Pearson Correlation&quot;</span>)</span>
-<span id="cb26-72"><a href="#cb26-72" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].axvline(<span class="dv">0</span>, color<span class="op">=</span><span class="st">&quot;gray&quot;</span>, linewidth<span class="op">=</span><span class="fl">0.5</span>)</span>
-<span id="cb26-73"><a href="#cb26-73" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].invert_yaxis()</span>
-<span id="cb26-74"><a href="#cb26-74" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-75"><a href="#cb26-75" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
-<span id="cb26-76"><a href="#cb26-76" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
-<span id="cb26-77"><a href="#cb26-77" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb26-78"><a href="#cb26-78" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-79"><a href="#cb26-79" aria-hidden="true" tabindex="-1"></a><span class="fu">## 2. Configure &amp; Run with ExperimentSession</span></span>
-<span id="cb26-80"><a href="#cb26-80" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-83"><a href="#cb26-83" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb26-84"><a href="#cb26-84" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: create-session</span></span>
-<span id="cb26-85"><a href="#cb26-85" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.config <span class="im">import</span> ExperimentConfig</span>
-<span id="cb26-86"><a href="#cb26-86" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.session <span class="im">import</span> ExperimentSession</span>
-<span id="cb26-87"><a href="#cb26-87" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-88"><a href="#cb26-88" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> ExperimentConfig(</span>
-<span id="cb26-89"><a href="#cb26-89" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">&quot;session_demo&quot;</span>,</span>
-<span id="cb26-90"><a href="#cb26-90" aria-hidden="true" tabindex="-1"></a>    task<span class="op">=</span><span class="st">&quot;classification&quot;</span>,</span>
-<span id="cb26-91"><a href="#cb26-91" aria-hidden="true" tabindex="-1"></a>    target_col<span class="op">=</span><span class="st">&quot;target&quot;</span>,</span>
-<span id="cb26-92"><a href="#cb26-92" aria-hidden="true" tabindex="-1"></a>    data_path<span class="op">=</span><span class="st">&quot;&quot;</span>,</span>
-<span id="cb26-93"><a href="#cb26-93" aria-hidden="true" tabindex="-1"></a>    models<span class="op">=</span>[<span class="st">&quot;catboost&quot;</span>, <span class="st">&quot;lightgbm&quot;</span>, <span class="st">&quot;xgboost&quot;</span>],</span>
-<span id="cb26-94"><a href="#cb26-94" aria-hidden="true" tabindex="-1"></a>    cv_folds<span class="op">=</span><span class="dv">5</span>,</span>
-<span id="cb26-95"><a href="#cb26-95" aria-hidden="true" tabindex="-1"></a>    metrics<span class="op">=</span>[<span class="st">&quot;roc_auc&quot;</span>, <span class="st">&quot;f1_macro&quot;</span>, <span class="st">&quot;accuracy&quot;</span>],</span>
-<span id="cb26-96"><a href="#cb26-96" aria-hidden="true" tabindex="-1"></a>    shap_enabled<span class="op">=</span><span class="va">True</span>,</span>
-<span id="cb26-97"><a href="#cb26-97" aria-hidden="true" tabindex="-1"></a>    max_workers<span class="op">=</span><span class="dv">2</span>,</span>
-<span id="cb26-98"><a href="#cb26-98" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb26-99"><a href="#cb26-99" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-100"><a href="#cb26-100" aria-hidden="true" tabindex="-1"></a>session <span class="op">=</span> ExperimentSession()</span>
-<span id="cb26-101"><a href="#cb26-101" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Session workspace: </span><span class="sc">{</span>session<span class="sc">.</span>workspace<span class="sc">.</span>root<span class="sc">}</span><span class="ss">&quot;</span>)</span>
-<span id="cb26-102"><a href="#cb26-102" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb26-103"><a href="#cb26-103" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-106"><a href="#cb26-106" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb26-107"><a href="#cb26-107" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: run-experiment</span></span>
-<span id="cb26-108"><a href="#cb26-108" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
-<span id="cb26-109"><a href="#cb26-109" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> session.run(config, df)</span>
-<span id="cb26-110"><a href="#cb26-110" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> model, scores <span class="kw">in</span> results.items():</span>
-<span id="cb26-111"><a href="#cb26-111" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;  </span><span class="sc">{</span>model<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>scores<span class="sc">}</span><span class="ss">&quot;</span>)</span>
-<span id="cb26-112"><a href="#cb26-112" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb26-113"><a href="#cb26-113" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-114"><a href="#cb26-114" aria-hidden="true" tabindex="-1"></a><span class="fu">## 3. Inspect the Leaderboard</span></span>
-<span id="cb26-115"><a href="#cb26-115" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-118"><a href="#cb26-118" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb26-119"><a href="#cb26-119" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: leaderboard</span></span>
-<span id="cb26-120"><a href="#cb26-120" aria-hidden="true" tabindex="-1"></a>lb <span class="op">=</span> session.leaderboard()</span>
-<span id="cb26-121"><a href="#cb26-121" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(lb)</span>
-<span id="cb26-122"><a href="#cb26-122" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb26-123"><a href="#cb26-123" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-126"><a href="#cb26-126" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb26-127"><a href="#cb26-127" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: leaderboard-chart</span></span>
-<span id="cb26-128"><a href="#cb26-128" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: &quot;Session leaderboard — cross-validated scores per model&quot;</span></span>
-<span id="cb26-129"><a href="#cb26-129" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-width: 9</span></span>
-<span id="cb26-130"><a href="#cb26-130" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-height: 5</span></span>
-<span id="cb26-131"><a href="#cb26-131" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.utils.io <span class="im">import</span> iter_events</span>
-<span id="cb26-132"><a href="#cb26-132" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-133"><a href="#cb26-133" aria-hidden="true" tabindex="-1"></a>model_scores <span class="op">=</span> {}</span>
-<span id="cb26-134"><a href="#cb26-134" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ev <span class="kw">in</span> iter_events(<span class="bu">str</span>(session.workspace.experiments_path)):</span>
-<span id="cb26-135"><a href="#cb26-135" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> ev.get(<span class="st">&quot;event&quot;</span>) <span class="op">==</span> <span class="st">&quot;model_completed&quot;</span>:</span>
-<span id="cb26-136"><a href="#cb26-136" aria-hidden="true" tabindex="-1"></a>        name <span class="op">=</span> ev.get(<span class="st">&quot;model&quot;</span>, <span class="st">&quot;unknown&quot;</span>)</span>
-<span id="cb26-137"><a href="#cb26-137" aria-hidden="true" tabindex="-1"></a>        scores <span class="op">=</span> ev.get(<span class="st">&quot;cv_scores&quot;</span>, {})</span>
-<span id="cb26-138"><a href="#cb26-138" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> scores:</span>
-<span id="cb26-139"><a href="#cb26-139" aria-hidden="true" tabindex="-1"></a>            model_scores[name] <span class="op">=</span> scores</span>
-<span id="cb26-140"><a href="#cb26-140" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-141"><a href="#cb26-141" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> model_scores:</span>
-<span id="cb26-142"><a href="#cb26-142" aria-hidden="true" tabindex="-1"></a>    model_scores <span class="op">=</span> {</span>
-<span id="cb26-143"><a href="#cb26-143" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;catboost&quot;</span>: {<span class="st">&quot;roc_auc&quot;</span>: <span class="fl">0.95</span>, <span class="st">&quot;f1_macro&quot;</span>: <span class="fl">0.90</span>, <span class="st">&quot;accuracy&quot;</span>: <span class="fl">0.91</span>},</span>
-<span id="cb26-144"><a href="#cb26-144" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;lightgbm&quot;</span>: {<span class="st">&quot;roc_auc&quot;</span>: <span class="fl">0.94</span>, <span class="st">&quot;f1_macro&quot;</span>: <span class="fl">0.89</span>, <span class="st">&quot;accuracy&quot;</span>: <span class="fl">0.90</span>},</span>
-<span id="cb26-145"><a href="#cb26-145" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;xgboost&quot;</span>:  {<span class="st">&quot;roc_auc&quot;</span>: <span class="fl">0.93</span>, <span class="st">&quot;f1_macro&quot;</span>: <span class="fl">0.88</span>, <span class="st">&quot;accuracy&quot;</span>: <span class="fl">0.89</span>},</span>
-<span id="cb26-146"><a href="#cb26-146" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb26-147"><a href="#cb26-147" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-148"><a href="#cb26-148" aria-hidden="true" tabindex="-1"></a>models <span class="op">=</span> <span class="bu">list</span>(model_scores.keys())</span>
-<span id="cb26-149"><a href="#cb26-149" aria-hidden="true" tabindex="-1"></a>metrics <span class="op">=</span> [<span class="st">&quot;roc_auc&quot;</span>, <span class="st">&quot;f1_macro&quot;</span>, <span class="st">&quot;accuracy&quot;</span>]</span>
-<span id="cb26-150"><a href="#cb26-150" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> np.arange(<span class="bu">len</span>(models))</span>
-<span id="cb26-151"><a href="#cb26-151" aria-hidden="true" tabindex="-1"></a>width <span class="op">=</span> <span class="fl">0.25</span></span>
-<span id="cb26-152"><a href="#cb26-152" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-153"><a href="#cb26-153" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">9</span>, <span class="dv">5</span>))</span>
-<span id="cb26-154"><a href="#cb26-154" aria-hidden="true" tabindex="-1"></a>palette <span class="op">=</span> [<span class="st">&quot;#4C72B0&quot;</span>, <span class="st">&quot;#55A868&quot;</span>, <span class="st">&quot;#C44E52&quot;</span>]</span>
-<span id="cb26-155"><a href="#cb26-155" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, metric <span class="kw">in</span> <span class="bu">enumerate</span>(metrics):</span>
-<span id="cb26-156"><a href="#cb26-156" aria-hidden="true" tabindex="-1"></a>    vals <span class="op">=</span> [model_scores[m].get(metric, <span class="dv">0</span>) <span class="cf">for</span> m <span class="kw">in</span> models]</span>
-<span id="cb26-157"><a href="#cb26-157" aria-hidden="true" tabindex="-1"></a>    bars <span class="op">=</span> ax.bar(x <span class="op">+</span> i <span class="op">*</span> width, vals, width, label<span class="op">=</span>metric.upper(), color<span class="op">=</span>palette[i])</span>
-<span id="cb26-158"><a href="#cb26-158" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> bar, v <span class="kw">in</span> <span class="bu">zip</span>(bars, vals):</span>
-<span id="cb26-159"><a href="#cb26-159" aria-hidden="true" tabindex="-1"></a>        ax.text(bar.get_x() <span class="op">+</span> bar.get_width() <span class="op">/</span> <span class="dv">2</span>, bar.get_height() <span class="op">+</span> <span class="fl">0.002</span>,</span>
-<span id="cb26-160"><a href="#cb26-160" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f&quot;</span><span class="sc">{</span>v<span class="sc">:.3f}</span><span class="ss">&quot;</span>, ha<span class="op">=</span><span class="st">&quot;center&quot;</span>, va<span class="op">=</span><span class="st">&quot;bottom&quot;</span>, fontsize<span class="op">=</span><span class="dv">8</span>)</span>
-<span id="cb26-161"><a href="#cb26-161" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-162"><a href="#cb26-162" aria-hidden="true" tabindex="-1"></a>ax.set_xticks(x <span class="op">+</span> width)</span>
-<span id="cb26-163"><a href="#cb26-163" aria-hidden="true" tabindex="-1"></a>ax.set_xticklabels(models)</span>
-<span id="cb26-164"><a href="#cb26-164" aria-hidden="true" tabindex="-1"></a>ax.set_ylim(<span class="fl">0.8</span>, <span class="fl">1.0</span>)</span>
-<span id="cb26-165"><a href="#cb26-165" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">&quot;Score&quot;</span>)</span>
-<span id="cb26-166"><a href="#cb26-166" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">&quot;Session Leaderboard&quot;</span>)</span>
-<span id="cb26-167"><a href="#cb26-167" aria-hidden="true" tabindex="-1"></a>ax.legend(loc<span class="op">=</span><span class="st">&quot;lower right&quot;</span>)</span>
-<span id="cb26-168"><a href="#cb26-168" aria-hidden="true" tabindex="-1"></a>ax.grid(axis<span class="op">=</span><span class="st">&quot;y&quot;</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
-<span id="cb26-169"><a href="#cb26-169" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
-<span id="cb26-170"><a href="#cb26-170" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
-<span id="cb26-171"><a href="#cb26-171" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb26-172"><a href="#cb26-172" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-173"><a href="#cb26-173" aria-hidden="true" tabindex="-1"></a><span class="fu">## 4. Promote the Best Run</span></span>
-<span id="cb26-174"><a href="#cb26-174" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-177"><a href="#cb26-177" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb26-178"><a href="#cb26-178" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: promote-best</span></span>
-<span id="cb26-179"><a href="#cb26-179" aria-hidden="true" tabindex="-1"></a><span class="co">#| error: true</span></span>
-<span id="cb26-180"><a href="#cb26-180" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
-<span id="cb26-181"><a href="#cb26-181" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-182"><a href="#cb26-182" aria-hidden="true" tabindex="-1"></a>registry_path <span class="op">=</span> session.workspace.registry_path</span>
-<span id="cb26-183"><a href="#cb26-183" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> registry_path.exists():</span>
-<span id="cb26-184"><a href="#cb26-184" aria-hidden="true" tabindex="-1"></a>    registry <span class="op">=</span> json.loads(registry_path.read_text())</span>
-<span id="cb26-185"><a href="#cb26-185" aria-hidden="true" tabindex="-1"></a>    best_run_id <span class="op">=</span> <span class="va">None</span></span>
-<span id="cb26-186"><a href="#cb26-186" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> key, entry <span class="kw">in</span> registry.items():</span>
-<span id="cb26-187"><a href="#cb26-187" aria-hidden="true" tabindex="-1"></a>        best_run_id <span class="op">=</span> entry.get(<span class="st">&quot;run_id&quot;</span>)</span>
-<span id="cb26-188"><a href="#cb26-188" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f&quot;Current champion: </span><span class="sc">{</span>key<span class="sc">}</span><span class="ss"> -&gt; </span><span class="sc">{</span>entry<span class="sc">.</span>get(<span class="st">&#39;model&#39;</span>)<span class="sc">}</span><span class="ss"> (score: </span><span class="sc">{</span>entry<span class="sc">.</span>get(<span class="st">&#39;score&#39;</span>)<span class="sc">}</span><span class="ss">)&quot;</span>)</span>
-<span id="cb26-189"><a href="#cb26-189" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
-<span id="cb26-190"><a href="#cb26-190" aria-hidden="true" tabindex="-1"></a>    events <span class="op">=</span> <span class="bu">list</span>(iter_events(<span class="bu">str</span>(session.workspace.experiments_path)))</span>
-<span id="cb26-191"><a href="#cb26-191" aria-hidden="true" tabindex="-1"></a>    completed <span class="op">=</span> [e <span class="cf">for</span> e <span class="kw">in</span> events <span class="cf">if</span> e.get(<span class="st">&quot;event&quot;</span>) <span class="op">==</span> <span class="st">&quot;model_completed&quot;</span>]</span>
-<span id="cb26-192"><a href="#cb26-192" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> completed:</span>
-<span id="cb26-193"><a href="#cb26-193" aria-hidden="true" tabindex="-1"></a>        best <span class="op">=</span> <span class="bu">max</span>(completed, key<span class="op">=</span><span class="kw">lambda</span> e: <span class="bu">max</span>(e.get(<span class="st">&quot;cv_scores&quot;</span>, {}).values()))</span>
-<span id="cb26-194"><a href="#cb26-194" aria-hidden="true" tabindex="-1"></a>        best_run_id <span class="op">=</span> best.get(<span class="st">&quot;run_id&quot;</span>)</span>
-<span id="cb26-195"><a href="#cb26-195" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
-<span id="cb26-196"><a href="#cb26-196" aria-hidden="true" tabindex="-1"></a>        best_run_id <span class="op">=</span> <span class="va">None</span></span>
-<span id="cb26-197"><a href="#cb26-197" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-198"><a href="#cb26-198" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> best_run_id:</span>
-<span id="cb26-199"><a href="#cb26-199" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> session.promote(best_run_id, <span class="st">&quot;session_demo:classification&quot;</span>)</span>
-<span id="cb26-200"><a href="#cb26-200" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;</span><span class="ch">\n</span><span class="ss">Promotion result: </span><span class="sc">{</span>result<span class="sc">.</span>status<span class="sc">}</span><span class="ss">&quot;</span>)</span>
-<span id="cb26-201"><a href="#cb26-201" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;  </span><span class="sc">{</span>result<span class="sc">.</span>message<span class="sc">}</span><span class="ss">&quot;</span>)</span>
-<span id="cb26-202"><a href="#cb26-202" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
-<span id="cb26-203"><a href="#cb26-203" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;No runs found to promote.&quot;</span>)</span>
-<span id="cb26-204"><a href="#cb26-204" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb26-205"><a href="#cb26-205" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-206"><a href="#cb26-206" aria-hidden="true" tabindex="-1"></a><span class="fu">## 5. Export the Champion Model</span></span>
-<span id="cb26-207"><a href="#cb26-207" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-210"><a href="#cb26-210" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb26-211"><a href="#cb26-211" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: export-champion</span></span>
-<span id="cb26-212"><a href="#cb26-212" aria-hidden="true" tabindex="-1"></a><span class="co">#| error: true</span></span>
-<span id="cb26-213"><a href="#cb26-213" aria-hidden="true" tabindex="-1"></a>export_path <span class="op">=</span> session.export(<span class="st">&quot;session_demo:classification&quot;</span>)</span>
-<span id="cb26-214"><a href="#cb26-214" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Champion model exported to: </span><span class="sc">{</span>export_path<span class="sc">}</span><span class="ss">&quot;</span>)</span>
-<span id="cb26-215"><a href="#cb26-215" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb26-216"><a href="#cb26-216" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-217"><a href="#cb26-217" aria-hidden="true" tabindex="-1"></a><span class="fu">## 6. Drift Check</span></span>
-<span id="cb26-218"><a href="#cb26-218" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-221"><a href="#cb26-221" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb26-222"><a href="#cb26-222" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: drift-check</span></span>
-<span id="cb26-223"><a href="#cb26-223" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
-<span id="cb26-224"><a href="#cb26-224" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">99</span>)</span>
-<span id="cb26-225"><a href="#cb26-225" aria-hidden="true" tabindex="-1"></a>X_live <span class="op">=</span> X[:<span class="dv">500</span>].copy()</span>
-<span id="cb26-226"><a href="#cb26-226" aria-hidden="true" tabindex="-1"></a>X_live[:, <span class="dv">0</span>] <span class="op">+=</span> <span class="fl">1.2</span></span>
-<span id="cb26-227"><a href="#cb26-227" aria-hidden="true" tabindex="-1"></a>X_live[:, <span class="dv">5</span>] <span class="op">*=</span> <span class="fl">1.5</span></span>
-<span id="cb26-228"><a href="#cb26-228" aria-hidden="true" tabindex="-1"></a>df_live <span class="op">=</span> pl.DataFrame({<span class="ss">f&quot;feat_</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span>: X_live[:, i] <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(X_live.shape[<span class="dv">1</span>])})</span>
-<span id="cb26-229"><a href="#cb26-229" aria-hidden="true" tabindex="-1"></a>df_live <span class="op">=</span> df_live.with_columns(target<span class="op">=</span>pl.Series(y[:<span class="dv">500</span>]))</span>
-<span id="cb26-230"><a href="#cb26-230" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-231"><a href="#cb26-231" aria-hidden="true" tabindex="-1"></a>drift_result <span class="op">=</span> session.drift_check(df, df_live, method<span class="op">=</span><span class="st">&quot;psi&quot;</span>)</span>
-<span id="cb26-232"><a href="#cb26-232" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">hasattr</span>(drift_result, <span class="st">&quot;drift_detected&quot;</span>):</span>
-<span id="cb26-233"><a href="#cb26-233" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;Drift detected: </span><span class="sc">{</span>drift_result<span class="sc">.</span>drift_detected<span class="sc">}</span><span class="ss">&quot;</span>)</span>
-<span id="cb26-234"><a href="#cb26-234" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> drift_result.psi_report <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
-<span id="cb26-235"><a href="#cb26-235" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f&quot;PSI moderate: </span><span class="sc">{</span>drift_result<span class="sc">.</span>psi_report<span class="sc">.</span>n_moderate<span class="sc">}</span><span class="ss">, severe: </span><span class="sc">{</span>drift_result<span class="sc">.</span>psi_report<span class="sc">.</span>n_severe<span class="sc">}</span><span class="ss">&quot;</span>)</span>
-<span id="cb26-236"><a href="#cb26-236" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
-<span id="cb26-237"><a href="#cb26-237" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;Drift result: </span><span class="sc">{</span>drift_result<span class="sc">}</span><span class="ss">&quot;</span>)</span>
-<span id="cb26-238"><a href="#cb26-238" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb26-239"><a href="#cb26-239" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-242"><a href="#cb26-242" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb26-243"><a href="#cb26-243" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: drift-chart</span></span>
-<span id="cb26-244"><a href="#cb26-244" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: &quot;PSI drift values for each feature between reference and live data&quot;</span></span>
-<span id="cb26-245"><a href="#cb26-245" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-width: 8</span></span>
-<span id="cb26-246"><a href="#cb26-246" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-height: 4</span></span>
-<span id="cb26-247"><a href="#cb26-247" aria-hidden="true" tabindex="-1"></a>psi_feats <span class="op">=</span> []</span>
-<span id="cb26-248"><a href="#cb26-248" aria-hidden="true" tabindex="-1"></a>psi_vals <span class="op">=</span> []</span>
-<span id="cb26-249"><a href="#cb26-249" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">hasattr</span>(drift_result, <span class="st">&quot;psi_report&quot;</span>) <span class="kw">and</span> drift_result.psi_report <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
-<span id="cb26-250"><a href="#cb26-250" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> fp <span class="kw">in</span> drift_result.psi_report.feature_psi:</span>
-<span id="cb26-251"><a href="#cb26-251" aria-hidden="true" tabindex="-1"></a>        psi_feats.append(fp.feature)</span>
-<span id="cb26-252"><a href="#cb26-252" aria-hidden="true" tabindex="-1"></a>        psi_vals.append(fp.psi_value)</span>
-<span id="cb26-253"><a href="#cb26-253" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-254"><a href="#cb26-254" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> psi_feats:</span>
-<span id="cb26-255"><a href="#cb26-255" aria-hidden="true" tabindex="-1"></a>    psi_feats <span class="op">=</span> [<span class="ss">f&quot;feat_</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(X.shape[<span class="dv">1</span>])]</span>
-<span id="cb26-256"><a href="#cb26-256" aria-hidden="true" tabindex="-1"></a>    psi_vals <span class="op">=</span> [<span class="fl">0.05</span>] <span class="op">*</span> X.shape[<span class="dv">1</span>]</span>
-<span id="cb26-257"><a href="#cb26-257" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-258"><a href="#cb26-258" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">4</span>))</span>
-<span id="cb26-259"><a href="#cb26-259" aria-hidden="true" tabindex="-1"></a>bar_colors <span class="op">=</span> [<span class="st">&quot;#C44E52&quot;</span> <span class="cf">if</span> v <span class="op">&gt;</span> <span class="fl">0.25</span> <span class="cf">else</span> <span class="st">&quot;#DD8452&quot;</span> <span class="cf">if</span> v <span class="op">&gt;</span> <span class="fl">0.1</span> <span class="cf">else</span> <span class="st">&quot;#55A868&quot;</span> <span class="cf">for</span> v <span class="kw">in</span> psi_vals]</span>
-<span id="cb26-260"><a href="#cb26-260" aria-hidden="true" tabindex="-1"></a>ax.barh(psi_feats, psi_vals, color<span class="op">=</span>bar_colors)</span>
-<span id="cb26-261"><a href="#cb26-261" aria-hidden="true" tabindex="-1"></a>ax.axvline(<span class="fl">0.1</span>, color<span class="op">=</span><span class="st">&quot;#DD8452&quot;</span>, linestyle<span class="op">=</span><span class="st">&quot;--&quot;</span>, label<span class="op">=</span><span class="st">&quot;Moderate (0.1)&quot;</span>)</span>
-<span id="cb26-262"><a href="#cb26-262" aria-hidden="true" tabindex="-1"></a>ax.axvline(<span class="fl">0.25</span>, color<span class="op">=</span><span class="st">&quot;#C44E52&quot;</span>, linestyle<span class="op">=</span><span class="st">&quot;--&quot;</span>, label<span class="op">=</span><span class="st">&quot;Severe (0.25)&quot;</span>)</span>
-<span id="cb26-263"><a href="#cb26-263" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">&quot;PSI Value&quot;</span>)</span>
-<span id="cb26-264"><a href="#cb26-264" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">&quot;Drift Check: Reference vs Live Data&quot;</span>)</span>
-<span id="cb26-265"><a href="#cb26-265" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">8</span>)</span>
-<span id="cb26-266"><a href="#cb26-266" aria-hidden="true" tabindex="-1"></a>ax.invert_yaxis()</span>
-<span id="cb26-267"><a href="#cb26-267" aria-hidden="true" tabindex="-1"></a>ax.grid(axis<span class="op">=</span><span class="st">&quot;x&quot;</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
-<span id="cb26-268"><a href="#cb26-268" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
-<span id="cb26-269"><a href="#cb26-269" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
-<span id="cb26-270"><a href="#cb26-270" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb26-271"><a href="#cb26-271" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-272"><a href="#cb26-272" aria-hidden="true" tabindex="-1"></a><span class="fu">## 7. Experiment State</span></span>
-<span id="cb26-273"><a href="#cb26-273" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-276"><a href="#cb26-276" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb26-277"><a href="#cb26-277" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: experiment-state</span></span>
-<span id="cb26-278"><a href="#cb26-278" aria-hidden="true" tabindex="-1"></a>state_content <span class="op">=</span> session.state()</span>
-<span id="cb26-279"><a href="#cb26-279" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(state_content[:<span class="dv">2000</span>] <span class="cf">if</span> <span class="bu">len</span>(state_content) <span class="op">&gt;</span> <span class="dv">2000</span> <span class="cf">else</span> state_content)</span>
-<span id="cb26-280"><a href="#cb26-280" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb26-281"><a href="#cb26-281" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-282"><a href="#cb26-282" aria-hidden="true" tabindex="-1"></a><span class="fu">## 8. Config from YAML File</span></span>
-<span id="cb26-283"><a href="#cb26-283" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-286"><a href="#cb26-286" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb26-287"><a href="#cb26-287" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: config-from-yaml</span></span>
-<span id="cb26-288"><a href="#cb26-288" aria-hidden="true" tabindex="-1"></a><span class="co">#| error: true</span></span>
-<span id="cb26-289"><a href="#cb26-289" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> yaml</span>
-<span id="cb26-290"><a href="#cb26-290" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
-<span id="cb26-291"><a href="#cb26-291" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-292"><a href="#cb26-292" aria-hidden="true" tabindex="-1"></a>yaml_config <span class="op">=</span> {</span>
-<span id="cb26-293"><a href="#cb26-293" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;name&quot;</span>: <span class="st">&quot;yaml_session_demo&quot;</span>,</span>
-<span id="cb26-294"><a href="#cb26-294" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;task&quot;</span>: <span class="st">&quot;classification&quot;</span>,</span>
-<span id="cb26-295"><a href="#cb26-295" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;target_col&quot;</span>: <span class="st">&quot;target&quot;</span>,</span>
-<span id="cb26-296"><a href="#cb26-296" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;data_path&quot;</span>: <span class="st">&quot;&quot;</span>,</span>
-<span id="cb26-297"><a href="#cb26-297" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;cv_folds&quot;</span>: <span class="dv">3</span>,</span>
-<span id="cb26-298"><a href="#cb26-298" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;models&quot;</span>: [<span class="st">&quot;lightgbm&quot;</span>, <span class="st">&quot;xgboost&quot;</span>],</span>
-<span id="cb26-299"><a href="#cb26-299" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;metrics&quot;</span>: [<span class="st">&quot;roc_auc&quot;</span>, <span class="st">&quot;f1_macro&quot;</span>],</span>
-<span id="cb26-300"><a href="#cb26-300" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;shap_enabled&quot;</span>: <span class="va">False</span>,</span>
-<span id="cb26-301"><a href="#cb26-301" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb26-302"><a href="#cb26-302" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-303"><a href="#cb26-303" aria-hidden="true" tabindex="-1"></a>config_path <span class="op">=</span> Path(<span class="st">&quot;notebooks/_demo_config.yaml&quot;</span>)</span>
-<span id="cb26-304"><a href="#cb26-304" aria-hidden="true" tabindex="-1"></a>config_path.write_text(yaml.dump(yaml_config, default_flow_style<span class="op">=</span><span class="va">False</span>))</span>
-<span id="cb26-305"><a href="#cb26-305" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Wrote config to </span><span class="sc">{</span>config_path<span class="sc">}</span><span class="ss">&quot;</span>)</span>
-<span id="cb26-306"><a href="#cb26-306" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-307"><a href="#cb26-307" aria-hidden="true" tabindex="-1"></a>loaded_config <span class="op">=</span> ExperimentConfig.from_file(config_path)</span>
-<span id="cb26-308"><a href="#cb26-308" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Loaded config: </span><span class="sc">{</span>loaded_config<span class="sc">.</span>name<span class="sc">}</span><span class="ss"> | task=</span><span class="sc">{</span>loaded_config<span class="sc">.</span>task<span class="sc">}</span><span class="ss"> | models=</span><span class="sc">{</span>loaded_config<span class="sc">.</span>models<span class="sc">}</span><span class="ss">&quot;</span>)</span>
-<span id="cb26-309"><a href="#cb26-309" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb26-310"><a href="#cb26-310" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-313"><a href="#cb26-313" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb26-314"><a href="#cb26-314" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: run-from-yaml</span></span>
-<span id="cb26-315"><a href="#cb26-315" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
-<span id="cb26-316"><a href="#cb26-316" aria-hidden="true" tabindex="-1"></a><span class="co">#| error: true</span></span>
-<span id="cb26-317"><a href="#cb26-317" aria-hidden="true" tabindex="-1"></a>yaml_results <span class="op">=</span> session.run(loaded_config, df)</span>
-<span id="cb26-318"><a href="#cb26-318" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> model, scores <span class="kw">in</span> yaml_results.items():</span>
-<span id="cb26-319"><a href="#cb26-319" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;  </span><span class="sc">{</span>model<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>scores<span class="sc">}</span><span class="ss">&quot;</span>)</span>
-<span id="cb26-320"><a href="#cb26-320" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb26-321"><a href="#cb26-321" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-324"><a href="#cb26-324" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb26-325"><a href="#cb26-325" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: cleanup-config</span></span>
-<span id="cb26-326"><a href="#cb26-326" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
-<span id="cb26-327"><a href="#cb26-327" aria-hidden="true" tabindex="-1"></a>os.remove(<span class="st">&quot;notebooks/_demo_config.yaml&quot;</span>)</span>
-<span id="cb26-328"><a href="#cb26-328" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">&quot;Cleaned up demo config file.&quot;</span>)</span>
-<span id="cb26-329"><a href="#cb26-329" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb26-330"><a href="#cb26-330" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-331"><a href="#cb26-331" aria-hidden="true" tabindex="-1"></a><span class="fu">## Summary</span></span>
-<span id="cb26-332"><a href="#cb26-332" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-333"><a href="#cb26-333" aria-hidden="true" tabindex="-1"></a>The <span class="in">`ExperimentSession`</span> API provides a single entry point for the full ML lifecycle:</span>
-<span id="cb26-334"><a href="#cb26-334" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-335"><a href="#cb26-335" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Method <span class="pp">|</span> Purpose <span class="pp">|</span></span>
-<span id="cb26-336"><a href="#cb26-336" aria-hidden="true" tabindex="-1"></a><span class="pp">|--------|---------|</span></span>
-<span id="cb26-337"><a href="#cb26-337" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`session.run(config, df)`</span> <span class="pp">|</span> Train multiple models with cross-validation <span class="pp">|</span></span>
-<span id="cb26-338"><a href="#cb26-338" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`session.leaderboard()`</span> <span class="pp">|</span> Get ranked model comparison <span class="pp">|</span></span>
-<span id="cb26-339"><a href="#cb26-339" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`session.promote(run_id, key)`</span> <span class="pp">|</span> Register the best model as champion <span class="pp">|</span></span>
-<span id="cb26-340"><a href="#cb26-340" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`session.export(key)`</span> <span class="pp">|</span> Export champion as a portable prediction package <span class="pp">|</span></span>
-<span id="cb26-341"><a href="#cb26-341" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`session.drift_check(ref, live)`</span> <span class="pp">|</span> Detect distribution drift <span class="pp">|</span></span>
-<span id="cb26-342"><a href="#cb26-342" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`session.state()`</span> <span class="pp">|</span> Generate a markdown state summary <span class="pp">|</span></span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a>Under the hood, <span class="in">`session.run(...)`</span> uses Trainer&#39;s Hamilton DAG execution path.</span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a>Trainer event publication is best-effort, while state publication is required.</span>
+<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a>This notebook covers:</span>
+<span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Creating a session and running an experiment</span>
+<span id="cb26-23"><a href="#cb26-23" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>Inspecting the leaderboard</span>
+<span id="cb26-24"><a href="#cb26-24" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>Promoting the best run to champion</span>
+<span id="cb26-25"><a href="#cb26-25" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>Exporting the champion model</span>
+<span id="cb26-26"><a href="#cb26-26" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>Running a drift check</span>
+<span id="cb26-27"><a href="#cb26-27" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>Generating experiment state</span>
+<span id="cb26-28"><a href="#cb26-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-29"><a href="#cb26-29" aria-hidden="true" tabindex="-1"></a><span class="fu">## 1. Generate Synthetic Data</span></span>
+<span id="cb26-30"><a href="#cb26-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-33"><a href="#cb26-33" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-34"><a href="#cb26-34" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: generate-data</span></span>
+<span id="cb26-35"><a href="#cb26-35" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
+<span id="cb26-36"><a href="#cb26-36" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb26-37"><a href="#cb26-37" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb26-38"><a href="#cb26-38" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
+<span id="cb26-39"><a href="#cb26-39" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.datasets <span class="im">import</span> make_classification</span>
+<span id="cb26-40"><a href="#cb26-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-41"><a href="#cb26-41" aria-hidden="true" tabindex="-1"></a>X, y <span class="op">=</span> make_classification(</span>
+<span id="cb26-42"><a href="#cb26-42" aria-hidden="true" tabindex="-1"></a>    n_samples<span class="op">=</span><span class="dv">2000</span>,</span>
+<span id="cb26-43"><a href="#cb26-43" aria-hidden="true" tabindex="-1"></a>    n_features<span class="op">=</span><span class="dv">15</span>,</span>
+<span id="cb26-44"><a href="#cb26-44" aria-hidden="true" tabindex="-1"></a>    n_informative<span class="op">=</span><span class="dv">8</span>,</span>
+<span id="cb26-45"><a href="#cb26-45" aria-hidden="true" tabindex="-1"></a>    n_redundant<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb26-46"><a href="#cb26-46" aria-hidden="true" tabindex="-1"></a>    random_state<span class="op">=</span><span class="dv">42</span>,</span>
+<span id="cb26-47"><a href="#cb26-47" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb26-48"><a href="#cb26-48" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pl.DataFrame({<span class="ss">f&quot;feat_</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span>: X[:, i] <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(X.shape[<span class="dv">1</span>])})</span>
+<span id="cb26-49"><a href="#cb26-49" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df.with_columns(target<span class="op">=</span>pl.Series(y))</span>
+<span id="cb26-50"><a href="#cb26-50" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Dataset: </span><span class="sc">{</span>df<span class="sc">.</span>shape[<span class="dv">0</span>]<span class="sc">}</span><span class="ss"> rows x </span><span class="sc">{</span>df<span class="sc">.</span>shape[<span class="dv">1</span>]<span class="sc">}</span><span class="ss"> columns  |  Positive rate: </span><span class="sc">{</span>df[<span class="st">&#39;target&#39;</span>]<span class="sc">.</span>mean()<span class="sc">:.2%}</span><span class="ss">&quot;</span>)</span>
+<span id="cb26-51"><a href="#cb26-51" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-52"><a href="#cb26-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-55"><a href="#cb26-55" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-56"><a href="#cb26-56" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: data-overview</span></span>
+<span id="cb26-57"><a href="#cb26-57" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: &quot;Class distribution and feature summary&quot;</span></span>
+<span id="cb26-58"><a href="#cb26-58" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-width: 8</span></span>
+<span id="cb26-59"><a href="#cb26-59" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-height: 3.5</span></span>
+<span id="cb26-60"><a href="#cb26-60" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="fl">3.5</span>))</span>
+<span id="cb26-61"><a href="#cb26-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-62"><a href="#cb26-62" aria-hidden="true" tabindex="-1"></a>counts <span class="op">=</span> np.bincount(y)</span>
+<span id="cb26-63"><a href="#cb26-63" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].bar([<span class="st">&quot;Class 0&quot;</span>, <span class="st">&quot;Class 1&quot;</span>], counts, color<span class="op">=</span>[<span class="st">&quot;#4C72B0&quot;</span>, <span class="st">&quot;#DD8452&quot;</span>])</span>
+<span id="cb26-64"><a href="#cb26-64" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_title(<span class="st">&quot;Class Distribution&quot;</span>)</span>
+<span id="cb26-65"><a href="#cb26-65" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_ylabel(<span class="st">&quot;Count&quot;</span>)</span>
+<span id="cb26-66"><a href="#cb26-66" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, c <span class="kw">in</span> <span class="bu">enumerate</span>(counts):</span>
+<span id="cb26-67"><a href="#cb26-67" aria-hidden="true" tabindex="-1"></a>    axes[<span class="dv">0</span>].text(i, c <span class="op">+</span> <span class="dv">15</span>, <span class="bu">str</span>(c), ha<span class="op">=</span><span class="st">&quot;center&quot;</span>, fontsize<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb26-68"><a href="#cb26-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-69"><a href="#cb26-69" aria-hidden="true" tabindex="-1"></a>corrs <span class="op">=</span> np.corrcoef(X, y.reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>), rowvar<span class="op">=</span><span class="va">False</span>)[<span class="op">-</span><span class="dv">1</span>, :<span class="op">-</span><span class="dv">1</span>]</span>
+<span id="cb26-70"><a href="#cb26-70" aria-hidden="true" tabindex="-1"></a>top_idx <span class="op">=</span> np.argsort(np.<span class="bu">abs</span>(corrs))[::<span class="op">-</span><span class="dv">1</span>][:<span class="dv">8</span>]</span>
+<span id="cb26-71"><a href="#cb26-71" aria-hidden="true" tabindex="-1"></a>colors <span class="op">=</span> [<span class="st">&quot;#C44E52&quot;</span> <span class="cf">if</span> corrs[i] <span class="op">&lt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="st">&quot;#55A868&quot;</span> <span class="cf">for</span> i <span class="kw">in</span> top_idx]</span>
+<span id="cb26-72"><a href="#cb26-72" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].barh([<span class="ss">f&quot;feat_</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span> <span class="cf">for</span> i <span class="kw">in</span> top_idx], corrs[top_idx], color<span class="op">=</span>colors)</span>
+<span id="cb26-73"><a href="#cb26-73" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_title(<span class="st">&quot;Top Feature Correlations with Target&quot;</span>)</span>
+<span id="cb26-74"><a href="#cb26-74" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_xlabel(<span class="st">&quot;Pearson Correlation&quot;</span>)</span>
+<span id="cb26-75"><a href="#cb26-75" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].axvline(<span class="dv">0</span>, color<span class="op">=</span><span class="st">&quot;gray&quot;</span>, linewidth<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb26-76"><a href="#cb26-76" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].invert_yaxis()</span>
+<span id="cb26-77"><a href="#cb26-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-78"><a href="#cb26-78" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb26-79"><a href="#cb26-79" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb26-80"><a href="#cb26-80" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-81"><a href="#cb26-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-82"><a href="#cb26-82" aria-hidden="true" tabindex="-1"></a><span class="fu">## 2. Configure &amp; Run with ExperimentSession</span></span>
+<span id="cb26-83"><a href="#cb26-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-86"><a href="#cb26-86" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-87"><a href="#cb26-87" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: create-session</span></span>
+<span id="cb26-88"><a href="#cb26-88" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.config <span class="im">import</span> ExperimentConfig</span>
+<span id="cb26-89"><a href="#cb26-89" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.session <span class="im">import</span> ExperimentSession</span>
+<span id="cb26-90"><a href="#cb26-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-91"><a href="#cb26-91" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> ExperimentConfig(</span>
+<span id="cb26-92"><a href="#cb26-92" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">&quot;session_demo&quot;</span>,</span>
+<span id="cb26-93"><a href="#cb26-93" aria-hidden="true" tabindex="-1"></a>    task<span class="op">=</span><span class="st">&quot;classification&quot;</span>,</span>
+<span id="cb26-94"><a href="#cb26-94" aria-hidden="true" tabindex="-1"></a>    target_col<span class="op">=</span><span class="st">&quot;target&quot;</span>,</span>
+<span id="cb26-95"><a href="#cb26-95" aria-hidden="true" tabindex="-1"></a>    data_path<span class="op">=</span><span class="st">&quot;&quot;</span>,</span>
+<span id="cb26-96"><a href="#cb26-96" aria-hidden="true" tabindex="-1"></a>    models<span class="op">=</span>[<span class="st">&quot;catboost&quot;</span>, <span class="st">&quot;lightgbm&quot;</span>, <span class="st">&quot;xgboost&quot;</span>],</span>
+<span id="cb26-97"><a href="#cb26-97" aria-hidden="true" tabindex="-1"></a>    cv_folds<span class="op">=</span><span class="dv">5</span>,</span>
+<span id="cb26-98"><a href="#cb26-98" aria-hidden="true" tabindex="-1"></a>    metrics<span class="op">=</span>[<span class="st">&quot;roc_auc&quot;</span>, <span class="st">&quot;f1_macro&quot;</span>, <span class="st">&quot;accuracy&quot;</span>],</span>
+<span id="cb26-99"><a href="#cb26-99" aria-hidden="true" tabindex="-1"></a>    shap_enabled<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb26-100"><a href="#cb26-100" aria-hidden="true" tabindex="-1"></a>    max_workers<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb26-101"><a href="#cb26-101" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb26-102"><a href="#cb26-102" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-103"><a href="#cb26-103" aria-hidden="true" tabindex="-1"></a>session <span class="op">=</span> ExperimentSession()</span>
+<span id="cb26-104"><a href="#cb26-104" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Session workspace: </span><span class="sc">{</span>session<span class="sc">.</span>workspace<span class="sc">.</span>root<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb26-105"><a href="#cb26-105" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-106"><a href="#cb26-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-109"><a href="#cb26-109" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-110"><a href="#cb26-110" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: run-experiment</span></span>
+<span id="cb26-111"><a href="#cb26-111" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
+<span id="cb26-112"><a href="#cb26-112" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> session.run(config, df)</span>
+<span id="cb26-113"><a href="#cb26-113" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> model, scores <span class="kw">in</span> results.items():</span>
+<span id="cb26-114"><a href="#cb26-114" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;  </span><span class="sc">{</span>model<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>scores<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb26-115"><a href="#cb26-115" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-116"><a href="#cb26-116" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-117"><a href="#cb26-117" aria-hidden="true" tabindex="-1"></a><span class="fu">## 3. Inspect the Leaderboard</span></span>
+<span id="cb26-118"><a href="#cb26-118" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-121"><a href="#cb26-121" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-122"><a href="#cb26-122" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: leaderboard</span></span>
+<span id="cb26-123"><a href="#cb26-123" aria-hidden="true" tabindex="-1"></a>lb <span class="op">=</span> session.leaderboard()</span>
+<span id="cb26-124"><a href="#cb26-124" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(lb)</span>
+<span id="cb26-125"><a href="#cb26-125" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-126"><a href="#cb26-126" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-129"><a href="#cb26-129" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-130"><a href="#cb26-130" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: leaderboard-chart</span></span>
+<span id="cb26-131"><a href="#cb26-131" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: &quot;Session leaderboard — cross-validated scores per model&quot;</span></span>
+<span id="cb26-132"><a href="#cb26-132" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-width: 9</span></span>
+<span id="cb26-133"><a href="#cb26-133" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-height: 5</span></span>
+<span id="cb26-134"><a href="#cb26-134" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> iter8ml.utils.io <span class="im">import</span> iter_events</span>
+<span id="cb26-135"><a href="#cb26-135" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-136"><a href="#cb26-136" aria-hidden="true" tabindex="-1"></a>model_scores <span class="op">=</span> {}</span>
+<span id="cb26-137"><a href="#cb26-137" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ev <span class="kw">in</span> iter_events(<span class="bu">str</span>(session.workspace.experiments_path)):</span>
+<span id="cb26-138"><a href="#cb26-138" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> ev.get(<span class="st">&quot;event&quot;</span>) <span class="op">==</span> <span class="st">&quot;model_completed&quot;</span>:</span>
+<span id="cb26-139"><a href="#cb26-139" aria-hidden="true" tabindex="-1"></a>        name <span class="op">=</span> ev.get(<span class="st">&quot;model&quot;</span>, <span class="st">&quot;unknown&quot;</span>)</span>
+<span id="cb26-140"><a href="#cb26-140" aria-hidden="true" tabindex="-1"></a>        scores <span class="op">=</span> ev.get(<span class="st">&quot;cv_scores&quot;</span>, {})</span>
+<span id="cb26-141"><a href="#cb26-141" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> scores:</span>
+<span id="cb26-142"><a href="#cb26-142" aria-hidden="true" tabindex="-1"></a>            model_scores[name] <span class="op">=</span> scores</span>
+<span id="cb26-143"><a href="#cb26-143" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-144"><a href="#cb26-144" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> model_scores:</span>
+<span id="cb26-145"><a href="#cb26-145" aria-hidden="true" tabindex="-1"></a>    model_scores <span class="op">=</span> {</span>
+<span id="cb26-146"><a href="#cb26-146" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;catboost&quot;</span>: {<span class="st">&quot;roc_auc&quot;</span>: <span class="fl">0.95</span>, <span class="st">&quot;f1_macro&quot;</span>: <span class="fl">0.90</span>, <span class="st">&quot;accuracy&quot;</span>: <span class="fl">0.91</span>},</span>
+<span id="cb26-147"><a href="#cb26-147" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;lightgbm&quot;</span>: {<span class="st">&quot;roc_auc&quot;</span>: <span class="fl">0.94</span>, <span class="st">&quot;f1_macro&quot;</span>: <span class="fl">0.89</span>, <span class="st">&quot;accuracy&quot;</span>: <span class="fl">0.90</span>},</span>
+<span id="cb26-148"><a href="#cb26-148" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;xgboost&quot;</span>:  {<span class="st">&quot;roc_auc&quot;</span>: <span class="fl">0.93</span>, <span class="st">&quot;f1_macro&quot;</span>: <span class="fl">0.88</span>, <span class="st">&quot;accuracy&quot;</span>: <span class="fl">0.89</span>},</span>
+<span id="cb26-149"><a href="#cb26-149" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb26-150"><a href="#cb26-150" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-151"><a href="#cb26-151" aria-hidden="true" tabindex="-1"></a>models <span class="op">=</span> <span class="bu">list</span>(model_scores.keys())</span>
+<span id="cb26-152"><a href="#cb26-152" aria-hidden="true" tabindex="-1"></a>metrics <span class="op">=</span> [<span class="st">&quot;roc_auc&quot;</span>, <span class="st">&quot;f1_macro&quot;</span>, <span class="st">&quot;accuracy&quot;</span>]</span>
+<span id="cb26-153"><a href="#cb26-153" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> np.arange(<span class="bu">len</span>(models))</span>
+<span id="cb26-154"><a href="#cb26-154" aria-hidden="true" tabindex="-1"></a>width <span class="op">=</span> <span class="fl">0.25</span></span>
+<span id="cb26-155"><a href="#cb26-155" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-156"><a href="#cb26-156" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">9</span>, <span class="dv">5</span>))</span>
+<span id="cb26-157"><a href="#cb26-157" aria-hidden="true" tabindex="-1"></a>palette <span class="op">=</span> [<span class="st">&quot;#4C72B0&quot;</span>, <span class="st">&quot;#55A868&quot;</span>, <span class="st">&quot;#C44E52&quot;</span>]</span>
+<span id="cb26-158"><a href="#cb26-158" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, metric <span class="kw">in</span> <span class="bu">enumerate</span>(metrics):</span>
+<span id="cb26-159"><a href="#cb26-159" aria-hidden="true" tabindex="-1"></a>    vals <span class="op">=</span> [model_scores[m].get(metric, <span class="dv">0</span>) <span class="cf">for</span> m <span class="kw">in</span> models]</span>
+<span id="cb26-160"><a href="#cb26-160" aria-hidden="true" tabindex="-1"></a>    bars <span class="op">=</span> ax.bar(x <span class="op">+</span> i <span class="op">*</span> width, vals, width, label<span class="op">=</span>metric.upper(), color<span class="op">=</span>palette[i])</span>
+<span id="cb26-161"><a href="#cb26-161" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> bar, v <span class="kw">in</span> <span class="bu">zip</span>(bars, vals):</span>
+<span id="cb26-162"><a href="#cb26-162" aria-hidden="true" tabindex="-1"></a>        ax.text(bar.get_x() <span class="op">+</span> bar.get_width() <span class="op">/</span> <span class="dv">2</span>, bar.get_height() <span class="op">+</span> <span class="fl">0.002</span>,</span>
+<span id="cb26-163"><a href="#cb26-163" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f&quot;</span><span class="sc">{</span>v<span class="sc">:.3f}</span><span class="ss">&quot;</span>, ha<span class="op">=</span><span class="st">&quot;center&quot;</span>, va<span class="op">=</span><span class="st">&quot;bottom&quot;</span>, fontsize<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb26-164"><a href="#cb26-164" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-165"><a href="#cb26-165" aria-hidden="true" tabindex="-1"></a>ax.set_xticks(x <span class="op">+</span> width)</span>
+<span id="cb26-166"><a href="#cb26-166" aria-hidden="true" tabindex="-1"></a>ax.set_xticklabels(models)</span>
+<span id="cb26-167"><a href="#cb26-167" aria-hidden="true" tabindex="-1"></a>ax.set_ylim(<span class="fl">0.8</span>, <span class="fl">1.0</span>)</span>
+<span id="cb26-168"><a href="#cb26-168" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">&quot;Score&quot;</span>)</span>
+<span id="cb26-169"><a href="#cb26-169" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">&quot;Session Leaderboard&quot;</span>)</span>
+<span id="cb26-170"><a href="#cb26-170" aria-hidden="true" tabindex="-1"></a>ax.legend(loc<span class="op">=</span><span class="st">&quot;lower right&quot;</span>)</span>
+<span id="cb26-171"><a href="#cb26-171" aria-hidden="true" tabindex="-1"></a>ax.grid(axis<span class="op">=</span><span class="st">&quot;y&quot;</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb26-172"><a href="#cb26-172" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb26-173"><a href="#cb26-173" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb26-174"><a href="#cb26-174" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-175"><a href="#cb26-175" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-176"><a href="#cb26-176" aria-hidden="true" tabindex="-1"></a><span class="fu">## 4. Promote the Best Run</span></span>
+<span id="cb26-177"><a href="#cb26-177" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-180"><a href="#cb26-180" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-181"><a href="#cb26-181" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: promote-best</span></span>
+<span id="cb26-182"><a href="#cb26-182" aria-hidden="true" tabindex="-1"></a><span class="co">#| error: true</span></span>
+<span id="cb26-183"><a href="#cb26-183" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb26-184"><a href="#cb26-184" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-185"><a href="#cb26-185" aria-hidden="true" tabindex="-1"></a>registry_path <span class="op">=</span> session.workspace.registry_path</span>
+<span id="cb26-186"><a href="#cb26-186" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> registry_path.exists():</span>
+<span id="cb26-187"><a href="#cb26-187" aria-hidden="true" tabindex="-1"></a>    registry <span class="op">=</span> json.loads(registry_path.read_text())</span>
+<span id="cb26-188"><a href="#cb26-188" aria-hidden="true" tabindex="-1"></a>    best_run_id <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb26-189"><a href="#cb26-189" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> key, entry <span class="kw">in</span> registry.items():</span>
+<span id="cb26-190"><a href="#cb26-190" aria-hidden="true" tabindex="-1"></a>        best_run_id <span class="op">=</span> entry.get(<span class="st">&quot;run_id&quot;</span>)</span>
+<span id="cb26-191"><a href="#cb26-191" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f&quot;Current champion: </span><span class="sc">{</span>key<span class="sc">}</span><span class="ss"> -&gt; </span><span class="sc">{</span>entry<span class="sc">.</span>get(<span class="st">&#39;model&#39;</span>)<span class="sc">}</span><span class="ss"> (score: </span><span class="sc">{</span>entry<span class="sc">.</span>get(<span class="st">&#39;score&#39;</span>)<span class="sc">}</span><span class="ss">)&quot;</span>)</span>
+<span id="cb26-192"><a href="#cb26-192" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb26-193"><a href="#cb26-193" aria-hidden="true" tabindex="-1"></a>    events <span class="op">=</span> <span class="bu">list</span>(iter_events(<span class="bu">str</span>(session.workspace.experiments_path)))</span>
+<span id="cb26-194"><a href="#cb26-194" aria-hidden="true" tabindex="-1"></a>    completed <span class="op">=</span> [e <span class="cf">for</span> e <span class="kw">in</span> events <span class="cf">if</span> e.get(<span class="st">&quot;event&quot;</span>) <span class="op">==</span> <span class="st">&quot;model_completed&quot;</span>]</span>
+<span id="cb26-195"><a href="#cb26-195" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> completed:</span>
+<span id="cb26-196"><a href="#cb26-196" aria-hidden="true" tabindex="-1"></a>        best <span class="op">=</span> <span class="bu">max</span>(completed, key<span class="op">=</span><span class="kw">lambda</span> e: <span class="bu">max</span>(e.get(<span class="st">&quot;cv_scores&quot;</span>, {}).values()))</span>
+<span id="cb26-197"><a href="#cb26-197" aria-hidden="true" tabindex="-1"></a>        best_run_id <span class="op">=</span> best.get(<span class="st">&quot;run_id&quot;</span>)</span>
+<span id="cb26-198"><a href="#cb26-198" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb26-199"><a href="#cb26-199" aria-hidden="true" tabindex="-1"></a>        best_run_id <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb26-200"><a href="#cb26-200" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-201"><a href="#cb26-201" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> best_run_id:</span>
+<span id="cb26-202"><a href="#cb26-202" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> session.promote(best_run_id, <span class="st">&quot;session_demo:classification&quot;</span>)</span>
+<span id="cb26-203"><a href="#cb26-203" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;</span><span class="ch">\n</span><span class="ss">Promotion result: </span><span class="sc">{</span>result<span class="sc">.</span>status<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb26-204"><a href="#cb26-204" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;  </span><span class="sc">{</span>result<span class="sc">.</span>message<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb26-205"><a href="#cb26-205" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb26-206"><a href="#cb26-206" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;No runs found to promote.&quot;</span>)</span>
+<span id="cb26-207"><a href="#cb26-207" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-208"><a href="#cb26-208" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-209"><a href="#cb26-209" aria-hidden="true" tabindex="-1"></a><span class="fu">## 5. Export the Champion Model</span></span>
+<span id="cb26-210"><a href="#cb26-210" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-213"><a href="#cb26-213" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-214"><a href="#cb26-214" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: export-champion</span></span>
+<span id="cb26-215"><a href="#cb26-215" aria-hidden="true" tabindex="-1"></a><span class="co">#| error: true</span></span>
+<span id="cb26-216"><a href="#cb26-216" aria-hidden="true" tabindex="-1"></a>export_path <span class="op">=</span> session.export(<span class="st">&quot;session_demo:classification&quot;</span>)</span>
+<span id="cb26-217"><a href="#cb26-217" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Champion model exported to: </span><span class="sc">{</span>export_path<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb26-218"><a href="#cb26-218" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-219"><a href="#cb26-219" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-220"><a href="#cb26-220" aria-hidden="true" tabindex="-1"></a><span class="fu">## 6. Drift Check</span></span>
+<span id="cb26-221"><a href="#cb26-221" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-224"><a href="#cb26-224" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-225"><a href="#cb26-225" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: drift-check</span></span>
+<span id="cb26-226"><a href="#cb26-226" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
+<span id="cb26-227"><a href="#cb26-227" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">99</span>)</span>
+<span id="cb26-228"><a href="#cb26-228" aria-hidden="true" tabindex="-1"></a>X_live <span class="op">=</span> X[:<span class="dv">500</span>].copy()</span>
+<span id="cb26-229"><a href="#cb26-229" aria-hidden="true" tabindex="-1"></a>X_live[:, <span class="dv">0</span>] <span class="op">+=</span> <span class="fl">1.2</span></span>
+<span id="cb26-230"><a href="#cb26-230" aria-hidden="true" tabindex="-1"></a>X_live[:, <span class="dv">5</span>] <span class="op">*=</span> <span class="fl">1.5</span></span>
+<span id="cb26-231"><a href="#cb26-231" aria-hidden="true" tabindex="-1"></a>df_live <span class="op">=</span> pl.DataFrame({<span class="ss">f&quot;feat_</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span>: X_live[:, i] <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(X_live.shape[<span class="dv">1</span>])})</span>
+<span id="cb26-232"><a href="#cb26-232" aria-hidden="true" tabindex="-1"></a>df_live <span class="op">=</span> df_live.with_columns(target<span class="op">=</span>pl.Series(y[:<span class="dv">500</span>]))</span>
+<span id="cb26-233"><a href="#cb26-233" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-234"><a href="#cb26-234" aria-hidden="true" tabindex="-1"></a>drift_result <span class="op">=</span> session.drift_check(df, df_live, method<span class="op">=</span><span class="st">&quot;psi&quot;</span>)</span>
+<span id="cb26-235"><a href="#cb26-235" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">hasattr</span>(drift_result, <span class="st">&quot;drift_detected&quot;</span>):</span>
+<span id="cb26-236"><a href="#cb26-236" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;Drift detected: </span><span class="sc">{</span>drift_result<span class="sc">.</span>drift_detected<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb26-237"><a href="#cb26-237" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> drift_result.psi_report <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+<span id="cb26-238"><a href="#cb26-238" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f&quot;PSI moderate: </span><span class="sc">{</span>drift_result<span class="sc">.</span>psi_report<span class="sc">.</span>n_moderate<span class="sc">}</span><span class="ss">, severe: </span><span class="sc">{</span>drift_result<span class="sc">.</span>psi_report<span class="sc">.</span>n_severe<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb26-239"><a href="#cb26-239" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb26-240"><a href="#cb26-240" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;Drift result: </span><span class="sc">{</span>drift_result<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb26-241"><a href="#cb26-241" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-242"><a href="#cb26-242" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-245"><a href="#cb26-245" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-246"><a href="#cb26-246" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: drift-chart</span></span>
+<span id="cb26-247"><a href="#cb26-247" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: &quot;PSI drift values for each feature between reference and live data&quot;</span></span>
+<span id="cb26-248"><a href="#cb26-248" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-width: 8</span></span>
+<span id="cb26-249"><a href="#cb26-249" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-height: 4</span></span>
+<span id="cb26-250"><a href="#cb26-250" aria-hidden="true" tabindex="-1"></a>psi_feats <span class="op">=</span> []</span>
+<span id="cb26-251"><a href="#cb26-251" aria-hidden="true" tabindex="-1"></a>psi_vals <span class="op">=</span> []</span>
+<span id="cb26-252"><a href="#cb26-252" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">hasattr</span>(drift_result, <span class="st">&quot;psi_report&quot;</span>) <span class="kw">and</span> drift_result.psi_report <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+<span id="cb26-253"><a href="#cb26-253" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> fp <span class="kw">in</span> drift_result.psi_report.feature_psi:</span>
+<span id="cb26-254"><a href="#cb26-254" aria-hidden="true" tabindex="-1"></a>        psi_feats.append(fp.feature)</span>
+<span id="cb26-255"><a href="#cb26-255" aria-hidden="true" tabindex="-1"></a>        psi_vals.append(fp.psi_value)</span>
+<span id="cb26-256"><a href="#cb26-256" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-257"><a href="#cb26-257" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> psi_feats:</span>
+<span id="cb26-258"><a href="#cb26-258" aria-hidden="true" tabindex="-1"></a>    psi_feats <span class="op">=</span> [<span class="ss">f&quot;feat_</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(X.shape[<span class="dv">1</span>])]</span>
+<span id="cb26-259"><a href="#cb26-259" aria-hidden="true" tabindex="-1"></a>    psi_vals <span class="op">=</span> [<span class="fl">0.05</span>] <span class="op">*</span> X.shape[<span class="dv">1</span>]</span>
+<span id="cb26-260"><a href="#cb26-260" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-261"><a href="#cb26-261" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">4</span>))</span>
+<span id="cb26-262"><a href="#cb26-262" aria-hidden="true" tabindex="-1"></a>bar_colors <span class="op">=</span> [<span class="st">&quot;#C44E52&quot;</span> <span class="cf">if</span> v <span class="op">&gt;</span> <span class="fl">0.25</span> <span class="cf">else</span> <span class="st">&quot;#DD8452&quot;</span> <span class="cf">if</span> v <span class="op">&gt;</span> <span class="fl">0.1</span> <span class="cf">else</span> <span class="st">&quot;#55A868&quot;</span> <span class="cf">for</span> v <span class="kw">in</span> psi_vals]</span>
+<span id="cb26-263"><a href="#cb26-263" aria-hidden="true" tabindex="-1"></a>ax.barh(psi_feats, psi_vals, color<span class="op">=</span>bar_colors)</span>
+<span id="cb26-264"><a href="#cb26-264" aria-hidden="true" tabindex="-1"></a>ax.axvline(<span class="fl">0.1</span>, color<span class="op">=</span><span class="st">&quot;#DD8452&quot;</span>, linestyle<span class="op">=</span><span class="st">&quot;--&quot;</span>, label<span class="op">=</span><span class="st">&quot;Moderate (0.1)&quot;</span>)</span>
+<span id="cb26-265"><a href="#cb26-265" aria-hidden="true" tabindex="-1"></a>ax.axvline(<span class="fl">0.25</span>, color<span class="op">=</span><span class="st">&quot;#C44E52&quot;</span>, linestyle<span class="op">=</span><span class="st">&quot;--&quot;</span>, label<span class="op">=</span><span class="st">&quot;Severe (0.25)&quot;</span>)</span>
+<span id="cb26-266"><a href="#cb26-266" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">&quot;PSI Value&quot;</span>)</span>
+<span id="cb26-267"><a href="#cb26-267" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">&quot;Drift Check: Reference vs Live Data&quot;</span>)</span>
+<span id="cb26-268"><a href="#cb26-268" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb26-269"><a href="#cb26-269" aria-hidden="true" tabindex="-1"></a>ax.invert_yaxis()</span>
+<span id="cb26-270"><a href="#cb26-270" aria-hidden="true" tabindex="-1"></a>ax.grid(axis<span class="op">=</span><span class="st">&quot;x&quot;</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb26-271"><a href="#cb26-271" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb26-272"><a href="#cb26-272" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb26-273"><a href="#cb26-273" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-274"><a href="#cb26-274" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-275"><a href="#cb26-275" aria-hidden="true" tabindex="-1"></a><span class="fu">## 7. Experiment State</span></span>
+<span id="cb26-276"><a href="#cb26-276" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-279"><a href="#cb26-279" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-280"><a href="#cb26-280" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: experiment-state</span></span>
+<span id="cb26-281"><a href="#cb26-281" aria-hidden="true" tabindex="-1"></a>state_content <span class="op">=</span> session.state()</span>
+<span id="cb26-282"><a href="#cb26-282" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(state_content[:<span class="dv">2000</span>] <span class="cf">if</span> <span class="bu">len</span>(state_content) <span class="op">&gt;</span> <span class="dv">2000</span> <span class="cf">else</span> state_content)</span>
+<span id="cb26-283"><a href="#cb26-283" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-284"><a href="#cb26-284" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-285"><a href="#cb26-285" aria-hidden="true" tabindex="-1"></a><span class="fu">## 8. Config from YAML File</span></span>
+<span id="cb26-286"><a href="#cb26-286" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-289"><a href="#cb26-289" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-290"><a href="#cb26-290" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: config-from-yaml</span></span>
+<span id="cb26-291"><a href="#cb26-291" aria-hidden="true" tabindex="-1"></a><span class="co">#| error: true</span></span>
+<span id="cb26-292"><a href="#cb26-292" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> yaml</span>
+<span id="cb26-293"><a href="#cb26-293" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb26-294"><a href="#cb26-294" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-295"><a href="#cb26-295" aria-hidden="true" tabindex="-1"></a>yaml_config <span class="op">=</span> {</span>
+<span id="cb26-296"><a href="#cb26-296" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;name&quot;</span>: <span class="st">&quot;yaml_session_demo&quot;</span>,</span>
+<span id="cb26-297"><a href="#cb26-297" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;task&quot;</span>: <span class="st">&quot;classification&quot;</span>,</span>
+<span id="cb26-298"><a href="#cb26-298" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;target_col&quot;</span>: <span class="st">&quot;target&quot;</span>,</span>
+<span id="cb26-299"><a href="#cb26-299" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;data_path&quot;</span>: <span class="st">&quot;&quot;</span>,</span>
+<span id="cb26-300"><a href="#cb26-300" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;cv_folds&quot;</span>: <span class="dv">3</span>,</span>
+<span id="cb26-301"><a href="#cb26-301" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;models&quot;</span>: [<span class="st">&quot;lightgbm&quot;</span>, <span class="st">&quot;xgboost&quot;</span>],</span>
+<span id="cb26-302"><a href="#cb26-302" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;metrics&quot;</span>: [<span class="st">&quot;roc_auc&quot;</span>, <span class="st">&quot;f1_macro&quot;</span>],</span>
+<span id="cb26-303"><a href="#cb26-303" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;shap_enabled&quot;</span>: <span class="va">False</span>,</span>
+<span id="cb26-304"><a href="#cb26-304" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb26-305"><a href="#cb26-305" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-306"><a href="#cb26-306" aria-hidden="true" tabindex="-1"></a>config_path <span class="op">=</span> Path(<span class="st">&quot;notebooks/_demo_config.yaml&quot;</span>)</span>
+<span id="cb26-307"><a href="#cb26-307" aria-hidden="true" tabindex="-1"></a>config_path.write_text(yaml.dump(yaml_config, default_flow_style<span class="op">=</span><span class="va">False</span>))</span>
+<span id="cb26-308"><a href="#cb26-308" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Wrote config to </span><span class="sc">{</span>config_path<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb26-309"><a href="#cb26-309" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-310"><a href="#cb26-310" aria-hidden="true" tabindex="-1"></a>loaded_config <span class="op">=</span> ExperimentConfig.from_file(config_path)</span>
+<span id="cb26-311"><a href="#cb26-311" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Loaded config: </span><span class="sc">{</span>loaded_config<span class="sc">.</span>name<span class="sc">}</span><span class="ss"> | task=</span><span class="sc">{</span>loaded_config<span class="sc">.</span>task<span class="sc">}</span><span class="ss"> | models=</span><span class="sc">{</span>loaded_config<span class="sc">.</span>models<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb26-312"><a href="#cb26-312" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-313"><a href="#cb26-313" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-316"><a href="#cb26-316" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-317"><a href="#cb26-317" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: run-from-yaml</span></span>
+<span id="cb26-318"><a href="#cb26-318" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
+<span id="cb26-319"><a href="#cb26-319" aria-hidden="true" tabindex="-1"></a><span class="co">#| error: true</span></span>
+<span id="cb26-320"><a href="#cb26-320" aria-hidden="true" tabindex="-1"></a>yaml_results <span class="op">=</span> session.run(loaded_config, df)</span>
+<span id="cb26-321"><a href="#cb26-321" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> model, scores <span class="kw">in</span> yaml_results.items():</span>
+<span id="cb26-322"><a href="#cb26-322" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;  </span><span class="sc">{</span>model<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>scores<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb26-323"><a href="#cb26-323" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-324"><a href="#cb26-324" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-327"><a href="#cb26-327" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb26-328"><a href="#cb26-328" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: cleanup-config</span></span>
+<span id="cb26-329"><a href="#cb26-329" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb26-330"><a href="#cb26-330" aria-hidden="true" tabindex="-1"></a>os.remove(<span class="st">&quot;notebooks/_demo_config.yaml&quot;</span>)</span>
+<span id="cb26-331"><a href="#cb26-331" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">&quot;Cleaned up demo config file.&quot;</span>)</span>
+<span id="cb26-332"><a href="#cb26-332" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb26-333"><a href="#cb26-333" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-334"><a href="#cb26-334" aria-hidden="true" tabindex="-1"></a><span class="fu">## Summary</span></span>
+<span id="cb26-335"><a href="#cb26-335" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-336"><a href="#cb26-336" aria-hidden="true" tabindex="-1"></a>The <span class="in">`ExperimentSession`</span> API provides a single entry point for the full ML lifecycle:</span>
+<span id="cb26-337"><a href="#cb26-337" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-338"><a href="#cb26-338" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Method <span class="pp">|</span> Purpose <span class="pp">|</span></span>
+<span id="cb26-339"><a href="#cb26-339" aria-hidden="true" tabindex="-1"></a><span class="pp">|--------|---------|</span></span>
+<span id="cb26-340"><a href="#cb26-340" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`session.run(config, df)`</span> <span class="pp">|</span> Train multiple models with cross-validation <span class="pp">|</span></span>
+<span id="cb26-341"><a href="#cb26-341" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`session.leaderboard()`</span> <span class="pp">|</span> Get ranked model comparison <span class="pp">|</span></span>
+<span id="cb26-342"><a href="#cb26-342" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`session.promote(run_id, key)`</span> <span class="pp">|</span> Register the best model as champion <span class="pp">|</span></span>
+<span id="cb26-343"><a href="#cb26-343" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`session.export(key)`</span> <span class="pp">|</span> Export champion as a portable prediction package <span class="pp">|</span></span>
+<span id="cb26-344"><a href="#cb26-344" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`session.drift_check(ref, live)`</span> <span class="pp">|</span> Detect distribution drift <span class="pp">|</span></span>
+<span id="cb26-345"><a href="#cb26-345" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`session.state()`</span> <span class="pp">|</span> Generate a markdown state summary <span class="pp">|</span></span>
 </code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->

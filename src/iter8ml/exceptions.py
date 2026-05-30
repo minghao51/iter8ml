@@ -25,6 +25,10 @@ class RegistryError(TabularBlueprintError):
     """Raised when registry operations fail."""
 
 
+class TrainerStatePublishError(TabularBlueprintError):
+    """Raised when the required trainer state publication seam fails."""
+
+
 _DATA_KEYWORDS = frozenset(
     {
         "target_col",

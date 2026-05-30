@@ -37,7 +37,15 @@ The pipeline layer uses [Hamilton](https://github.com/DAGWorks-Inc/hamilton) to 
 
 **Source:** `src/iter8ml/engine/trainer.py:50`
 
-1. Calls `PipelineExecutor.run_training()` — builds and executes the full DAG
+1. Calls `PipelineExecutor.run_training()` — builds and executes the full DAG.
+2. Publishes run/model events through a best-effort event adapter seam.
+3. Publishes state files through a required state adapter seam.
+
+Trainer defaults for these seams are built in `src/iter8ml/engine/trainer_factory.py`:
+- `TrackerEventAdapter` (event publication)
+- `ObserverStateAdapter` (state publication)
+
+If required state publication fails, Trainer raises `TrainerStatePublishError`.
 
 ---
 

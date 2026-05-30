@@ -11,7 +11,10 @@ from sklearn.datasets import make_classification
 pytest.importorskip("mcp.server.fastmcp")
 
 from iter8ml.services.mcp import (
+    __getattr__,
+    _get_workspace,
     detect_drift,
+    export_champion,
     get_column_stats,
     get_event_log,
     get_experiment_state,
@@ -250,3 +253,70 @@ def test_registry_tools_use_service(monkeypatch, tmp_path):
     with patch("iter8ml.services.mcp.RegistryService", return_value=mock_registry):
         result = registry_show()
         assert "catboost" in result
+
+
+def test_getattr_invalid_name_raises_attribute_error():
+    with pytest.raises(AttributeError):
+        __getattr__("not_a_real_attribute")
+
+
+def test_getattr_mcp_uses_lazy_initializer(monkeypatch):
+    sentinel = object()
+    monkeypatch.setattr("iter8ml.services.mcp._init_mcp", lambda: sentinel)
+    assert __getattr__("mcp") is sentinel
+
+
+def test_get_workspace_is_cached(monkeypatch):
+    import iter8ml.services.mcp as mcp_mod
+
+    monkeypatch.setattr(mcp_mod, "_WORKSPACE", None)
+    ws1 = _get_workspace()
+    ws2 = _get_workspace()
+    assert ws1 is ws2
+
+
+def test_get_event_log_respects_n(monkeypatch):
+    import iter8ml.services.mcp as mcp_mod
+
+    class _DummyWorkspace:
+        experiments_path = Path("/tmp/fake-experiments.jsonl")
+
+    monkeypatch.setattr(mcp_mod, "_get_workspace", lambda: _DummyWorkspace())
+    monkeypatch.setattr(Path, "exists", lambda self: True)
+    monkeypatch.setattr(
+        "iter8ml.services.mcp.load_events",
+        lambda _: [{"id": 1}, {"id": 2}, {"id": 3}],
+    )
+    result = json.loads(get_event_log(n=2))
+    assert result == [{"id": 2}, {"id": 3}]
+
+
+def test_export_champion_success(monkeypatch):
+    class _FakeExportService:
+        def __init__(self, workspace):
+            self.workspace = workspace
+
+        def export(self, key, target_col=None):
+            assert key == "clf:demo"
+            assert target_col == "target"
+            return Path("/tmp/pkg")
+
+    monkeypatch.setattr("iter8ml.services.export.ExportService", _FakeExportService)
+    result = json.loads(export_champion("clf:demo", target_col="target"))
+    assert result["status"] == "ok"
+    assert result["export_path"] == "/tmp/pkg"
+    assert "predictor.py" in result["files"]
+
+
+def test_export_champion_error(monkeypatch):
+    class _FakeExportService:
+        def __init__(self, workspace):
+            self.workspace = workspace
+
+        def export(self, key, target_col=None):
+            raise RuntimeError("boom")
+
+    monkeypatch.setattr("iter8ml.services.export.ExportService", _FakeExportService)
+    result = json.loads(export_champion("clf:demo"))
+    assert result["status"] == "error"
+    assert "boom" in result["message"]

@@ -11,8 +11,10 @@ from typing import TYPE_CHECKING, Any
 import polars as pl
 
 from iter8ml.config import ExperimentConfig, HardwareProfile
+from iter8ml.engine import trainer_factory
 from iter8ml.engine.pipelines.executor import PipelineExecutor, PipelineMode
 from iter8ml.engine.tracker import JSONLTracker, Tracker
+from iter8ml.exceptions import TrainerStatePublishError
 
 if TYPE_CHECKING:
     from iter8ml.workspace import Workspace
@@ -48,6 +50,12 @@ class Trainer:
         else:
             _tracker = JSONLTracker(log_path=str(workspace.experiments_path))
         self.tracker = _tracker
+        self._event_adapter = trainer_factory.build_trainer_event_adapter(self.tracker)
+        self._state_adapter = trainer_factory.build_trainer_state_adapter(
+            workspace=self.workspace,
+            llm_enabled=self.config.llm_enabled,
+            llm_model=self.config.llm_model,
+        )
         self.hardware = HardwareProfile.detect()
 
     def run(self, df: pl.DataFrame) -> dict:
@@ -55,7 +63,7 @@ class Trainer:
         run_id = f"exp_{int(time.time())}_{str(uuid.uuid4())[:6]}"
         self.tracker.current_run_id = run_id
 
-        self.tracker.log_event(
+        self._publish_event(
             {
                 "event": "experiment_started",
                 "config": self.config.model_dump(mode="json"),
@@ -85,7 +93,7 @@ class Trainer:
             if entry.get("is_baseline"):
                 continue
             if "error" in entry:
-                self.tracker.log_event(
+                self._publish_event(
                     {
                         "event": "model_failed",
                         "run_id": run_id,
@@ -94,7 +102,7 @@ class Trainer:
                     }
                 )
                 continue
-            self.tracker.log_event(
+            self._publish_event(
                 {
                     "event": "model_completed",
                     "run_id": run_id,
@@ -108,14 +116,33 @@ class Trainer:
             )
 
     def _update_state(self) -> None:
-        from iter8ml.engine.state_observer import StateObserver
+        try:
+            self._state_adapter.publish()
+        except Exception as e:
+            run_id = self.tracker.current_run_id or "unknown"
+            adapter_name = type(self._state_adapter).__name__
+            raise TrainerStatePublishError(
+                "Trainer state publication failed",
+                context={
+                    "run_id": run_id,
+                    "adapter": adapter_name,
+                    "original_type": type(e).__name__,
+                    "original_message": str(e),
+                },
+            ) from e
 
-        observer = StateObserver(
-            workspace=self.workspace,
-            llm_enabled=self.config.llm_enabled,
-            llm_model=self.config.llm_model,
-        )
-        observer.generate()
+    def _publish_event(self, event: dict[str, Any]) -> None:
+        try:
+            self._event_adapter.publish(event)
+        except Exception:
+            run_id = self.tracker.current_run_id or "unknown"
+            adapter_name = type(self._event_adapter).__name__
+            logging.getLogger(__name__).warning(
+                "Trainer event publication failed (run_id=%s adapter=%s event=%s)",
+                run_id,
+                adapter_name,
+                event.get("event", "unknown"),
+            )
 
 
 def _load_completed_models(log_path: Path, run_id: str) -> set[str]:

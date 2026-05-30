@@ -18,6 +18,10 @@ promotion, and generates state summaries. This notebook covers:
 3. **State** — Automated state summaries with optional LLM commentary
 4. **Lifecycle** — The full run → compare → promote → export → monitor loop
 
+Trainer uses two internal seams during `session.run(...)`:
+- Event publication is best-effort through the tracker adapter.
+- State publication is required; failures raise `TrainerStatePublishError`.
+
 ## 1. Generate Data & Run First Experiment
 
 ```{python}

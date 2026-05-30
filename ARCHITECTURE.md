@@ -46,10 +46,18 @@ drivers from node modules.
 ## Data and Training Flow
 
 1. CLI or MCP tool builds `ExperimentConfig`.
-2. `Trainer.run()` tries Hamilton DAG first (`_try_hamilton_training()`), falls back to imperative path.
-3. `DataPreparationService` runs preprocessing + data preparation via Hamilton, with `TrackingHook` for lifecycle events.
-4. Model training, baseline evaluation, and state generation execute as DAG nodes.
-5. `DriftChecker` runs as standalone `DRIFT` mode DAG.
+2. `Trainer.run()` executes the Hamilton DAG training path via `PipelineExecutor.run_training()`.
+3. Trainer publishes experiment/model events through a best-effort event adapter seam.
+4. Trainer publishes `current_state.md` through a required state adapter seam (state publish failure fails the run).
+5. Model training, baseline evaluation, and state generation execute as DAG nodes.
+6. `DriftChecker` runs as standalone `DRIFT` mode DAG.
+
+## Trainer Seams
+
+- `src/iter8ml/engine/trainer_factory.py` defines default trainer adapters.
+- Event adapter (`TrackerEventAdapter`) forwards events to the configured tracker.
+- State adapter (`ObserverStateAdapter`) delegates state generation to `StateObserver`.
+- State publication failures are wrapped as `TrainerStatePublishError` with seam context.
 
 ## Export
 
