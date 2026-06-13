@@ -22,14 +22,15 @@ def test_run_embedding_uses_workspace(monkeypatch):
     )
 
     prep = SimpleNamespace(
+        dataframe=None,
         X=np.array([[1.0], [2.0]]),
         y=np.array([0, 1]),
         feature_names=["f1"],
-        _df=None,
     )
     ws = Workspace(root="/tmp/custom-workspace")
     _run_embedding(
         data_prep_result=prep,
+        target_col="target",
         task="classification",
         random_seed=42,
         run_id="exp_1",

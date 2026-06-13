@@ -7,6 +7,7 @@ import typer
 from iter8ml.config import ExperimentConfig
 from iter8ml.constants import TaskType
 from iter8ml.data.loader import load_data
+from iter8ml.exceptions import DataLoadError
 from iter8ml.session import ExperimentSession
 
 from .main import app
@@ -66,7 +67,7 @@ def run(
 
     try:
         df = load_data(data_path)
-    except ValueError as e:
+    except (ValueError, DataLoadError) as e:
         typer.echo(f"Error loading data: {e}")
         raise typer.Exit(code=1) from e
 

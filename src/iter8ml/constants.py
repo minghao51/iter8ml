@@ -26,19 +26,6 @@ class CVStrategy(Enum):
     TIMESERIES = "timeseries"
 
 
-class ModelName(Enum):
-    """Available model names."""
-
-    CATBOOST = "catboost"
-    LIGHTGBM = "lightgbm"
-    XGBOOST = "xgboost"
-    TABPFN = "tabpfn"
-    FT_TRANSFORMER = "ft_transformer"
-    TABNET = "tabnet"
-    NAIVE_BASELINE = "naive_baseline"
-    LINEAR_BASELINE = "linear_baseline"
-
-
 class EmbeddingMethod(Enum):
     """Available embedding methods for high-cardinality features."""
 

@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 from filelock import FileLock
 from pydantic import BaseModel
 
+from iter8ml.exceptions import RegistryError, track_errors
 from iter8ml.services.reporting import metric_value_is_better, resolve_primary_score
 from iter8ml.utils.io import iter_events
 
@@ -59,6 +60,7 @@ class RegistryService:
                 return json.load(f)  # type: ignore[no-any-return]
         return {}
 
+    @track_errors(RegistryError)
     def update_if_better(
         self,
         key: str,

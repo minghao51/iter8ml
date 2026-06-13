@@ -6,6 +6,8 @@ from typing import Any
 
 import numpy as np
 
+from iter8ml.exceptions import ModelNotFittedError
+
 
 class BaseGBDTModel:
     """Base class for gradient boosting decision tree models.
@@ -20,6 +22,7 @@ class BaseGBDTModel:
         self._model: Any = None
         self._n_classes: int = kwargs.pop("n_classes", 0)
         self._class_labels: np.ndarray | None = None
+        self._fitted: bool = False
 
     @abstractmethod
     def _build_params(self) -> dict[str, Any]:
@@ -35,6 +38,10 @@ class BaseGBDTModel:
         """Merge per-model hyperparameter overrides into self.params."""
         self.params.update(overrides)
 
+    def _ensure_fitted(self) -> None:
+        if not self._fitted or self._model is None:
+            raise ModelNotFittedError("Model not fitted")
+
     def fit(self, X: np.ndarray, y: np.ndarray, **kwargs: Any) -> None:
         if self.task == "classification":
             labels, y_encoded = np.unique(y, return_inverse=True)
@@ -47,6 +54,7 @@ class BaseGBDTModel:
         params = self._build_params()
         self._model = self._create_model(params)
         self._train_model(X, y_train)
+        self._fitted = True
 
     def _decode_class_indices(self, y_pred: np.ndarray) -> np.ndarray:
         if self.task != "classification" or self._class_labels is None:
@@ -77,9 +85,11 @@ class BaseGBDTModel:
         pass
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray | None:
-        if self.task == "classification" and self._model is not None:
-            return self._predict_proba_impl(X)
-        return None
+        if not self._fitted or self._model is None:
+            return None
+        if self.task != "classification":
+            return None
+        return self._predict_proba_impl(X)
 
     @abstractmethod
     def _predict_proba_impl(self, X: np.ndarray) -> np.ndarray:
@@ -87,8 +97,7 @@ class BaseGBDTModel:
         pass
 
     def save(self, path: str) -> None:
-        if self._model is None:
-            raise ValueError("Model has not been trained yet.")
+        self._ensure_fitted()
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         self._model.save_model(path)
 

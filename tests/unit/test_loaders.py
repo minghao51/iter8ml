@@ -21,6 +21,12 @@ def test_get_data_hash_mutation():
     assert get_data_hash(df1) != get_data_hash(df2)
 
 
+def test_get_data_hash_row_order_sensitive():
+    df1 = pl.DataFrame({"a": [1, 2, 3], "b": ["x", "y", "z"]})
+    df2 = pl.DataFrame({"a": [3, 2, 1], "b": ["z", "y", "x"]})
+    assert get_data_hash(df1) != get_data_hash(df2)
+
+
 def test_load_csv():
     with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
         f.write("a,b,c\n1,2,3\n4,5,6\n")

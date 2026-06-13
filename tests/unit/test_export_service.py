@@ -110,6 +110,17 @@ def test_export_predictor_script_contains_class(export_workspace):
     assert "def predict(" in script
     assert "_build_preprocessing_driver" in script
     assert "_preprocess" in script
+    assert "from pipelines.preprocessing import" in script
+    assert "iter8ml.engine.pipelines.preprocessing" not in script
+
+
+def test_exported_preprocessing_module_is_standalone(export_workspace):
+    service = ExportService(workspace=export_workspace)
+    export_path = service.export("credit_risk:classification")
+
+    preprocessing = (export_path / "pipelines" / "preprocessing.py").read_text()
+    assert "iter8ml" not in preprocessing
+    assert "def processed_dataframe" in preprocessing
 
 
 def test_exported_predictor_rejects_non_allowlisted_model_class(export_workspace):

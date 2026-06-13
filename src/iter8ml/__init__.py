@@ -22,7 +22,13 @@ from iter8ml.engine.models.factory import available_model_names, get_model_class
 from iter8ml.engine.models.selector import ModelSelector
 from iter8ml.engine.tracker import JSONLTracker, Tracker
 from iter8ml.engine.trainer import Trainer
-from iter8ml.exceptions import DataLoadError, ModelFitError, RegistryError, TabularBlueprintError
+from iter8ml.exceptions import (
+    DataLoadError,
+    Iter8MLError,
+    ModelFitError,
+    RegistryError,
+    TabularBlueprintError,
+)
 from iter8ml.services.export import ExportService
 from iter8ml.services.registry import PromotionResult, RegistryService
 from iter8ml.services.reporting import ReportService
@@ -39,6 +45,7 @@ __all__ = [
     "ExportService",
     "FeatureStrategy",
     "HardwareProfile",
+    "Iter8MLError",
     "JSONLTracker",
     "ModelFitError",
     "ModelSelector",

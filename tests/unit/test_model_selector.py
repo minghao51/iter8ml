@@ -21,6 +21,14 @@ def test_small_dataset_with_gpu_routing():
         assert models[2:] == ["tabpfn", "catboost", "lightgbm", "xgboost"]
 
 
+def test_oversized_gpu_dataset_skips_tabpfn():
+    selector = ModelSelector()
+    with patch.object(selector, "_has_gpu", return_value=True):
+        models = selector.select(n_rows=50_001, task="classification", vram_gb=0.0)
+        assert "tabpfn" not in models
+        assert models[2:] == ["catboost", "lightgbm", "xgboost"]
+
+
 def test_medium_dataset_routing():
     selector = ModelSelector()
     models = selector.select(n_rows=100_000, task="classification", vram_gb=0.0)

@@ -40,9 +40,7 @@ class ModelSelector:
         if include_baselines:
             models.extend(["naive_baseline", "linear_baseline"])
 
-        # TabPFN is now always included if GPU is present, regardless of row count.
-        # The Trainer will handle the warning if n_rows > TABPFN_ROW_LIMIT.
-        if has_gpu:
+        if has_gpu and n_rows <= self.TABPFN_ROW_LIMIT:
             models.append("tabpfn")
 
         if n_rows < 500_000:

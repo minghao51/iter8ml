@@ -5,6 +5,8 @@ from typing import Any
 
 import numpy as np
 
+from iter8ml.exceptions import ModelNotFittedError
+
 logger = logging.getLogger(__name__)
 
 
@@ -20,6 +22,7 @@ class TabPFNModel:
         self.max_rows = max_rows or self.DEFAULT_MAX_ROWS
         self.params = kwargs
         self.model: Any = None
+        self._fitted: bool = False
 
     def _resolve_device(self) -> str:
         try:
@@ -59,26 +62,27 @@ class TabPFNModel:
             )
         self.model = self._build_model()
         self.model.fit(X, y)
+        self._fitted = True
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        if self.model is None:
-            raise ValueError("Model not fitted")
+        if not self._fitted or self.model is None:
+            raise ModelNotFittedError("Model not fitted")
         return self.model.predict(X)  # type: ignore[no-any-return]
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray | None:
-        if (
-            self.task == "classification"
-            and self.model is not None
-            and hasattr(self.model, "predict_proba")
-        ):
-            return self.model.predict_proba(X)  # type: ignore[no-any-return]
-        return None
+        if not self._fitted or self.model is None:
+            return None
+        if self.task != "classification":
+            return None
+        if not hasattr(self.model, "predict_proba"):
+            return None
+        return self.model.predict_proba(X)  # type: ignore[no-any-return]
 
     def save(self, path: str) -> None:
         from iter8ml.utils.io import safe_dump
 
-        if self.model is None:
-            raise ValueError("Model not fitted")
+        if not self._fitted or self.model is None:
+            raise ModelNotFittedError("Model not fitted")
         safe_dump(
             {"model": self.model, "task": self.task, "params": self.params},
             path,
@@ -91,6 +95,7 @@ class TabPFNModel:
         self.model = data["model"]
         self.task = data.get("task", self.task)
         self.params = data.get("params", self.params)
+        self._fitted = True
 
     @property
     def model_name(self) -> str:

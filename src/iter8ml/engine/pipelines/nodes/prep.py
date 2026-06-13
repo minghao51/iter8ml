@@ -9,17 +9,14 @@ from polars import selectors as cs
 
 from iter8ml.data.adapter import DataAdapter
 from iter8ml.data.leakage import LeakageReport, detect_leakage
+from iter8ml.engine.pipelines.nodes._hamilton_compat import hamilton_config
 
-try:
-    from hamilton.function_modifiers import config as _hamilton_config
-
-    _HAS_HAMILTON = True
-except ImportError:
-    _HAS_HAMILTON = False
+_hamilton_config = hamilton_config()
 
 
 @dataclass
 class DataPrepResult:
+    dataframe: pl.DataFrame
     X: np.ndarray
     y: np.ndarray
     feature_names: list[str]
@@ -141,7 +138,7 @@ def validate_target(
     return processed_dataframe
 
 
-if _HAS_HAMILTON:
+if _hamilton_config is not None:
 
     @_hamilton_config.when(run_quality_audit=True)
     def quality_cleaned_df__audit(
@@ -301,6 +298,7 @@ def data_prep_result(
     _, noise_cleaned, n_dropped = quality_cleaned_df
     df = quality_cleaned_df[0]
     return DataPrepResult(
+        dataframe=df,
         X=X,
         y=y,
         feature_names=feature_names,

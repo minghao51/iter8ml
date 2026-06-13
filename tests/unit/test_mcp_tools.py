@@ -8,6 +8,8 @@ import polars as pl
 import pytest
 from sklearn.datasets import make_classification
 
+from iter8ml.exceptions import DataLoadError
+
 pytest.importorskip("mcp.server.fastmcp")
 
 from iter8ml.services.mcp import (
@@ -73,7 +75,7 @@ def test_get_column_stats_parquet(sample_parquet):
 def test_get_column_stats_unsupported_format(tmp_path):
     bad_path = str(tmp_path / "data.json")
     Path(bad_path).write_text("{}")
-    with pytest.raises(ValueError, match="Unsupported file format"):
+    with pytest.raises(DataLoadError, match="Unsupported file format"):
         get_column_stats(bad_path)
 
 

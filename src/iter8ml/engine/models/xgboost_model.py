@@ -40,8 +40,7 @@ class XGBoostModel(BaseGBDTModel):
         self._model = xgb.train(params, dtrain, num_boost_round=params.get("n_estimators", 1000))
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        if self._model is None:
-            raise ValueError("Model not fitted")
+        self._ensure_fitted()
         dtest = xgb.DMatrix(X)
         preds = self._model.predict(dtest)
         if self.task == "classification":
@@ -49,8 +48,6 @@ class XGBoostModel(BaseGBDTModel):
         return preds  # type: ignore[no-any-return]
 
     def _predict_proba_impl(self, X: np.ndarray) -> np.ndarray:
-        if self._model is None:
-            raise ValueError("Model not fitted")
         dtest = xgb.DMatrix(X)
         preds = self._model.predict(dtest)
         return self._format_proba(preds)
@@ -58,6 +55,7 @@ class XGBoostModel(BaseGBDTModel):
     def load(self, path: str) -> None:
         self._model = xgb.Booster()
         self._model.load_model(path)
+        self._fitted = True
 
     @property
     def model_name(self) -> str:

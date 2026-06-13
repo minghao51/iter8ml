@@ -45,21 +45,19 @@ class LightGBMModel(BaseGBDTModel):
         )
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        if self._model is None:
-            raise ValueError("Model not fitted")
+        self._ensure_fitted()
         preds = self._model.predict(X)
         if self.task == "classification":
             return self._classify_predictions(preds)
         return preds  # type: ignore[no-any-return]
 
     def _predict_proba_impl(self, X: np.ndarray) -> np.ndarray:
-        if self._model is None:
-            raise ValueError("Model not fitted")
         preds = self._model.predict(X)
         return self._format_proba(preds)
 
     def load(self, path: str) -> None:
         self._model = lgb.Booster(model_file=path)
+        self._fitted = True
 
     @property
     def model_name(self) -> str:

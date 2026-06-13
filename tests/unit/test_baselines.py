@@ -129,6 +129,7 @@ class TestNaiveBaselineSaveLoad:
         model = NaiveBaseline(task="classification")
         model._value = 0
         model._classes = [0, 1]
+        model._fitted = True
         proba = model.predict_proba(np.array([[1.0], [2.0]]))
         assert proba is not None
         assert proba.shape == (2, 2)

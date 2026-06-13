@@ -6,6 +6,8 @@ from typing import Any
 
 import numpy as np
 
+from iter8ml.exceptions import ModelNotFittedError
+
 try:
     import torch
     from torch import nn
@@ -68,6 +70,7 @@ class FTTransformerModel:
         self.random_seed = self.config.random_seed
         self.model: nn.Module | None = None
         self.accelerator: Any = None
+        self._fitted: bool = False
 
     def _build_model(self) -> nn.Module:
         return _FTTransformer(
@@ -122,10 +125,11 @@ class FTTransformerModel:
                 loss = criterion(output, batch_y)
                 self.accelerator.backward(loss)
                 optimizer.step()
+        self._fitted = True
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        if self.model is None:
-            raise ValueError("Model not fitted")
+        if not self._fitted or self.model is None:
+            raise ModelNotFittedError("Model not fitted")
         self.model.eval()
         X_tensor = torch.tensor(X, dtype=torch.float32, device=next(self.model.parameters()).device)
         with torch.no_grad():
@@ -136,10 +140,10 @@ class FTTransformerModel:
         return output.squeeze().cpu().numpy()  # type: ignore[no-any-return]
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray | None:
+        if not self._fitted or self.model is None:
+            return None
         if self.task != "classification":
             return None
-        if self.model is None:
-            raise ValueError("Model not fitted")
         self.model.eval()
         X_tensor = torch.tensor(X, dtype=torch.float32, device=next(self.model.parameters()).device)
         with torch.no_grad():
@@ -169,6 +173,7 @@ class FTTransformerModel:
         self.model = self._build_model()
         self.model.load_state_dict(checkpoint["model_state"])
         self.accelerator = None
+        self._fitted = True
 
     @property
     def model_name(self) -> str:

@@ -1,6 +1,9 @@
 """Tests for automated feature engineering module."""
 
+from types import SimpleNamespace
+
 import numpy as np
+import polars as pl
 
 from iter8ml.data.features import (
     _effective_parallel_jobs,
@@ -11,6 +14,8 @@ from iter8ml.data.features import (
     prune_features,
     transform_target,
 )
+from iter8ml.engine.pipelines.nodes.features import _run_embedding
+from iter8ml.workspace import Workspace
 
 
 class TestDetectTargetSkewness:
@@ -228,3 +233,41 @@ class TestPruneFeatures:
         assert result.n_kept == 3
         assert result.n_dropped == 0
         assert X_pruned.shape == X.shape
+
+
+def test_run_embedding_uses_real_dataframe_and_target_col(monkeypatch, tmp_path):
+    captured = {}
+
+    def fake_fit_transform(self, *, df, X, y, feature_names, target_col, run_id, data_hash=""):
+        captured["df"] = df
+        captured["target_col"] = target_col
+        captured["run_id"] = run_id
+        captured["feature_names"] = feature_names
+        return X, feature_names
+
+    monkeypatch.setattr(
+        "iter8ml.data.embedding.EmbeddingEngine.fit_transform",
+        fake_fit_transform,
+    )
+
+    data_prep_result = SimpleNamespace(
+        dataframe=pl.DataFrame({"cat": ["a", "b"], "target": [0, 1]}),
+        X=np.array([[1.0], [2.0]]),
+        y=np.array([0, 1]),
+        feature_names=["cat"],
+    )
+
+    X_out, names_out = _run_embedding(
+        data_prep_result=data_prep_result,
+        target_col="target",
+        task="classification",
+        random_seed=42,
+        run_id="run_1",
+        workspace=Workspace(root=tmp_path),
+    )
+
+    assert captured["df"] is data_prep_result.dataframe
+    assert captured["target_col"] == "target"
+    assert captured["run_id"] == "run_1"
+    np.testing.assert_array_equal(X_out, data_prep_result.X)
+    assert names_out == data_prep_result.feature_names

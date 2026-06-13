@@ -46,6 +46,107 @@ def _validate_bounds(param_name: str, low: int | float, high: int | float) -> No
         )
 
 
+def _write_hpo_event(
+    event: dict[str, Any],
+    log_path: str | None,
+    tracker: "Tracker | None",
+) -> None:
+    """Write an HPO event to the tracker or log file."""
+    if tracker is not None:
+        tracker.log_event(event)
+        return
+    if log_path is None:
+        return
+    path = Path(log_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with _hpo_file_lock, open(path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(event) + "\n")
+
+
+def _log_hpo_trial(
+    *,
+    params: dict[str, Any],
+    cv_scores: dict[str, float],
+    model_name: str,
+    task: str,
+    log_path: str | None,
+    tracker: "Tracker | None",
+) -> None:
+    """Log a completed HPO trial as an event."""
+    event = {
+        "event": "hpo_trial_completed",
+        "run_id": f"hpo_{model_name}",
+        "timestamp": datetime.now(UTC).isoformat(),
+        "model": model_name,
+        "task": task,
+        "params": params,
+        "cv_scores": cv_scores,
+    }
+    _write_hpo_event(event, log_path, tracker)
+
+
+def _log_warning_event(
+    *,
+    source: str,
+    warning_type: str,
+    message: str,
+    model_name: str,
+    warnings: list[dict[str, str]],
+    log_path: str | None,
+    tracker: "Tracker | None",
+) -> None:
+    """Append a warning and write it as an HPO event."""
+    warnings.append({"source": source, "warning_type": warning_type, "message": message})
+    event = {
+        "event": "hpo_warning",
+        "run_id": f"hpo_{model_name}",
+        "timestamp": datetime.now(UTC).isoformat(),
+        "model": model_name,
+        "warning_source": source,
+        "warning_type": warning_type,
+        "message": message,
+    }
+    _write_hpo_event(event, log_path, tracker)
+
+
+def _parse_trial_params(trial: optuna.Trial, search_space: dict | None) -> dict[str, Any]:
+    """Sample parameters from the search space using an Optuna trial."""
+    params: dict[str, Any] = {}
+    if not search_space:
+        return params
+    for param_name, param_range in search_space.items():
+        if not isinstance(param_range, (tuple, list)):
+            raise ValueError(
+                f"Invalid search space for '{param_name}': "
+                f"expected tuple/list, got {type(param_range).__name__}"
+            )
+        if len(param_range) not in (2, 3):
+            raise ValueError(
+                f"Invalid search space for '{param_name}': "
+                f"expected 2 or 3 elements, got {len(param_range)}"
+            )
+        if len(param_range) == 2:
+            low, high = param_range
+            _validate_bounds(param_name, low, high)
+            if isinstance(low, float) or isinstance(high, float):
+                params[param_name] = trial.suggest_float(param_name, low, high)
+            else:
+                params[param_name] = trial.suggest_int(param_name, low, high)
+        elif len(param_range) == 3:
+            low, high, kind = param_range
+            _validate_bounds(param_name, low, high)
+            if kind not in ("linear", "log"):
+                raise ValueError(
+                    f"Invalid search space for '{param_name}': "
+                    f"kind must be 'linear' or 'log', got '{kind}'"
+                )
+            if kind == "log":
+                params[param_name] = trial.suggest_float(param_name, low, high, log=True)
+            else:
+                params[param_name] = trial.suggest_float(param_name, low, high)
+    return params
+
+
 def setup_hpo_components(
     data_path: str,
     target_col: str,
@@ -88,6 +189,56 @@ def setup_hpo_components(
     search_space = getattr(model_configs, model).hpo_search_space()
 
     return X, y, evaluator, search_space
+
+
+def _compute_hpo_result(
+    study: optuna.Study,
+    injection: Any | None,
+    warnings: list[dict[str, str]],
+    model_name: str,
+    log_path: str | None,
+    tracker: "Tracker | None",
+) -> dict[str, Any]:
+    """Assemble the result dict from a completed HPO study."""
+    result: dict[str, Any] = {
+        "best_params": study.best_params,
+        "best_value": study.best_value,
+        "n_trials": len(study.trials),
+    }
+
+    if injection is not None:
+        result["warmstart_trials"] = injection.n_trials_injected
+        result["warmstart_summary"] = {
+            "n_runs_scanned": injection.n_runs_scanned,
+            "n_trials_injected": injection.n_trials_injected,
+            "n_skipped_missing_scores": injection.n_skipped_missing_scores,
+            "n_skipped_missing_params": injection.n_skipped_missing_params,
+            "n_skipped_invalid_trials": injection.n_skipped_invalid_trials,
+        }
+
+    try:
+        from iter8ml.engine.hpo_importance import compute_param_importance
+
+        importance_report = compute_param_importance(study)
+        result["param_importances"] = [
+            {"param": p.param_name, "importance": p.importance}
+            for p in importance_report.importances
+        ]
+    except Exception as e:
+        _log_warning_event(
+            source="hpo_importance",
+            warning_type=type(e).__name__,
+            message=f"Failed to compute parameter importances: {e}",
+            model_name=model_name,
+            warnings=warnings,
+            log_path=log_path,
+            tracker=tracker,
+        )
+
+    if warnings:
+        result["warnings"] = warnings
+
+    return result
 
 
 def optimize_model(
@@ -138,91 +289,20 @@ def optimize_model(
         study = create_study(model_name, n_trials=n_trials)
         injection = None
 
-    def _write_event(event: dict[str, Any]) -> None:
-        if tracker is not None:
-            tracker.log_event(event)
-            return
-        if log_path is None:
-            return
-        path = Path(log_path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with _hpo_file_lock, open(path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(event) + "\n")
-
-    def _log_hpo_trial(
-        *,
-        params: dict[str, Any],
-        cv_scores: dict[str, float],
-    ) -> None:
-        event = {
-            "event": "hpo_trial_completed",
-            "run_id": f"hpo_{model_name}",
-            "timestamp": datetime.now(UTC).isoformat(),
-            "model": model_name,
-            "task": task,
-            "params": params,
-            "cv_scores": cv_scores,
-        }
-        _write_event(event)
-
-    def _log_warning_event(
-        *,
-        source: str,
-        warning_type: str,
-        message: str,
-    ) -> None:
-        warning = {"source": source, "warning_type": warning_type, "message": message}
-        warnings.append(warning)
-        event = {
-            "event": "hpo_warning",
-            "run_id": f"hpo_{model_name}",
-            "timestamp": datetime.now(UTC).isoformat(),
-            "model": model_name,
-            "warning_source": source,
-            "warning_type": warning_type,
-            "message": message,
-        }
-        _write_event(event)
-
     def objective(trial: optuna.Trial) -> float:
-        params = {}
-        if search_space:
-            for param_name, param_range in search_space.items():
-                if not isinstance(param_range, (tuple, list)):
-                    raise ValueError(
-                        f"Invalid search space for '{param_name}': "
-                        f"expected tuple/list, got {type(param_range).__name__}"
-                    )
-                if len(param_range) not in (2, 3):
-                    raise ValueError(
-                        f"Invalid search space for '{param_name}': "
-                        f"expected 2 or 3 elements, got {len(param_range)}"
-                    )
-                if len(param_range) == 2:
-                    low, high = param_range
-                    _validate_bounds(param_name, low, high)
-                    if isinstance(low, float) or isinstance(high, float):
-                        params[param_name] = trial.suggest_float(param_name, low, high)
-                    else:
-                        params[param_name] = trial.suggest_int(param_name, low, high)
-                elif len(param_range) == 3:
-                    low, high, kind = param_range
-                    _validate_bounds(param_name, low, high)
-                    if kind not in ("linear", "log"):
-                        raise ValueError(
-                            f"Invalid search space for '{param_name}': "
-                            f"kind must be 'linear' or 'log', got '{kind}'"
-                        )
-                    if kind == "log":
-                        params[param_name] = trial.suggest_float(param_name, low, high, log=True)
-                    else:
-                        params[param_name] = trial.suggest_float(param_name, low, high)
-
+        params = _parse_trial_params(trial, search_space)
         try:
             scores = evaluator.evaluate(model_cls, X, y, task=task, **params)
             if not scores:
                 raise optuna.TrialPruned("No scores returned from evaluator")
-            _log_hpo_trial(params=params, cv_scores=scores)
+            _log_hpo_trial(
+                params=params,
+                cv_scores=scores,
+                model_name=model_name,
+                task=task,
+                log_path=log_path,
+                tracker=tracker,
+            )
             primary = next(iter(scores.values()))
             return primary
         except optuna.TrialPruned:
@@ -235,38 +315,11 @@ def optimize_model(
 
     study.optimize(objective, n_trials=n_trials)
 
-    result: dict[str, Any] = {
-        "best_params": study.best_params,
-        "best_value": study.best_value,
-        "n_trials": len(study.trials),
-    }
-
-    if injection is not None:
-        result["warmstart_trials"] = injection.n_trials_injected
-        result["warmstart_summary"] = {
-            "n_runs_scanned": injection.n_runs_scanned,
-            "n_trials_injected": injection.n_trials_injected,
-            "n_skipped_missing_scores": injection.n_skipped_missing_scores,
-            "n_skipped_missing_params": injection.n_skipped_missing_params,
-            "n_skipped_invalid_trials": injection.n_skipped_invalid_trials,
-        }
-
-    try:
-        from iter8ml.engine.hpo_importance import compute_param_importance
-
-        importance_report = compute_param_importance(study)
-        result["param_importances"] = [
-            {"param": p.param_name, "importance": p.importance}
-            for p in importance_report.importances
-        ]
-    except Exception as e:
-        _log_warning_event(
-            source="hpo_importance",
-            warning_type=type(e).__name__,
-            message=f"Failed to compute parameter importances: {e}",
-        )
-
-    if warnings:
-        result["warnings"] = warnings
-
-    return result
+    return _compute_hpo_result(
+        study,
+        injection,
+        warnings,
+        model_name,
+        log_path,
+        tracker,
+    )

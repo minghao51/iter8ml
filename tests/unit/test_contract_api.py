@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 import iter8ml as iml
-from iter8ml.exceptions import DataLoadError, ModelFitError, RegistryError, TabularBlueprintError
+from iter8ml.exceptions import DataLoadError, Iter8MLError, ModelFitError, RegistryError
 
 pytestmark = pytest.mark.contract
 
@@ -24,11 +24,9 @@ class TestPublicExports:
                 f"{name} is {type(obj)}, not a class or function"
             )
 
-    def test_exceptions_are_tabular_blueprint_errors(self):
+    def test_exceptions_are_iter8ml_errors(self):
         for exc_cls in [DataLoadError, ModelFitError, RegistryError]:
-            assert issubclass(exc_cls, TabularBlueprintError), (
-                f"{exc_cls.__name__} is not a TabularBlueprintError"
-            )
+            assert issubclass(exc_cls, Iter8MLError), f"{exc_cls.__name__} is not an Iter8MLError"
 
     def test_all_exports_match_all(self):
         for name in iml.__all__:

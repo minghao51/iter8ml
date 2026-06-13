@@ -302,6 +302,8 @@ def test_state_dag_fallback(tmp_path):
 
 
 def test_default_llm_model_no_env(tmp_path):
+    if "ITER8ML_LLM_MODEL" in os.environ:
+        del os.environ["ITER8ML_LLM_MODEL"]
     if "TABBLUEPRINT_LLM_MODEL" in os.environ:
         del os.environ["TABBLUEPRINT_LLM_MODEL"]
     ws = Workspace(root=tmp_path)
@@ -312,7 +314,7 @@ def test_default_llm_model_no_env(tmp_path):
 
 
 def test_default_llm_model_with_env(monkeypatch, tmp_path):
-    monkeypatch.setenv("TABBLUEPRINT_LLM_MODEL", "gpt-4o")
+    monkeypatch.setenv("ITER8ML_LLM_MODEL", "gpt-4o")
     ws = Workspace(root=tmp_path)
     observer = StateObserver(workspace=ws)
     assert observer._default_llm_model() == "gpt-4o"

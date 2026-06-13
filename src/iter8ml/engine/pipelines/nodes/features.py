@@ -5,14 +5,10 @@ from typing import Any
 import numpy as np
 
 from iter8ml.constants import EmbeddingMethod
+from iter8ml.engine.pipelines.nodes._hamilton_compat import hamilton_config
 from iter8ml.workspace import Workspace
 
-try:
-    from hamilton.function_modifiers import config as _hamilton_config
-
-    _HAS_HAMILTON = True
-except ImportError:
-    _HAS_HAMILTON = False
+_hamilton_config = hamilton_config()
 
 
 def _passthrough(data_prep_result: Any) -> tuple[np.ndarray, list[str]]:
@@ -108,6 +104,7 @@ def _run_afe(
 
 def _run_embedding(
     data_prep_result: Any,
+    target_col: str,
     task: str,
     random_seed: int,
     run_id: str,
@@ -143,16 +140,16 @@ def _run_embedding(
         random_seed=random_seed,
     )
     return engine.fit_transform(
-        df=getattr(data_prep_result, "_df", None),
+        df=data_prep_result.dataframe,
         X=data_prep_result.X,
         y=data_prep_result.y,
         feature_names=data_prep_result.feature_names,
-        target_col="_target_",
+        target_col=target_col,
         run_id=run_id,
     )
 
 
-if _HAS_HAMILTON:
+if _hamilton_config is not None:
 
     @_hamilton_config.when(feature_strategy="none")
     def training_features__none(data_prep_result: Any) -> tuple[np.ndarray, list[str]]:
@@ -189,6 +186,7 @@ if _HAS_HAMILTON:
     @_hamilton_config.when(feature_strategy="embedding")
     def training_features__embedding(
         data_prep_result: Any,
+        target_col: str,
         task: str,
         random_seed: int,
         run_id: str,
@@ -205,6 +203,7 @@ if _HAS_HAMILTON:
     ) -> tuple[np.ndarray, list[str]]:
         return _run_embedding(
             data_prep_result,
+            target_col,
             task,
             random_seed,
             run_id,
@@ -221,17 +220,10 @@ if _HAS_HAMILTON:
         )
 
 else:
+    from iter8ml.engine.pipelines.nodes._hamilton_compat import hamilton_stub
 
     def training_features__none(data_prep_result: Any) -> tuple[np.ndarray, list[str]]:
         return _passthrough(data_prep_result)
 
-    def training_features__afe(**_kwargs: Any) -> None:
-        raise ImportError(
-            "Hamilton is required for feature_strategy='afe'. Install with: pip install sf-hamilton"
-        )
-
-    def training_features__embedding(**_kwargs: Any) -> None:
-        raise ImportError(
-            "Hamilton is required for feature_strategy='embedding'. "
-            "Install with: pip install sf-hamilton"
-        )
+    training_features__afe = hamilton_stub("feature_strategy='afe'")
+    training_features__embedding = hamilton_stub("feature_strategy='embedding'")

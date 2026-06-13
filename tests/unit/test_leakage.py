@@ -83,3 +83,11 @@ def test_effective_parallel_jobs_caps_for_large_matrices():
         n_features=2_000,
     )
     assert jobs == 2
+
+
+def test_leakage_with_highly_predictive_feature():
+    X, y = make_classification(n_samples=200, n_features=5, n_informative=2, random_state=42)
+    X[:, 0] = y.astype(float) * 100 + np.random.normal(0, 1, size=len(y))
+    report = detect_leakage(X, y, task="classification", threshold=0.01)
+    assert report.n_flagged >= 1
+    assert any(f["feature_index"] == 0 for f in report.flagged_features)

@@ -9,6 +9,8 @@ from typing import Any
 
 import numpy as np
 
+from iter8ml.exceptions import ModelNotFittedError
+
 try:
     import pandas as pd
 except ImportError:
@@ -20,6 +22,7 @@ class TabNetModel:
         self.task = task
         self.params = kwargs
         self.model: Any = None
+        self._fitted: bool = False
 
     def _build_model(self, n_features: int, n_classes: int | None = None) -> Any:
         try:
@@ -86,19 +89,20 @@ class TabNetModel:
 
         df = self._to_dataframe(X, include_target=y)
         self.model.fit(train=df, target_col=["target"])
+        self._fitted = True
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        if self.model is None:
-            raise ValueError("Model not fitted")
+        if not self._fitted or self.model is None:
+            raise ModelNotFittedError("Model not fitted")
         df = self._to_dataframe(X)
         result = self.model.predict(df)
         return result.iloc[:, 0].to_numpy()  # type: ignore[no-any-return]
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray | None:
+        if not self._fitted or self.model is None:
+            return None
         if self.task != "classification":
             return None
-        if self.model is None:
-            raise ValueError("Model not fitted")
         df = self._to_dataframe(X)
         result = self.model.predict(df)
         proba_cols = [c for c in result.columns if c.startswith("probability")]
@@ -107,8 +111,8 @@ class TabNetModel:
         return None
 
     def save(self, path: str) -> None:
-        if self.model is None:
-            raise ValueError("Model not fitted")
+        if not self._fitted or self.model is None:
+            raise ModelNotFittedError("Model not fitted")
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         self.model.save_model(path)
 
@@ -119,6 +123,7 @@ class TabNetModel:
             raise ImportError("pytorch-tabular is required.") from e
 
         self.model = TabularModel.load_from_checkpoint(path)
+        self._fitted = True
 
     @property
     def model_name(self) -> str:

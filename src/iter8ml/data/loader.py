@@ -7,6 +7,8 @@ from pathlib import Path
 import numpy as np
 import polars as pl
 
+from iter8ml.exceptions import DataLoadError, track_errors
+
 
 def load_csv(
     path: str | Path,
@@ -29,6 +31,7 @@ def load_parquet(path: str | Path) -> pl.DataFrame:
     return pl.read_parquet(str(path))
 
 
+@track_errors(DataLoadError)
 def load_data(path: str | Path) -> pl.DataFrame:
     """Load a data file (CSV or Parquet) into a Polars DataFrame."""
     path = Path(path)
@@ -101,6 +104,11 @@ def load_sqlite(db_path: str | Path, query: str) -> pl.DataFrame:
 
 def get_data_hash(df: pl.DataFrame) -> str:
     """Compute a deterministic SHA-256 hash of a Polars DataFrame."""
-    row_hashes = df.hash_rows()
-    combined_hash = int(np.bitwise_xor.reduce(row_hashes.to_numpy().astype(np.uint64)))
-    return "sha256:" + hashlib.sha256(str(combined_hash).encode()).hexdigest()[:16]
+    hasher = hashlib.sha256()
+    hasher.update("\x1f".join(df.columns).encode("utf-8"))
+    hasher.update(
+        "\x1f".join(f"{name}:{dtype}" for name, dtype in df.schema.items()).encode("utf-8")
+    )
+    row_hashes = df.hash_rows().to_numpy().astype(np.uint64, copy=False)
+    hasher.update(row_hashes.tobytes())
+    return "sha256:" + hasher.hexdigest()[:16]

@@ -104,6 +104,7 @@ class WandbTracker:
 
             self.wandb = wandb
             self.run = wandb.init(project=project, **kwargs)
+            self.current_run_id: str | None = self.run.id
         except ImportError as e:
             raise ImportError("wandb is required. Install with: pip install wandb") from e
 
@@ -123,6 +124,7 @@ class WandbTracker:
 
     def finish(self) -> None:
         self.run.finish()
+        self.current_run_id = None
 
 
 class MLflowTracker:
@@ -137,6 +139,7 @@ class MLflowTracker:
                 mlflow.set_tracking_uri(tracking_uri)
             mlflow.set_experiment(experiment_name)
             self.run = mlflow.start_run()
+            self.current_run_id: str | None = self.run.info.run_id
         except ImportError as e:
             raise ImportError("mlflow is required. Install with: pip install mlflow") from e
 
@@ -158,3 +161,4 @@ class MLflowTracker:
 
     def finish(self) -> None:
         self.mlflow.end_run()
+        self.current_run_id = None

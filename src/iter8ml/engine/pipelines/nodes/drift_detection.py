@@ -5,15 +5,9 @@ from typing import Any
 
 import polars as pl
 
-try:
-    from hamilton.function_modifiers import config as _hamilton_config
+from iter8ml.engine.pipelines.nodes._hamilton_compat import hamilton_config
 
-    _HAS_HAMILTON = True
-except ImportError:
-    _HAS_HAMILTON = False
-    from unittest.mock import MagicMock
-
-    config = MagicMock()
+_hamilton_config = hamilton_config()
 
 
 @dataclass
@@ -45,7 +39,7 @@ def live_features(live_df_input: pl.DataFrame) -> pl.DataFrame:
     return live_df_input.select(cols) if cols else live_df_input
 
 
-if _HAS_HAMILTON:
+if _hamilton_config is not None:
 
     @_hamilton_config.when(drift_method="psi")
     def psi_drift_report__psi(
@@ -123,38 +117,12 @@ if _HAS_HAMILTON:
         )
 
 else:
+    from iter8ml.engine.pipelines.nodes._hamilton_compat import hamilton_stub
 
-    def psi_drift_report__psi(**_kwargs: Any) -> None:
-        raise ImportError(
-            "Hamilton is required for drift detection. Install with: pip install sf-hamilton"
-        )
-
-    def domain_drift_report__domain(**_kwargs: Any) -> None:
-        raise ImportError(
-            "Hamilton is required for drift detection. Install with: pip install sf-hamilton"
-        )
-
-    def drift_report__psi(**_kwargs: Any) -> None:
-        raise ImportError(
-            "Hamilton is required for drift detection. Install with: pip install sf-hamilton"
-        )
-
-    def drift_report__domain(**_kwargs: Any) -> None:
-        raise ImportError(
-            "Hamilton is required for drift detection. Install with: pip install sf-hamilton"
-        )
-
-    def psi_drift_report__both(**_kwargs: Any) -> None:
-        raise ImportError(
-            "Hamilton is required for drift detection. Install with: pip install sf-hamilton"
-        )
-
-    def domain_drift_report__both(**_kwargs: Any) -> None:
-        raise ImportError(
-            "Hamilton is required for drift detection. Install with: pip install sf-hamilton"
-        )
-
-    def drift_report__both(**_kwargs: Any) -> None:
-        raise ImportError(
-            "Hamilton is required for drift detection. Install with: pip install sf-hamilton"
-        )
+    psi_drift_report__psi = hamilton_stub("drift detection")
+    domain_drift_report__domain = hamilton_stub("drift detection")
+    drift_report__psi = hamilton_stub("drift detection")
+    drift_report__domain = hamilton_stub("drift detection")
+    psi_drift_report__both = hamilton_stub("drift detection")
+    domain_drift_report__both = hamilton_stub("drift detection")
+    drift_report__both = hamilton_stub("drift detection")
