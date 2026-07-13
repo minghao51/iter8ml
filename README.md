@@ -15,8 +15,8 @@ A high-velocity iteration framework for tabular machine learning. Built for sing
 **Option A: Project install (recommended for development)**
 
 ```bash
-uv sync --extra base      # ML models + HPO + Hamilton DAG
-uv sync --extra opinion   # Deep learning, SHAP, experiment tracking, LLM/MCP, data quality
+uv sync --extra train     # ML models + HPO + Hamilton DAG
+uv sync --extra full      # Training, deep learning, tracking, LLM/MCP, and data quality
 uv sync --extra docs      # Documentation tooling
 
 # Run an experiment
@@ -150,7 +150,7 @@ Connect Claude Desktop or any MCP client to run experiments conversationally:
 
 ```bash
 # Install LLM/MCP dependencies
-uv sync --extra opinion
+uv sync --extra full
 
 # Start the MCP server
 uv run iter8 mcp
@@ -178,7 +178,7 @@ Or with uvx (no local clone needed):
   "mcpServers": {
     "iter8ml": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/your-org/iter8ml", "--with", "iter8ml[opinion]", "iter8", "mcp"]
+      "args": ["--from", "git+https://github.com/your-org/iter8ml", "--with", "iter8ml[full]", "iter8", "mcp"]
     }
   }
 }
@@ -241,21 +241,22 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the detailed design document.
 | [explainability.md](docs/explainability.md) | SHAP TreeExplainer/KernelExplainer, beeswarm + dependence plots |
 | [data-loading.md](docs/data-loading.md) | CSV/Parquet/SQLite loading, security measures, data hashing |
 | [pipeline-architecture.md](docs/pipeline-architecture.md) | Hamilton DAG composition, config variants, hooks, extension guide |
+| [medallion.md](docs/medallion.md) | Local Bronze/Silver/Gold/Platinum products, atomic artifacts, catalog, and verification |
 
 ## Optional Integrations
 
 **With `uv sync` (project install):**
 
 ```bash
-uv sync --extra base        # ML models (catboost, lightgbm, xgboost) + HPO + Hamilton DAG
-uv sync --extra opinion     # Everything optional: DL, SHAP, wandb, MLflow, MCP/LLM, cleanlab
+uv sync --extra train       # ML models (catboost, lightgbm, xgboost) + HPO + Hamilton DAG
+uv sync --extra full        # Everything optional: DL, SHAP, wandb, MLflow, MCP/LLM, cleanlab
 uv sync --extra docs        # Documentation tooling (mkdocs, mkdocstrings, mike)
 ```
 
 | Extra | Packages |
 |-------|----------|
-| `base` | catboost, lightgbm, xgboost, optuna, sf-hamilton |
-| `opinion` | shap, cleanlab, torch, accelerate, transformers, tabpfn, pytorch-tabular, datasets, wandb, mlflow, mcp, litellm |
+| `train` | catboost, lightgbm, xgboost, optuna, sf-hamilton |
+| `full` | shap, cleanlab, torch, accelerate, transformers, tabpfn, pytorch-tabular, wandb, mlflow, mcp, litellm |
 | `docs` | mkdocs-material, mkdocstrings, mike, pymdown-extensions |
 
 **With `uvx` (ephemeral):**
@@ -275,10 +276,10 @@ docker run -v $(pwd):/workspace iter8ml iter8 run --data data.csv --target label
 
 ```bash
 # Install development/test extras
-uv sync --group dev --extra base --extra opinion
+uv sync --group dev --extra full
 
 # Run tests
-uv run --group dev --extra base --extra opinion pytest tests/unit -v
+uv run --group dev --extra full pytest tests/unit -v
 
 # Lint
 uv run --group dev ruff check .

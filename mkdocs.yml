@@ -33,6 +33,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Architecture: pipeline-architecture.md
+  - Medallion Runtime: medallion.md
   - Guides:
     - Data Loading: data-loading.md
     - Preprocessing: preprocessing.md

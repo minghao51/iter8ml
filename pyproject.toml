@@ -82,7 +82,7 @@ naive_baseline = "iter8ml.engine.models.baselines:NaiveBaseline"
 linear_baseline = "iter8ml.engine.models.baselines:LinearBaseline"
 
 [project.scripts]
-iter8 = "iter8ml.cli.main:app"
+iter8 = "iter8ml.cli:app"
 
 [dependency-groups]
 dev = [
