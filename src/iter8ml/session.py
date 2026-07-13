@@ -8,9 +8,12 @@ from typing import Any
 import polars as pl
 
 from iter8ml.config import ExperimentConfig
+from iter8ml.domain.manifests import RunPlan
 from iter8ml.engine.state_observer import StateObserver
 from iter8ml.engine.tracker import Tracker
 from iter8ml.engine.trainer import Trainer
+from iter8ml.orchestration.service import ExecutionResult, MedallionExecutionService
+from iter8ml.runtime.plan import compile_run_plan
 from iter8ml.services.export import ExportService
 from iter8ml.services.registry import RegistryService
 from iter8ml.services.reporting import ReportService
@@ -45,6 +48,22 @@ class ExperimentSession:
             resume_run_id=resume_run_id,
         )
         return trainer.run(df)
+
+    def plan(self, config: ExperimentConfig, *, materialization: str = "reproducible") -> RunPlan:
+        """Compile a deterministic medallion plan without executing it."""
+        return compile_run_plan(config, materialization=materialization)
+
+    def medallion_run(
+        self,
+        config: ExperimentConfig,
+        df: pl.DataFrame,
+        *,
+        execute_training: bool = True,
+    ) -> ExecutionResult:
+        """Run the explicit local Bronze-to-Platinum lifecycle."""
+        return MedallionExecutionService(self.workspace).run(
+            config, df, execute_training=execute_training
+        )
 
     def drift_check(
         self,

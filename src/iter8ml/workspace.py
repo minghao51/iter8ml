@@ -34,6 +34,30 @@ class Workspace:
         return self.root / "artifacts"
 
     @property
+    def lake_dir(self) -> Path:
+        return self.root / "lake"
+
+    @property
+    def control_dir(self) -> Path:
+        return self.root / "control"
+
+    @property
+    def runs_dir(self) -> Path:
+        return self.control_dir / "runs"
+
+    @property
+    def events_dir(self) -> Path:
+        return self.control_dir / "events"
+
+    @property
+    def catalog_path(self) -> Path:
+        return self.control_dir / "catalog" / "catalog.duckdb"
+
+    @property
+    def site_data_dir(self) -> Path:
+        return self.root / "site-data"
+
+    @property
     def exports_dir(self) -> Path:
         return self.root / "exports"
 
@@ -48,6 +72,11 @@ class Workspace:
     def init(self) -> Workspace:
         self.artifacts_dir.mkdir(parents=True, exist_ok=True)
         self.exports_dir.mkdir(parents=True, exist_ok=True)
+        self.lake_dir.mkdir(parents=True, exist_ok=True)
+        self.runs_dir.mkdir(parents=True, exist_ok=True)
+        self.events_dir.mkdir(parents=True, exist_ok=True)
+        (self.control_dir / "catalog").mkdir(parents=True, exist_ok=True)
+        self.site_data_dir.mkdir(parents=True, exist_ok=True)
         self.experiments_path.touch(exist_ok=True)
         if not self.registry_path.exists():
             self.registry_path.write_text("{}")

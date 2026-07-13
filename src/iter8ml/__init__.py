@@ -23,12 +23,16 @@ from iter8ml.engine.models.selector import ModelSelector
 from iter8ml.engine.tracker import JSONLTracker, Tracker
 from iter8ml.engine.trainer import Trainer
 from iter8ml.exceptions import (
+    ArtifactError,
     DataLoadError,
+    HamiltonUnavailableError,
     Iter8MLError,
     ModelFitError,
     RegistryError,
     TabularBlueprintError,
 )
+from iter8ml.orchestration import MedallionExecutionService
+from iter8ml.runtime import compile_run_plan
 from iter8ml.services.export import ExportService
 from iter8ml.services.registry import PromotionResult, RegistryService
 from iter8ml.services.reporting import ReportService
@@ -36,6 +40,7 @@ from iter8ml.session import ExperimentSession
 from iter8ml.workspace import Workspace
 
 __all__ = [
+    "ArtifactError",
     "CVStrategy",
     "DataLoadError",
     "EmbeddingMethod",
@@ -44,9 +49,11 @@ __all__ = [
     "ExperimentSession",
     "ExportService",
     "FeatureStrategy",
+    "HamiltonUnavailableError",
     "HardwareProfile",
     "Iter8MLError",
     "JSONLTracker",
+    "MedallionExecutionService",
     "ModelFitError",
     "ModelSelector",
     "PipelineSpec",
@@ -63,6 +70,7 @@ __all__ = [
     "Trainer",
     "Workspace",
     "available_model_names",
+    "compile_run_plan",
     "get_model_class",
     "load_data",
 ]
