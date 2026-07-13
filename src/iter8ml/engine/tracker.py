@@ -84,10 +84,11 @@ class JSONLTracker:
             if self._should_rotate():
                 self._rotate_log()
 
-            event["run_id"] = self.current_run_id or "unknown"
-            event["timestamp"] = datetime.now(UTC).isoformat()
+            enriched_event = dict(event)
+            enriched_event["run_id"] = self.current_run_id or "unknown"
+            enriched_event["timestamp"] = datetime.now(UTC).isoformat()
             with open(self.log_path, "a") as f:
-                f.write(json.dumps(event) + "\n")
+                f.write(json.dumps(enriched_event) + "\n")
 
     def finish(self) -> None:
         self.log_event({"event": "run_completed"})

@@ -33,6 +33,14 @@ class TrainerStatePublishError(TabularBlueprintError):
     """Raised when the required trainer state publication seam fails."""
 
 
+class HamiltonUnavailableError(TabularBlueprintError):
+    """Raised when a Hamilton-backed operation is requested without Hamilton."""
+
+
+class ArtifactError(TabularBlueprintError):
+    """Raised when a durable artifact cannot be created, verified, or read."""
+
+
 Iter8MLError = TabularBlueprintError
 
 

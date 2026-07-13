@@ -71,22 +71,34 @@ class Trainer:
             }
         )
 
-        training_executor = PipelineExecutor(mode=PipelineMode.TRAINING, tracker=self.tracker)
-        state = training_executor.run_training(
-            config=self.config,
-            df=df,
-            run_id=run_id,
-            vram_gb=self.hardware.vram_gb,
-            completed_models=self._completed_models,
-            workspace=self.workspace,
-        )
+        try:
+            training_executor = PipelineExecutor(mode=PipelineMode.TRAINING, tracker=self.tracker)
+            state = training_executor.run_training(
+                config=self.config,
+                df=df,
+                run_id=run_id,
+                vram_gb=self.hardware.vram_gb,
+                completed_models=self._completed_models,
+                workspace=self.workspace,
+            )
 
-        if state is not None:
-            self._log_state_events(state, run_id)
+            if state is not None:
+                self._log_state_events(state, run_id)
 
-        self._update_state()
-        self.tracker.finish()
-        return state.results if state is not None else {}
+            self._update_state()
+            return state.results if state is not None else {}
+        except BaseException as exc:
+            self._publish_event(
+                {
+                    "event": "experiment_failed",
+                    "run_id": run_id,
+                    "error_type": type(exc).__name__,
+                    "error": str(exc),
+                }
+            )
+            raise
+        finally:
+            self.tracker.finish()
 
     def _log_state_events(self, state: Any, run_id: str) -> None:
         for model_name, entry in state.results.items():

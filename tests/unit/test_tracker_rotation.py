@@ -157,6 +157,17 @@ def test_log_event_adds_run_id_and_timestamp():
         assert event["data"] == "test"
 
 
+def test_log_event_does_not_mutate_caller_event():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tracker = JSONLTracker(log_path=str(Path(tmpdir) / "test.jsonl"))
+        tracker.current_run_id = "run_1"
+        event = {"event": "custom_event", "payload": {"value": 1}}
+
+        tracker.log_event(event)
+
+        assert event == {"event": "custom_event", "payload": {"value": 1}}
+
+
 # --- WandbTracker tests ---
 
 

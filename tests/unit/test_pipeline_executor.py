@@ -2,6 +2,7 @@ import polars as pl
 import pytest
 
 from iter8ml.engine.pipelines.executor import PipelineExecutor, PipelineMode
+from iter8ml.exceptions import HamiltonUnavailableError
 
 
 @pytest.fixture
@@ -80,21 +81,21 @@ class TestPipelineExecutorFallback:
         executor = PipelineExecutor()
         assert executor.available is False
 
-    def test_run_preprocessing_fallback_returns_original(self, monkeypatch, sample_df):
+    def test_run_preprocessing_fallback_raises_actionable_error(self, monkeypatch, sample_df):
         import iter8ml.engine.pipelines.executor as executor_mod
 
         monkeypatch.setattr(executor_mod, "_try_import_hamilton", lambda: None)
         executor = PipelineExecutor()
-        result = executor.run_preprocessing(sample_df)
-        assert result.equals(sample_df)
+        with pytest.raises(HamiltonUnavailableError, match="uv sync --extra train"):
+            executor.run_preprocessing(sample_df)
 
-    def test_execute_fallback_returns_empty(self, monkeypatch, sample_df):
+    def test_execute_fallback_raises_actionable_error(self, monkeypatch, sample_df):
         import iter8ml.engine.pipelines.executor as executor_mod
 
         monkeypatch.setattr(executor_mod, "_try_import_hamilton", lambda: None)
         executor = PipelineExecutor()
-        result = executor.execute(inputs={"df": sample_df})
-        assert result == {}
+        with pytest.raises(HamiltonUnavailableError, match="uv sync --extra train"):
+            executor.execute(inputs={"df": sample_df})
 
     def test_mermaid_fallback(self, monkeypatch):
         import iter8ml.engine.pipelines.executor as executor_mod

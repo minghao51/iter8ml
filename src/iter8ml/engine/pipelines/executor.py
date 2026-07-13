@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 import polars as pl
 
 from iter8ml.config import PipelineSpec, StepName
+from iter8ml.exceptions import HamiltonUnavailableError
 from iter8ml.workspace import Workspace
 
 if TYPE_CHECKING:
@@ -152,14 +153,21 @@ class PipelineExecutor:
     def available(self) -> bool:
         return self._dr is not None
 
+    def require_available(self) -> None:
+        """Fail with an actionable configuration error when Hamilton is absent."""
+        if self._dr is None:
+            raise HamiltonUnavailableError(
+                "Hamilton is required for DAG execution. "
+                "Install the training extra with `uv sync --extra train`."
+            )
+
     def execute(
         self,
         inputs: dict[str, Any],
         final_vars: list[str] | None = None,
         overrides: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        if self._dr is None:
-            return {}
+        self.require_available()
 
         targets = final_vars or _MODE_FINAL_VARS.get(self._mode, ["processed_dataframe"])
         return self._dr.execute(targets, inputs=inputs, overrides=overrides)  # type: ignore[no-any-return]
@@ -198,8 +206,7 @@ class PipelineExecutor:
         return getattr(result, "source", str(result))
 
     def run_preprocessing(self, df: pl.DataFrame) -> pl.DataFrame:
-        if self._dr is None:
-            return df
+        self.require_available()
         result = self.execute(inputs={"df": df})
         return result.get("processed_dataframe", df)  # type: ignore[no-any-return]
 
@@ -213,7 +220,7 @@ class PipelineExecutor:
         workspace: Workspace | None = None,
     ) -> Any:
         if self._driver_mod is None:
-            return None
+            self.require_available()
 
         modules = _get_training_modules(config.pipeline)
         hamilton_config = _resolve_hamilton_config(config)
@@ -243,7 +250,7 @@ class PipelineExecutor:
         drift_method: str = "psi",
     ) -> Any:
         if self._driver_mod is None:
-            return None
+            self.require_available()
 
         from iter8ml.engine.pipelines.nodes import drift_detection, prep
 
