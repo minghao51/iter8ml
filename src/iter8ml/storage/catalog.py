@@ -1,8 +1,7 @@
-"""Rebuildable local catalog over committed manifests.
+"""Rebuildable local SQLite catalog over committed manifests.
 
-The file is named ``catalog.duckdb`` to preserve the planned public layout. The
-implementation uses SQLite from the standard library so the core package stays
-usable without adding a database dependency; callers can query the same tables.
+The current compatibility filename remains ``catalog.duckdb``. The manifest and
+artifact store are authoritative, so a future DuckDB migration can rebuild it.
 """
 
 from __future__ import annotations
@@ -24,7 +23,11 @@ class LocalCatalogStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._initialize()
 
-    def _connect(self) -> sqlite3.Connection:
+    def _connect(self, *, read_only: bool = False) -> sqlite3.Connection:
+        if read_only:
+            connection = sqlite3.connect(f"file:{self.path.resolve()}?mode=ro", uri=True)
+            connection.execute("PRAGMA query_only = ON")
+            return connection
         return sqlite3.connect(self.path)
 
     def _initialize(self) -> None:
@@ -103,7 +106,15 @@ class LocalCatalogStore:
         return {"products": len(products), "runs": len(runs)}
 
     def query(self, sql: str, parameters: Sequence[Any] = ()) -> pl.DataFrame:
-        with self._connect() as conn:
+        statement = sql.strip()
+        if not statement:
+            raise ValueError("catalog query cannot be empty")
+        if ";" in statement.rstrip(";"):
+            raise ValueError("catalog query must contain exactly one statement")
+        keyword = statement.split(None, 1)[0].lower()
+        if keyword not in {"select", "with", "explain", "pragma"}:
+            raise ValueError("catalog query is read-only; use SELECT, WITH, EXPLAIN, or PRAGMA")
+        with self._connect(read_only=True) as conn:
             return pl.read_database(
                 query=sql, connection=conn, execute_options={"parameters": parameters}
             )

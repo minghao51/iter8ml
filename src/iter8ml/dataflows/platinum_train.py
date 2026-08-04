@@ -21,7 +21,7 @@ def materialize_platinum(
 ) -> ProductManifest:
     pid = product_id("platinum", experiment_name, gold.product_id, run_id)
     if store.exists(pid):
-        return store.read_manifest(pid)
+        return store.read_verified_manifest(pid)
     writer = store.begin(pid, product_type="platinum", name=experiment_name)
     try:
         metrics_ref = writer.write_json(results, relative_path="metrics.json", kind="metrics")

@@ -27,7 +27,7 @@ uv run iter8 run --data path/to/data.csv --target target_column
 
 ```bash
 # Run directly with uvx (uses the CLI entry point from git)
-uvx --from git+https://github.com/your-org/iter8ml iter8 run --data data.csv --target label
+uvx --from git+https://github.com/minghao51/iter8ml iter8 run --data data.csv --target label
 
 # Or after publishing to PyPI:
 uvx iter8ml run --data data.csv --target label
@@ -36,7 +36,7 @@ uvx iter8ml run --data data.csv --target label
 **Option C: Permanent install on PATH**
 
 ```bash
-uv tool install git+https://github.com/your-org/iter8ml
+uv tool install git+https://github.com/minghao51/iter8ml
 iter8 run --data data.csv --target label
 ```
 
@@ -178,7 +178,7 @@ Or with uvx (no local clone needed):
   "mcpServers": {
     "iter8ml": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/your-org/iter8ml", "--with", "iter8ml[full]", "iter8", "mcp"]
+      "args": ["--from", "git+https://github.com/minghao51/iter8ml", "--with", "iter8ml[full]", "iter8", "mcp"]
     }
   }
 }
@@ -262,7 +262,7 @@ uv sync --extra docs        # Documentation tooling (mkdocs, mkdocstrings, mike)
 **With `uvx` (ephemeral):**
 
 ```bash
-uvx --from git+https://github.com/your-org/iter8ml --with wandb iter8 run --data data.csv --target label
+uvx --from git+https://github.com/minghao51/iter8ml --with wandb iter8 run --data data.csv --target label
 ```
 
 ## Running in Docker

@@ -24,7 +24,7 @@ def materialize_bronze(
     spec_digest = digest(specification or {})
     pid = product_id("bronze", source.name, source_fingerprint, spec_digest)
     if store.exists(pid):
-        return store.read_manifest(pid)
+        return store.read_verified_manifest(pid)
     writer = store.begin(pid, product_type="bronze", name=source.name)
     try:
         data_ref = writer.write_parquet(frame, relative_path="data/data.parquet", kind="dataset")

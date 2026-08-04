@@ -13,7 +13,19 @@ and Polars execution path. The logical layers are:
 Products live under `workspace/lake/01_bronze` through
 `workspace/lake/04_platinum`. A product is readable only after its manifest and
 `_SUCCESS` marker are committed atomically. `workspace/control/catalog/catalog.duckdb`
-is a rebuildable local index; manifests and artifacts remain the source of truth.
+is currently a rebuildable SQLite compatibility index; manifests and artifacts
+remain the source of truth. A true DuckDB catalog with Parquet views remains
+part of the later catalog phase.
+
+## Current implementation boundary
+
+This is a hardened local reference slice, not completion of every phase in the
+medallion handoff. It currently covers atomic local products, deterministic
+Bronze/Silver/Gold identities, split membership, a Platinum metrics wrapper,
+run manifests/events, verification, catalog commands, and bounded JSON
+projections. Model-per-fold Platinum execution, OOF artifacts, inference/drift
+plans, migration tooling, selective Hamilton caching, and the Astro/Starlight
+site remain future work.
 
 ## Commands
 

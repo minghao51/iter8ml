@@ -87,7 +87,10 @@ class Trainer:
 
             self._update_state()
             return state.results if state is not None else {}
-        except BaseException as exc:
+        except KeyboardInterrupt:
+            self._publish_event({"event": "experiment_cancelled", "run_id": run_id})
+            raise
+        except Exception as exc:
             self._publish_event(
                 {
                     "event": "experiment_failed",

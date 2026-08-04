@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import typer
 
@@ -55,11 +56,15 @@ def data_ingest(
     name: str = typer.Option("dataset", "--name"),
 ) -> None:
     """Snapshot CSV or Parquet input as a Bronze product."""
+    suffix = Path(data_path).suffix.lower()
+    source_types = {".csv": "csv", ".parquet": "parquet"}
+    if suffix not in source_types:
+        raise typer.BadParameter("--data must be a CSV or Parquet file")
     workspace = Workspace().init()
     frame = load_data(data_path)
     source = SourceSpec(
         name=name,
-        source_type="csv" if data_path.endswith(".csv") else "parquet",
+        source_type=source_types[suffix],  # type: ignore[arg-type]
         uri=data_path,
     )
     store = LocalArtifactStore(workspace.root)

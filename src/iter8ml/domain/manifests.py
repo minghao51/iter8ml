@@ -28,6 +28,15 @@ StageName = Literal["bronze", "silver", "gold", "platinum", "publish"]
 RunStatus = Literal["planned", "running", "succeeded", "partial", "failed", "cancelled"]
 
 
+def _validate_digest(value: str) -> str:
+    if not (value.startswith("sha256:") and len(value) == 71):
+        raise ValueError("digest must be a full sha256:<64 lowercase hex> value")
+    if value[7:] != value[7:].lower():
+        raise ValueError("digest must use lowercase hexadecimal characters")
+    int(value[7:], 16)
+    return value
+
+
 class ContractModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -38,6 +47,11 @@ class SourceSpec(ContractModel):
     uri: str
     query: str | None = None
     fingerprint: str | None = None
+
+    @field_validator("fingerprint")
+    @classmethod
+    def validate_fingerprint(cls, value: str | None) -> str | None:
+        return _validate_digest(value) if value is not None else None
 
 
 class ArtifactRef(ContractModel):
@@ -53,12 +67,7 @@ class ArtifactRef(ContractModel):
     @field_validator("sha256")
     @classmethod
     def validate_digest(cls, value: str) -> str:
-        if not (value.startswith("sha256:") and len(value) == 71):
-            raise ValueError("sha256 must be a full sha256:<64 lowercase hex> digest")
-        if value[7:] != value[7:].lower():
-            raise ValueError("sha256 digest must use lowercase hexadecimal characters")
-        int(value[7:], 16)
-        return value
+        return _validate_digest(value)
 
 
 class LineageEdge(ContractModel):
@@ -84,6 +93,11 @@ class ProductManifest(ContractModel):
     lineage: list[LineageEdge] = Field(default_factory=list)
     metadata: dict[str, JsonValue] = Field(default_factory=dict)
 
+    @field_validator("specification_digest", "code_digest", "graph_version", "schema_digest")
+    @classmethod
+    def validate_digests(cls, value: str | None) -> str | None:
+        return _validate_digest(value) if value is not None else None
+
 
 class SplitSpec(ContractModel):
     strategy: Literal["kfold", "stratified", "group", "time", "purged_time"] = "kfold"
@@ -106,6 +120,11 @@ class SplitManifest(ContractModel):
     fold_counts: dict[str, dict[str, int]]
     overlap_checks_passed: bool
     temporal_checks_passed: bool | None
+
+    @field_validator("split_id")
+    @classmethod
+    def validate_split_id(cls, value: str) -> str:
+        return _validate_digest(value)
 
 
 class RunPlan(ContractModel):
@@ -157,3 +176,8 @@ class RunManifest(ContractModel):
     promotion: dict[str, JsonValue] | None = None
     error: dict[str, str] | None = None
     event_archive: str | None = None
+
+    @field_validator("run_key", "graph_version")
+    @classmethod
+    def validate_digests(cls, value: str) -> str:
+        return _validate_digest(value)

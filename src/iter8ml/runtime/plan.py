@@ -70,5 +70,9 @@ def compile_run_plan(
 
 
 def _safe_name(value: str) -> str:
-    normalized = "".join(char.lower() if char.isalnum() else "_" for char in value).strip("_")
-    return normalized[:64] or "experiment"
+    normalized = "".join(
+        char.lower() if char.isascii() and char.isalnum() else "_" for char in value
+    ).strip("_")
+    if not normalized or not normalized[0].isalpha():
+        normalized = f"experiment_{normalized}".rstrip("_")
+    return normalized[:64]

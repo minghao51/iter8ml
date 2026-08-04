@@ -41,6 +41,10 @@ class ArtifactError(TabularBlueprintError):
     """Raised when a durable artifact cannot be created, verified, or read."""
 
 
+class CancellationRequested(TabularBlueprintError):
+    """Raised at a stage boundary after a local cancellation request."""
+
+
 Iter8MLError = TabularBlueprintError
 
 

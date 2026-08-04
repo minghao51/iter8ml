@@ -57,8 +57,7 @@ class DocsExporter:
                     "run_id": data.get("run_id"),
                     "status": data.get("status"),
                     "run_key": data.get("run_key"),
-                    "stages": data.get("stages", []),
-                    "event_archive": data.get("event_archive"),
+                    "stages": [_project_stage(stage) for stage in data.get("stages", [])],
                 },
             )
         _write(
@@ -83,3 +82,14 @@ class DocsExporter:
 def _write(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _project_stage(stage: dict[str, Any]) -> dict[str, Any]:
+    """Allowlist operational fields; never export local paths or error payloads."""
+    return {
+        "name": stage.get("name"),
+        "status": stage.get("status"),
+        "attempt": stage.get("attempt"),
+        "input_products": stage.get("input_products", []),
+        "output_products": stage.get("output_products", []),
+    }

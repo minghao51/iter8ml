@@ -23,9 +23,16 @@ def digest(value: Any) -> str:
 
 def dataframe_digest(df: pl.DataFrame) -> str:
     """Hash schema and row content without depending on Polars partition layout."""
-    payload = {
+    header = {
         "columns": df.columns,
         "schema": {name: str(dtype) for name, dtype in df.schema.items()},
-        "rows": sorted(canonical_json(row) for row in df.to_dicts()),
+        "row_count": df.height,
     }
-    return digest(payload)
+    row_digests = sorted(
+        hashlib.sha256(canonical_json(row).encode("utf-8")).digest()
+        for row in df.iter_rows(named=True)
+    )
+    hasher = hashlib.sha256(canonical_json(header).encode("utf-8"))
+    for row_digest in row_digests:
+        hasher.update(row_digest)
+    return "sha256:" + hasher.hexdigest()

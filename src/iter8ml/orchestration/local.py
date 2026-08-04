@@ -19,21 +19,24 @@ class LocalOrchestrator:
     def submit(self, plan: RunPlan) -> RunHandle:
         handle = RunHandle(run_id=f"planned_{plan.run_key[7:19]}")
         if self.runner is not None:
-            self.runner(plan)
+            result = self.runner(plan)
+            if hasattr(result, "run_id"):
+                return RunHandle(run_id=str(result.run_id))
         return handle
 
     def status(self, run_id: str) -> dict[str, Any]:
         path = self.workspace.runs_dir / run_id / "run.json"
         if not path.exists():
             return {"run_id": run_id, "status": "unknown"}
-        return json.loads(path.read_text(encoding="utf-8"))  # type: ignore[no-any-return]
+        status = json.loads(path.read_text(encoding="utf-8"))
+        status["cancellation_requested"] = (path.parent / "CANCEL_REQUESTED").exists()
+        return status  # type: ignore[no-any-return]
 
     def cancel(self, run_id: str) -> None:
         path = self.workspace.runs_dir / run_id / "run.json"
         if not path.exists():
             raise FileNotFoundError(f"run not found: {run_id}")
         data = json.loads(path.read_text(encoding="utf-8"))
-        if data.get("status") in {"succeeded", "failed", "cancelled"}:
+        if data.get("status") in {"succeeded", "partial", "failed", "cancelled"}:
             return
-        data["status"] = "cancelled"
-        path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+        (path.parent / "CANCEL_REQUESTED").touch(exist_ok=True)

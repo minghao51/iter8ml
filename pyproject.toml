@@ -67,9 +67,9 @@ full = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/anomalyco/iter8ml"
-Repository = "https://github.com/anomalyco/iter8ml"
-Documentation = "https://iter8ml.dev"
+Homepage = "https://github.com/minghao51/iter8ml"
+Repository = "https://github.com/minghao51/iter8ml"
+Documentation = "https://minghao51.github.io/iter8ml/"
 
 [project.entry-points."iter8ml.models"]
 catboost = "iter8ml.engine.models.catboost_model:CatBoostModel"
