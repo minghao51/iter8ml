@@ -65,30 +65,23 @@ class Evaluator:
     def cv_strategy(self) -> str:
         return self.config.cv_strategy.value
 
-    def evaluate(
+    def _run_cv(
         self,
         model_cls: Any,
         X: np.ndarray,
         y: np.ndarray,
-        task: str | None = None,
+        task: str,
         **model_kwargs: Any,
-    ) -> dict[str, float]:
-        """Run cross-validation and return aggregated metrics.
+    ) -> dict[str, list[float]]:
+        """Run cross-validation and return per-fold scores keyed by metric.
 
-        Args:
-            model_cls: Model class (not instance). A fresh instance is created
-                for each fold to prevent state leakage across folds.
-            X: Feature matrix.
-            y: Target vector.
-            task: Task type override. Falls back to self.task.
-            **model_kwargs: Passed to model_cls constructor.
+        A fresh model instance is created for each fold to prevent state leakage.
         """
         cv = get_cv_split(self.config.cv_strategy, self.cv_folds)
         fold_scores: dict[str, list[float]] = {m: [] for m in self.metrics}
-        model_task = task or self.task
 
         metric_fns = {
-            metric_name: METRICS_REGISTRY[model_task][metric_name] for metric_name in self.metrics
+            metric_name: METRICS_REGISTRY[task][metric_name] for metric_name in self.metrics
         }
 
         all_classes = np.unique(y)
@@ -97,7 +90,7 @@ class Evaluator:
             X_train, X_val = X[train_idx], X[val_idx]
             y_train, y_val = y[train_idx], y[val_idx]
 
-            model = model_cls(task=model_task, **model_kwargs)
+            model = model_cls(task=task, **model_kwargs)
             model.fit(X_train, y_train)
             y_pred = model.predict(X_val)
             y_proba = None
@@ -132,7 +125,42 @@ class Evaluator:
                 else:
                     fold_scores[metric_name].append(metric_fn(y_val, y_pred))
 
+        return fold_scores
+
+    def evaluate(
+        self,
+        model_cls: Any,
+        X: np.ndarray,
+        y: np.ndarray,
+        task: str | None = None,
+        **model_kwargs: Any,
+    ) -> dict[str, float]:
+        """Run cross-validation and return the mean of each metric.
+
+        Args:
+            model_cls: Model class (not instance). A fresh instance is created
+                for each fold to prevent state leakage across folds.
+            X: Feature matrix.
+            y: Target vector.
+            task: Task type override. Falls back to self.task.
+            **model_kwargs: Passed to model_cls constructor.
+        """
+        fold_scores = self._run_cv(model_cls, X, y, task or self.task, **model_kwargs)
         return {m: float(np.mean(scores)) for m, scores in fold_scores.items()}
+
+    def evaluate_with_std(
+        self,
+        model_cls: Any,
+        X: np.ndarray,
+        y: np.ndarray,
+        task: str | None = None,
+        **model_kwargs: Any,
+    ) -> tuple[dict[str, float], dict[str, float]]:
+        """Like :meth:`evaluate`, but also return per-metric std across folds."""
+        fold_scores = self._run_cv(model_cls, X, y, task or self.task, **model_kwargs)
+        means = {m: float(np.mean(scores)) for m, scores in fold_scores.items()}
+        stds = {m: float(np.std(scores)) for m, scores in fold_scores.items()}
+        return means, stds
 
     @staticmethod
     def compute_lift(

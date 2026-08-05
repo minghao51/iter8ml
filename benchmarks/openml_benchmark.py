@@ -10,6 +10,8 @@ Usage::
 
     uv run python -m benchmarks.run_openml_benchmark [--quick]
     uv run python -m benchmarks.run_openml_benchmark \
+        --config configs/cpu_benchmark.yaml
+    uv run python -m benchmarks.run_openml_benchmark \
         --sweep-config sweeps/default_vs_gpu.yaml
     uv run python -m benchmarks.run_openml_benchmark \
         --check-regression benchmarks/results/baseline_summary.json
@@ -36,8 +38,8 @@ BASELINE_PATH = RESULTS_DIR / "baseline_summary.json"
 REGRESSION_THRESHOLD = 0.02  # 2% default allowed regression
 
 
-def load_config() -> dict[str, Any]:
-    return yaml.safe_load(CONFIG_PATH.read_text())
+def load_config(config_path: str | Path = CONFIG_PATH) -> dict[str, Any]:
+    return yaml.safe_load(Path(config_path).read_text())
 
 
 def load_openml_dataset(dataset_id: int) -> tuple[pl.DataFrame, str]:
@@ -111,7 +113,8 @@ def _preprocess_for_benchmark(
     df: pl.DataFrame, target_col: str, task: str
 ) -> tuple[np.ndarray, np.ndarray]:
     from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
-    from tabular_blueprint.data.adapter import DataAdapter
+
+    from iter8ml.data.adapter import DataAdapter
 
     adapter = DataAdapter()
     X, y = adapter.transform(df, target_col)
@@ -150,13 +153,14 @@ def run_benchmark_for_dataset(
     model_overrides: dict[str, Any] | None,
     quick: bool = False,
 ) -> list[dict[str, Any]]:
-    from tabular_blueprint.config import CVStrategy, ExperimentConfig
-    from tabular_blueprint.constants import TaskType
-    from tabular_blueprint.engine.evaluator import Evaluator
-    from tabular_blueprint.models.factory import get_model_class
+    from iter8ml.config import CVStrategy, ExperimentConfig
+    from iter8ml.constants import TaskType
+    from iter8ml.engine.evaluator import Evaluator
+    from iter8ml.engine.models.factory import get_model_class
 
     X, y = _preprocess_for_benchmark(df, target_col, task)
     n_rows, n_features = X.shape
+    n_classes = int(np.unique(y).size) if task == "classification" else 0
 
     config = ExperimentConfig(
         name=f"benchmark_{dataset_name}_{variant_name}",
@@ -174,13 +178,28 @@ def run_benchmark_for_dataset(
     for model_name in models:
         try:
             model_cls = get_model_class(model_name)
-        except Exception:
+        except Exception as e:
+            print(f"  [{dataset_name}] model '{model_name}' unavailable: {e}", flush=True)
+            results.append(
+                {
+                    "dataset": dataset_name,
+                    "variant": variant_name,
+                    "model": model_name,
+                    "task": task,
+                    "n_rows": n_rows,
+                    "n_features": n_features,
+                    "n_classes": n_classes,
+                    "error": f"model_load_failed: {e}",
+                }
+            )
             continue
 
         start = time.perf_counter()
         try:
             kwargs = _model_kwargs(model_name, model_overrides)
-            cv_scores = evaluator.evaluate(model_cls, X, y, task=task, **kwargs)
+            cv_scores, cv_std = evaluator.evaluate_with_std(
+                model_cls, X, y, task=task, **kwargs
+            )
             duration = round(time.perf_counter() - start, 3)
         except Exception as e:
             results.append(
@@ -191,6 +210,7 @@ def run_benchmark_for_dataset(
                     "task": task,
                     "n_rows": n_rows,
                     "n_features": n_features,
+                    "n_classes": n_classes,
                     "error": str(e),
                 }
             )
@@ -204,7 +224,9 @@ def run_benchmark_for_dataset(
                 "task": task,
                 "n_rows": n_rows,
                 "n_features": n_features,
+                "n_classes": n_classes,
                 "cv_scores": {k: round(float(v), 6) for k, v in cv_scores.items()},
+                "cv_std": {k: round(float(v), 6) for k, v in cv_std.items()},
                 "duration_seconds": duration,
             }
         )
@@ -222,8 +244,9 @@ def load_sweep_config(path: str | Path | None) -> list[dict[str, Any]]:
 def run_all(
     quick: bool = False,
     sweep_config_path: str | Path | None = None,
+    config_path: str | Path = CONFIG_PATH,
 ) -> list[dict[str, Any]]:
-    config = load_config()
+    config = load_config(config_path)
     all_results: list[dict[str, Any]] = []
     variants = load_sweep_config(sweep_config_path)
 
@@ -348,6 +371,12 @@ def main() -> None:
         "--quick", action="store_true", help="Sample large datasets for fast feedback"
     )
     parser.add_argument(
+        "--config",
+        type=str,
+        default=str(CONFIG_PATH),
+        help="Path to benchmark dataset/model config YAML",
+    )
+    parser.add_argument(
         "--sweep-config", type=str, default=None, help="YAML file with parameter sweep variants"
     )
     parser.add_argument(
@@ -373,7 +402,7 @@ def main() -> None:
     args = parser.parse_args()
 
     print("=" * 60)
-    print("  tabular-blueprint OpenML Benchmark Suite")
+    print("  iter8ml OpenML Benchmark Suite")
     print("=" * 60)
     print(f"  Mode: {'quick' if args.quick else 'full'}")
     if args.sweep_config:
@@ -381,7 +410,11 @@ def main() -> None:
     print()
 
     t0 = time.perf_counter()
-    results = run_all(quick=args.quick, sweep_config_path=args.sweep_config)
+    results = run_all(
+        quick=args.quick,
+        sweep_config_path=args.sweep_config,
+        config_path=args.config,
+    )
     total = time.perf_counter() - t0
 
     print(f"\nDone: {len(results)} benchmark results in {total:.1f}s")

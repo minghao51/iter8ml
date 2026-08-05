@@ -68,6 +68,8 @@ benchmark_results*.csv
 benchmark_results*.json
 benchmarks/results/*.json
 !benchmarks/results/.gitkeep
+!benchmarks/results/summary.json
+!benchmarks/results/*_default.json
 
 # Generated docs
 docs/*-benchmark-report.md

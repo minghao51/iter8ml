@@ -1,0 +1,56 @@
+[
+  {
+    "dataset": "quake",
+    "variant": "default",
+    "model": "catboost",
+    "task": "regression",
+    "n_rows": 2178,
+    "n_features": 3,
+    "n_classes": 0,
+    "cv_scores": {
+      "rmse": 0.518741,
+      "r2": -0.091958
+    },
+    "cv_std": {
+      "rmse": 0.004097,
+      "r2": 0.023663
+    },
+    "duration_seconds": 2.396
+  },
+  {
+    "dataset": "quake",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "regression",
+    "n_rows": 2178,
+    "n_features": 3,
+    "n_classes": 0,
+    "cv_scores": {
+      "rmse": 0.592391,
+      "r2": -0.425321
+    },
+    "cv_std": {
+      "rmse": 0.020378,
+      "r2": 0.095898
+    },
+    "duration_seconds": 1.467
+  },
+  {
+    "dataset": "quake",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "regression",
+    "n_rows": 2178,
+    "n_features": 3,
+    "n_classes": 0,
+    "cv_scores": {
+      "rmse": 0.606664,
+      "r2": -0.494693
+    },
+    "cv_std": {
+      "rmse": 0.01785,
+      "r2": 0.092142
+    },
+    "duration_seconds": 0.878
+  }
+]

@@ -1,0 +1,56 @@
+[
+  {
+    "dataset": "credit-g",
+    "variant": "default",
+    "model": "catboost",
+    "task": "classification",
+    "n_rows": 1000,
+    "n_features": 20,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.796167,
+      "f1_macro": 0.683174
+    },
+    "cv_std": {
+      "roc_auc": 0.022765,
+      "f1_macro": 0.012961
+    },
+    "duration_seconds": 3.193
+  },
+  {
+    "dataset": "credit-g",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "classification",
+    "n_rows": 1000,
+    "n_features": 20,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.767238,
+      "f1_macro": 0.68298
+    },
+    "cv_std": {
+      "roc_auc": 0.020438,
+      "f1_macro": 0.022176
+    },
+    "duration_seconds": 1.285
+  },
+  {
+    "dataset": "credit-g",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "classification",
+    "n_rows": 1000,
+    "n_features": 20,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.771821,
+      "f1_macro": 0.692437
+    },
+    "cv_std": {
+      "roc_auc": 0.012431,
+      "f1_macro": 0.011022
+    },
+    "duration_seconds": 0.688
+  }
+]

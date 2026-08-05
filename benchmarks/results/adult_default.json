@@ -1,0 +1,56 @@
+[
+  {
+    "dataset": "adult",
+    "variant": "default",
+    "model": "catboost",
+    "task": "classification",
+    "n_rows": 48842,
+    "n_features": 14,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.929177,
+      "f1_macro": 0.816853
+    },
+    "cv_std": {
+      "roc_auc": 0.001849,
+      "f1_macro": 0.005049
+    },
+    "duration_seconds": 17.651
+  },
+  {
+    "dataset": "adult",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "classification",
+    "n_rows": 48842,
+    "n_features": 14,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.922208,
+      "f1_macro": 0.809333
+    },
+    "cv_std": {
+      "roc_auc": 0.001789,
+      "f1_macro": 0.003529
+    },
+    "duration_seconds": 3.732
+  },
+  {
+    "dataset": "adult",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "classification",
+    "n_rows": 48842,
+    "n_features": 14,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.912634,
+      "f1_macro": 0.798795
+    },
+    "cv_std": {
+      "roc_auc": 0.002301,
+      "f1_macro": 0.004355
+    },
+    "duration_seconds": 2.974
+  }
+]

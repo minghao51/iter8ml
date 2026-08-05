@@ -10,6 +10,28 @@ A high-velocity iteration framework for tabular machine learning. Built for sing
 - **Config over code** – hyperparameters, feature lists, model types, and even pipeline steps are defined in YAML/TOML.
 - **Extensible** – easy to drop in custom transformers, metrics, or models.
 
+## Benchmark Results
+
+CatBoost / LightGBM / XGBoost, 5-fold cross-validation, **default hyperparameters**, on a laptop CPU (Intel Core Ultra 5, 14 cores). Reproducible via `uv run python benchmarks/render_results.py`.
+
+![Benchmark results](docs/img/benchmark_results.png)
+
+| Dataset | Task | N | Metric | CatBoost | LightGBM | XGBoost |
+|---|---|--:|---|--:|--:|--:|
+| credit-g | classification | 1,000 | roc_auc | **0.796 ±0.023** | 0.767 ±0.020 | 0.772 ±0.012 |
+| adult | classification | 48,842 | roc_auc | **0.929 ±0.002** | 0.922 ±0.002 | 0.913 ±0.002 |
+| shuttle | classification | 58,000 | f1_macro | 0.985 ±0.017 | 0.347 ±0.052 | **0.986 ±0.019** |
+| iris | classification | 150 | f1_macro | **0.953 ±0.034** | 0.953 ±0.035 | 0.939 ±0.034 |
+| spambase | classification | 4,601 | roc_auc | **0.988 ±0.003** | 0.987 ±0.002 | 0.985 ±0.002 |
+| breast_cancer | classification | 569 | roc_auc | **0.995 ±0.005** | 0.992 ±0.008 | 0.994 ±0.004 |
+| house_16H | regression | 8,192 | r2 | **0.963 ±0.002** | 0.958 ±0.002 | 0.955 ±0.003 |
+| quake | regression | 2,178 | r2 | **-0.092 ±0.024** | -0.425 ±0.096 | -0.495 ±0.092 |
+| diabetes | regression | 442 | r2 | **0.432 ±0.064** | 0.340 ±0.070 | 0.315 ±0.109 |
+
+_5-fold CV (mean ± std) · default hyperparameters · CPU · roc_auc (binary) / f1_macro (multiclass) / R² (regression) · best per row in bold._
+
+> **Notes:** Multiclass datasets (`shuttle`, `iris`) report `f1_macro` — OVR-AUC is unstable on imbalanced folds. `shuttle` is extremely class-imbalanced (3 of 7 classes have <15 samples), so default LightGBM underfits the rare classes (f1 0.35 ± 0.05); the framework's class-weighting and HPO steps are designed to close that gap. `quake` is a known noisy regression set (negative R² is expected for all models).
+
 ## Quick Start
 
 **Option A: Project install (recommended for development)**

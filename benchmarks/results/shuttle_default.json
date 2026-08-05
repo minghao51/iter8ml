@@ -1,0 +1,56 @@
+[
+  {
+    "dataset": "shuttle",
+    "variant": "default",
+    "model": "catboost",
+    "task": "classification",
+    "n_rows": 58000,
+    "n_features": 9,
+    "n_classes": 7,
+    "cv_scores": {
+      "roc_auc": 1.0,
+      "f1_macro": 0.985369
+    },
+    "cv_std": {
+      "roc_auc": 0.0,
+      "f1_macro": 0.016893
+    },
+    "duration_seconds": 34.963
+  },
+  {
+    "dataset": "shuttle",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "classification",
+    "n_rows": 58000,
+    "n_features": 9,
+    "n_classes": 7,
+    "cv_scores": {
+      "roc_auc": 0.652297,
+      "f1_macro": 0.346701
+    },
+    "cv_std": {
+      "roc_auc": 0.040851,
+      "f1_macro": 0.051626
+    },
+    "duration_seconds": 10.568
+  },
+  {
+    "dataset": "shuttle",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "classification",
+    "n_rows": 58000,
+    "n_features": 9,
+    "n_classes": 7,
+    "cv_scores": {
+      "roc_auc": 0.999996,
+      "f1_macro": 0.986409
+    },
+    "cv_std": {
+      "roc_auc": 7e-06,
+      "f1_macro": 0.019457
+    },
+    "duration_seconds": 7.313
+  }
+]

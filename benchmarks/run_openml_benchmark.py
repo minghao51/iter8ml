@@ -19,6 +19,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from benchmarks.openml_benchmark import main
+from iter8ml.config import HardwareProfile
+
+# Configure OpenMP threads via the framework's own (Linux-capped) default BEFORE
+# any C-extension ML lib (lightgbm/xgboost) loads libgomp. On hybrid-core (P+E)
+# CPUs under WSL2/Linux, libgomp deadlocks across all cores; the framework caps at
+# 8 on Linux (override via OMP_NUM_THREADS).
+HardwareProfile.configure_omp_threads()
 
 if __name__ == "__main__":
     main()

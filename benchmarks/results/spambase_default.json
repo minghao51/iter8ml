@@ -1,0 +1,56 @@
+[
+  {
+    "dataset": "spambase",
+    "variant": "default",
+    "model": "catboost",
+    "task": "classification",
+    "n_rows": 4601,
+    "n_features": 57,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.988275,
+      "f1_macro": 0.952988
+    },
+    "cv_std": {
+      "roc_auc": 0.002837,
+      "f1_macro": 0.004285
+    },
+    "duration_seconds": 11.039
+  },
+  {
+    "dataset": "spambase",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "classification",
+    "n_rows": 4601,
+    "n_features": 57,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.986836,
+      "f1_macro": 0.956933
+    },
+    "cv_std": {
+      "roc_auc": 0.002441,
+      "f1_macro": 0.003919
+    },
+    "duration_seconds": 3.175
+  },
+  {
+    "dataset": "spambase",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "classification",
+    "n_rows": 4601,
+    "n_features": 57,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.98486,
+      "f1_macro": 0.948442
+    },
+    "cv_std": {
+      "roc_auc": 0.002428,
+      "f1_macro": 0.004757
+    },
+    "duration_seconds": 2.594
+  }
+]

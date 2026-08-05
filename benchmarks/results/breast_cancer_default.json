@@ -1,0 +1,56 @@
+[
+  {
+    "dataset": "breast_cancer",
+    "variant": "default",
+    "model": "catboost",
+    "task": "classification",
+    "n_rows": 569,
+    "n_features": 30,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.994718,
+      "f1_macro": 0.962265
+    },
+    "cv_std": {
+      "roc_auc": 0.004846,
+      "f1_macro": 0.010566
+    },
+    "duration_seconds": 7.393
+  },
+  {
+    "dataset": "breast_cancer",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "classification",
+    "n_rows": 569,
+    "n_features": 30,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.992006,
+      "f1_macro": 0.967703
+    },
+    "cv_std": {
+      "roc_auc": 0.007928,
+      "f1_macro": 0.020499
+    },
+    "duration_seconds": 0.325
+  },
+  {
+    "dataset": "breast_cancer",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "classification",
+    "n_rows": 569,
+    "n_features": 30,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.993718,
+      "f1_macro": 0.95099
+    },
+    "cv_std": {
+      "roc_auc": 0.004087,
+      "f1_macro": 0.010997
+    },
+    "duration_seconds": 0.391
+  }
+]

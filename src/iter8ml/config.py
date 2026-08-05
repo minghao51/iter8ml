@@ -16,6 +16,16 @@ from iter8ml.constants import CVStrategy, EmbeddingMethod, TaskType, TrackerType
 
 _omp_configured: bool = False
 
+# Conservative OpenMP thread cap for libgomp-based backends (lightgbm, xgboost).
+# On Intel hybrid-core (P+E) CPUs under Linux/WSL2, libgomp deadlocks when
+# spawning threads across all cores — verified to hang at threads >= 10 on a
+# 14-core Core Ultra 225H, while <= 8 is stable (see docs/plan/
+# portfolio-roadmap-20260805.md §1.6b). Applied on Linux only; Windows/macOS use
+# a different OpenMP runtime and are unaffected. 8 is also a sane default for
+# GBDT tabular work (sublinear scaling past ~8 threads). Large servers: override
+# via the OMP_NUM_THREADS env var.
+_OMP_THREAD_CAP: int = 8
+
 DEFAULT_LLM_MODEL: str = "claude-sonnet-4-20250514"
 
 
@@ -438,6 +448,10 @@ class HardwareProfile(BaseModel):
     def _get_default_threads(cls) -> int:
         if platform.system() == "Darwin" and platform.machine() == "arm64":
             return 1
+        # The libgomp hybrid-core deadlock is Linux-specific; other platforms use
+        # a different OpenMP runtime and don't need the cap.
+        if platform.system() == "Linux":
+            return min(os.cpu_count() or 1, _OMP_THREAD_CAP)
         return os.cpu_count() or 1
 
     @classmethod

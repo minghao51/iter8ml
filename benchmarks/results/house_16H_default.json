@@ -1,0 +1,56 @@
+[
+  {
+    "dataset": "house_16H",
+    "variant": "default",
+    "model": "catboost",
+    "task": "regression",
+    "n_rows": 8192,
+    "n_features": 8,
+    "n_classes": 0,
+    "cv_scores": {
+      "rmse": 0.029276,
+      "r2": 0.962768
+    },
+    "cv_std": {
+      "rmse": 0.000342,
+      "r2": 0.00189
+    },
+    "duration_seconds": 4.502
+  },
+  {
+    "dataset": "house_16H",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "regression",
+    "n_rows": 8192,
+    "n_features": 8,
+    "n_classes": 0,
+    "cv_scores": {
+      "rmse": 0.031047,
+      "r2": 0.958126
+    },
+    "cv_std": {
+      "rmse": 0.000347,
+      "r2": 0.002113
+    },
+    "duration_seconds": 1.737
+  },
+  {
+    "dataset": "house_16H",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "regression",
+    "n_rows": 8192,
+    "n_features": 8,
+    "n_classes": 0,
+    "cv_scores": {
+      "rmse": 0.032305,
+      "r2": 0.95464
+    },
+    "cv_std": {
+      "rmse": 0.000606,
+      "r2": 0.002973
+    },
+    "duration_seconds": 1.093
+  }
+]

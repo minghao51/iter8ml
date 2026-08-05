@@ -1,0 +1,488 @@
+[
+  {
+    "dataset": "credit-g",
+    "variant": "default",
+    "model": "catboost",
+    "task": "classification",
+    "n_rows": 1000,
+    "n_features": 20,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.796167,
+      "f1_macro": 0.683174
+    },
+    "cv_std": {
+      "roc_auc": 0.022765,
+      "f1_macro": 0.012961
+    },
+    "duration_seconds": 3.193
+  },
+  {
+    "dataset": "credit-g",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "classification",
+    "n_rows": 1000,
+    "n_features": 20,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.767238,
+      "f1_macro": 0.68298
+    },
+    "cv_std": {
+      "roc_auc": 0.020438,
+      "f1_macro": 0.022176
+    },
+    "duration_seconds": 1.285
+  },
+  {
+    "dataset": "credit-g",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "classification",
+    "n_rows": 1000,
+    "n_features": 20,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.771821,
+      "f1_macro": 0.692437
+    },
+    "cv_std": {
+      "roc_auc": 0.012431,
+      "f1_macro": 0.011022
+    },
+    "duration_seconds": 0.688
+  },
+  {
+    "dataset": "adult",
+    "variant": "default",
+    "model": "catboost",
+    "task": "classification",
+    "n_rows": 48842,
+    "n_features": 14,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.929177,
+      "f1_macro": 0.816853
+    },
+    "cv_std": {
+      "roc_auc": 0.001849,
+      "f1_macro": 0.005049
+    },
+    "duration_seconds": 17.651
+  },
+  {
+    "dataset": "adult",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "classification",
+    "n_rows": 48842,
+    "n_features": 14,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.922208,
+      "f1_macro": 0.809333
+    },
+    "cv_std": {
+      "roc_auc": 0.001789,
+      "f1_macro": 0.003529
+    },
+    "duration_seconds": 3.732
+  },
+  {
+    "dataset": "adult",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "classification",
+    "n_rows": 48842,
+    "n_features": 14,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.912634,
+      "f1_macro": 0.798795
+    },
+    "cv_std": {
+      "roc_auc": 0.002301,
+      "f1_macro": 0.004355
+    },
+    "duration_seconds": 2.974
+  },
+  {
+    "dataset": "shuttle",
+    "variant": "default",
+    "model": "catboost",
+    "task": "classification",
+    "n_rows": 58000,
+    "n_features": 9,
+    "n_classes": 7,
+    "cv_scores": {
+      "roc_auc": 1.0,
+      "f1_macro": 0.985369
+    },
+    "cv_std": {
+      "roc_auc": 0.0,
+      "f1_macro": 0.016893
+    },
+    "duration_seconds": 34.963
+  },
+  {
+    "dataset": "shuttle",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "classification",
+    "n_rows": 58000,
+    "n_features": 9,
+    "n_classes": 7,
+    "cv_scores": {
+      "roc_auc": 0.652297,
+      "f1_macro": 0.346701
+    },
+    "cv_std": {
+      "roc_auc": 0.040851,
+      "f1_macro": 0.051626
+    },
+    "duration_seconds": 10.568
+  },
+  {
+    "dataset": "shuttle",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "classification",
+    "n_rows": 58000,
+    "n_features": 9,
+    "n_classes": 7,
+    "cv_scores": {
+      "roc_auc": 0.999996,
+      "f1_macro": 0.986409
+    },
+    "cv_std": {
+      "roc_auc": 7e-06,
+      "f1_macro": 0.019457
+    },
+    "duration_seconds": 7.313
+  },
+  {
+    "dataset": "iris",
+    "variant": "default",
+    "model": "catboost",
+    "task": "classification",
+    "n_rows": 150,
+    "n_features": 4,
+    "n_classes": 3,
+    "cv_scores": {
+      "roc_auc": 0.996,
+      "f1_macro": 0.953115
+    },
+    "cv_std": {
+      "roc_auc": 0.004899,
+      "f1_macro": 0.034139
+    },
+    "duration_seconds": 1.537
+  },
+  {
+    "dataset": "iris",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "classification",
+    "n_rows": 150,
+    "n_features": 4,
+    "n_classes": 3,
+    "cv_scores": {
+      "roc_auc": 0.983333,
+      "f1_macro": 0.95284
+    },
+    "cv_std": {
+      "roc_auc": 0.020521,
+      "f1_macro": 0.034707
+    },
+    "duration_seconds": 0.387
+  },
+  {
+    "dataset": "iris",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "classification",
+    "n_rows": 150,
+    "n_features": 4,
+    "n_classes": 3,
+    "cv_scores": {
+      "roc_auc": 0.966667,
+      "f1_macro": 0.9389
+    },
+    "cv_std": {
+      "roc_auc": 0.030966,
+      "f1_macro": 0.033938
+    },
+    "duration_seconds": 0.618
+  },
+  {
+    "dataset": "spambase",
+    "variant": "default",
+    "model": "catboost",
+    "task": "classification",
+    "n_rows": 4601,
+    "n_features": 57,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.988275,
+      "f1_macro": 0.952988
+    },
+    "cv_std": {
+      "roc_auc": 0.002837,
+      "f1_macro": 0.004285
+    },
+    "duration_seconds": 11.039
+  },
+  {
+    "dataset": "spambase",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "classification",
+    "n_rows": 4601,
+    "n_features": 57,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.986836,
+      "f1_macro": 0.956933
+    },
+    "cv_std": {
+      "roc_auc": 0.002441,
+      "f1_macro": 0.003919
+    },
+    "duration_seconds": 3.175
+  },
+  {
+    "dataset": "spambase",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "classification",
+    "n_rows": 4601,
+    "n_features": 57,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.98486,
+      "f1_macro": 0.948442
+    },
+    "cv_std": {
+      "roc_auc": 0.002428,
+      "f1_macro": 0.004757
+    },
+    "duration_seconds": 2.594
+  },
+  {
+    "dataset": "breast_cancer",
+    "variant": "default",
+    "model": "catboost",
+    "task": "classification",
+    "n_rows": 569,
+    "n_features": 30,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.994718,
+      "f1_macro": 0.962265
+    },
+    "cv_std": {
+      "roc_auc": 0.004846,
+      "f1_macro": 0.010566
+    },
+    "duration_seconds": 7.393
+  },
+  {
+    "dataset": "breast_cancer",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "classification",
+    "n_rows": 569,
+    "n_features": 30,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.992006,
+      "f1_macro": 0.967703
+    },
+    "cv_std": {
+      "roc_auc": 0.007928,
+      "f1_macro": 0.020499
+    },
+    "duration_seconds": 0.325
+  },
+  {
+    "dataset": "breast_cancer",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "classification",
+    "n_rows": 569,
+    "n_features": 30,
+    "n_classes": 2,
+    "cv_scores": {
+      "roc_auc": 0.993718,
+      "f1_macro": 0.95099
+    },
+    "cv_std": {
+      "roc_auc": 0.004087,
+      "f1_macro": 0.010997
+    },
+    "duration_seconds": 0.391
+  },
+  {
+    "dataset": "house_16H",
+    "variant": "default",
+    "model": "catboost",
+    "task": "regression",
+    "n_rows": 8192,
+    "n_features": 8,
+    "n_classes": 0,
+    "cv_scores": {
+      "rmse": 0.029276,
+      "r2": 0.962768
+    },
+    "cv_std": {
+      "rmse": 0.000342,
+      "r2": 0.00189
+    },
+    "duration_seconds": 4.502
+  },
+  {
+    "dataset": "house_16H",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "regression",
+    "n_rows": 8192,
+    "n_features": 8,
+    "n_classes": 0,
+    "cv_scores": {
+      "rmse": 0.031047,
+      "r2": 0.958126
+    },
+    "cv_std": {
+      "rmse": 0.000347,
+      "r2": 0.002113
+    },
+    "duration_seconds": 1.737
+  },
+  {
+    "dataset": "house_16H",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "regression",
+    "n_rows": 8192,
+    "n_features": 8,
+    "n_classes": 0,
+    "cv_scores": {
+      "rmse": 0.032305,
+      "r2": 0.95464
+    },
+    "cv_std": {
+      "rmse": 0.000606,
+      "r2": 0.002973
+    },
+    "duration_seconds": 1.093
+  },
+  {
+    "dataset": "quake",
+    "variant": "default",
+    "model": "catboost",
+    "task": "regression",
+    "n_rows": 2178,
+    "n_features": 3,
+    "n_classes": 0,
+    "cv_scores": {
+      "rmse": 0.518741,
+      "r2": -0.091958
+    },
+    "cv_std": {
+      "rmse": 0.004097,
+      "r2": 0.023663
+    },
+    "duration_seconds": 2.396
+  },
+  {
+    "dataset": "quake",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "regression",
+    "n_rows": 2178,
+    "n_features": 3,
+    "n_classes": 0,
+    "cv_scores": {
+      "rmse": 0.592391,
+      "r2": -0.425321
+    },
+    "cv_std": {
+      "rmse": 0.020378,
+      "r2": 0.095898
+    },
+    "duration_seconds": 1.467
+  },
+  {
+    "dataset": "quake",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "regression",
+    "n_rows": 2178,
+    "n_features": 3,
+    "n_classes": 0,
+    "cv_scores": {
+      "rmse": 0.606664,
+      "r2": -0.494693
+    },
+    "cv_std": {
+      "rmse": 0.01785,
+      "r2": 0.092142
+    },
+    "duration_seconds": 0.878
+  },
+  {
+    "dataset": "diabetes",
+    "variant": "default",
+    "model": "catboost",
+    "task": "regression",
+    "n_rows": 442,
+    "n_features": 10,
+    "n_classes": 0,
+    "cv_scores": {
+      "rmse": 57.485191,
+      "r2": 0.431588
+    },
+    "cv_std": {
+      "rmse": 2.693336,
+      "r2": 0.064217
+    },
+    "duration_seconds": 2.252
+  },
+  {
+    "dataset": "diabetes",
+    "variant": "default",
+    "model": "lightgbm",
+    "task": "regression",
+    "n_rows": 442,
+    "n_features": 10,
+    "n_classes": 0,
+    "cv_scores": {
+      "rmse": 61.910863,
+      "r2": 0.34049
+    },
+    "cv_std": {
+      "rmse": 2.269323,
+      "r2": 0.070138
+    },
+    "duration_seconds": 0.663
+  },
+  {
+    "dataset": "diabetes",
+    "variant": "default",
+    "model": "xgboost",
+    "task": "regression",
+    "n_rows": 442,
+    "n_features": 10,
+    "n_classes": 0,
+    "cv_scores": {
+      "rmse": 62.996348,
+      "r2": 0.314677
+    },
+    "cv_std": {
+      "rmse": 4.23592,
+      "r2": 0.108628
+    },
+    "duration_seconds": 0.432
+  }
+]

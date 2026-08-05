@@ -18,9 +18,9 @@ repos:
     hooks:
       - id: ruff-check
         args: [--fix]
-        exclude: ^notebooks/
+        exclude: ^(notebooks/|benchmarks/archive/)
       - id: ruff-format
-        exclude: ^notebooks/
+        exclude: ^(notebooks/|benchmarks/archive/)
 
   - repo: local
     hooks:
