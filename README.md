@@ -37,8 +37,8 @@ _5-fold CV (mean ± std) · default hyperparameters · CPU · roc_auc (binary) /
 **Option A: Project install (recommended for development)**
 
 ```bash
-uv sync --extra train     # ML models + HPO + Hamilton DAG
-uv sync --extra full      # Training, deep learning, tracking, LLM/MCP, and data quality
+uv sync --extra gbdt      # GBDT models (CatBoost/LightGBM/XGBoost) + HPO + Hamilton DAG — runs `iter8 run`
+uv sync --extra full      # Everything: deep models, tracking, LLM/MCP, SHAP, data quality
 uv sync --extra docs      # Documentation tooling
 
 # Run an experiment
@@ -48,23 +48,23 @@ uv run iter8 run --data path/to/data.csv --target target_column
 **Option B: Ephemeral run (no install, for quick experiments)**
 
 ```bash
-# Run directly with uvx (uses the CLI entry point from git)
-uvx --from git+https://github.com/minghao51/iter8ml iter8 run --data data.csv --target label
+# From git (no local clone) — include the [gbdt] extra so models + Hamilton DAG are available:
+uvx --from 'iter8ml[gbdt] @ git+https://github.com/minghao51/iter8ml' iter8 run --data data.csv --target label
 
-# Or after publishing to PyPI:
-uvx iter8ml run --data data.csv --target label
+# Or from PyPI:
+uvx --from 'iter8ml[gbdt]' iter8 run --data data.csv --target label
 ```
 
 **Option C: Permanent install on PATH**
 
 ```bash
-uv tool install git+https://github.com/minghao51/iter8ml
+uv tool install 'iter8ml[gbdt] @ git+https://github.com/minghao51/iter8ml'
 iter8 run --data data.csv --target label
 ```
 
 ## CLI Commands
 
-All commands below use the `uv run` prefix. Replace with `uvx iter8ml` or just `iter8` if using Option B or C from Quick Start.
+All commands below use the `uv run` prefix. Replace with `uvx --from 'iter8ml[gbdt]' iter8` or just `iter8` if using Option B or C from Quick Start.
 
 ```bash
 # Initialize workspace
@@ -270,21 +270,23 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the detailed design document.
 **With `uv sync` (project install):**
 
 ```bash
-uv sync --extra train       # ML models (catboost, lightgbm, xgboost) + HPO + Hamilton DAG
-uv sync --extra full        # Everything optional: DL, SHAP, wandb, MLflow, MCP/LLM, cleanlab
+uv sync --extra gbdt        # GBDT models + HPO + Hamilton DAG (enough for `iter8 run`)
+uv sync --extra train       # gbdt + deep models, tracking, LLM/MCP, SHAP, data quality
+uv sync --extra full        # train + docs
 uv sync --extra docs        # Documentation tooling (mkdocs, mkdocstrings, mike)
 ```
 
 | Extra | Packages |
 |-------|----------|
-| `train` | catboost, lightgbm, xgboost, optuna, sf-hamilton |
-| `full` | shap, cleanlab, torch, accelerate, transformers, tabpfn, pytorch-tabular, wandb, mlflow, mcp, litellm |
-| `docs` | mkdocs-material, mkdocstrings, mike, pymdown-extensions |
+| `gbdt` | catboost, lightgbm, xgboost, optuna, sf-hamilton |
+| `train` | gbdt + torch, accelerate, transformers, tabpfn, pytorch-tabular, wandb, mlflow, mcp, litellm, shap, cleanlab |
+| `full` | train + docs |
+| `docs` | mkdocs-material, mkdocstrings, mike, pymdown-extensions, matplotlib |
 
 **With `uvx` (ephemeral):**
 
 ```bash
-uvx --from git+https://github.com/minghao51/iter8ml --with wandb iter8 run --data data.csv --target label
+uvx --from 'iter8ml[gbdt] @ git+https://github.com/minghao51/iter8ml' --with wandb iter8 run --data data.csv --target label
 ```
 
 ## Running in Docker

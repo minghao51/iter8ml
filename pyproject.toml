@@ -11,9 +11,8 @@ readme = "README.md"
 license = "MIT"
 keywords = ["machine-learning", "tabular", "experiment", "automl"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
@@ -37,6 +36,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+gbdt = [
+    "catboost>=1.2",
+    "lightgbm>=4.0",
+    "xgboost>=2.0",
+    "optuna>=3.6",
+    "sf-hamilton>=1.70",
+]
 train = [
     "catboost>=1.2",
     "lightgbm>=4.0",

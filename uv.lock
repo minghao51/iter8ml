@@ -1901,6 +1901,13 @@ full = [
     { name = "wandb" },
     { name = "xgboost" },
 ]
+gbdt = [
+    { name = "catboost" },
+    { name = "lightgbm" },
+    { name = "optuna" },
+    { name = "sf-hamilton" },
+    { name = "xgboost" },
+]
 train = [
     { name = "accelerate" },
     { name = "catboost" },
@@ -1943,6 +1950,7 @@ requires-dist = [
     { name = "accelerate", marker = "extra == 'full'", specifier = ">=0.30" },
     { name = "accelerate", marker = "extra == 'train'", specifier = ">=0.30" },
     { name = "catboost", marker = "extra == 'full'", specifier = ">=1.2" },
+    { name = "catboost", marker = "extra == 'gbdt'", specifier = ">=1.2" },
     { name = "catboost", marker = "extra == 'train'", specifier = ">=1.2" },
     { name = "cleanlab", marker = "extra == 'full'", specifier = ">=2.6" },
     { name = "cleanlab", marker = "extra == 'train'", specifier = ">=2.6" },
@@ -1950,6 +1958,7 @@ requires-dist = [
     { name = "filelock", specifier = ">=3.12" },
     { name = "gitpython", specifier = ">=3.1.50" },
     { name = "lightgbm", marker = "extra == 'full'", specifier = ">=4.0" },
+    { name = "lightgbm", marker = "extra == 'gbdt'", specifier = ">=4.0" },
     { name = "lightgbm", marker = "extra == 'train'", specifier = ">=4.0" },
     { name = "litellm", specifier = ">=1.83.10" },
     { name = "litellm", marker = "extra == 'full'", specifier = ">=1.40" },
@@ -1969,6 +1978,7 @@ requires-dist = [
     { name = "mlflow", marker = "extra == 'train'", specifier = ">=2.13" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "optuna", marker = "extra == 'full'", specifier = ">=3.6" },
+    { name = "optuna", marker = "extra == 'gbdt'", specifier = ">=3.6" },
     { name = "optuna", marker = "extra == 'train'", specifier = ">=3.6" },
     { name = "polars", specifier = ">=1.0" },
     { name = "psutil", specifier = ">=5.9" },
@@ -1982,6 +1992,7 @@ requires-dist = [
     { name = "rich", specifier = ">=13.0" },
     { name = "scikit-learn", specifier = ">=1.4" },
     { name = "sf-hamilton", marker = "extra == 'full'", specifier = ">=1.70" },
+    { name = "sf-hamilton", marker = "extra == 'gbdt'", specifier = ">=1.70" },
     { name = "sf-hamilton", marker = "extra == 'train'", specifier = ">=1.70" },
     { name = "shap", marker = "extra == 'full'", specifier = ">=0.44" },
     { name = "shap", marker = "extra == 'train'", specifier = ">=0.44" },
@@ -1995,9 +2006,10 @@ requires-dist = [
     { name = "wandb", marker = "extra == 'full'", specifier = ">=0.17" },
     { name = "wandb", marker = "extra == 'train'", specifier = ">=0.17" },
     { name = "xgboost", marker = "extra == 'full'", specifier = ">=2.0" },
+    { name = "xgboost", marker = "extra == 'gbdt'", specifier = ">=2.0" },
     { name = "xgboost", marker = "extra == 'train'", specifier = ">=2.0" },
 ]
-provides-extras = ["docs", "full", "train"]
+provides-extras = ["docs", "full", "gbdt", "train"]
 
 [package.metadata.requires-dev]
 dev = [
