@@ -32,6 +32,8 @@ _5-fold CV (mean ± std) · default hyperparameters · CPU · roc_auc (binary) /
 
 > **Notes:** Multiclass datasets (`shuttle`, `iris`) report `f1_macro` — OVR-AUC is unstable on imbalanced folds. `shuttle` is extremely class-imbalanced (3 of 7 classes have <15 samples), so default LightGBM underfits the rare classes (f1 0.35 ± 0.05); the framework's class-weighting and HPO steps are designed to close that gap. `quake` is a known noisy regression set (negative R² is expected for all models).
 
+> 📖 **Deep dive — [German Credit case study](https://minghao51.github.io/iter8ml/notebooks/case-study-german-credit/):** takes the `credit-g` row above from benchmark to production. HPO edges ROC-AUC 0.791 → ≈0.796, SHAP ranks `checking_status` / `credit_history` as the top risk drivers, and a drift monitor + portable export bundle come from the same `ExperimentSession` API.
+
 ## Quick Start
 
 **Option A: Project install (recommended for development)**

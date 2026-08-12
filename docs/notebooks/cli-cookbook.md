@@ -6,7 +6,7 @@ hide:
 
 # CLI Cookbook
 
-Every CLI command with examples — `init`, `hardware`, `run`, `leaderboard`, `hpo`, `drift`, `export`, `state`.
+Practical examples for every iter8ml CLI command — init, run, leaderboard, hpo, drift, export, state, and hardware.
 
 <div class="iframe-container" id="iframe-wrapper-cli-cookbook">
   <div class="iframe-controls">

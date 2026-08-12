@@ -4,11 +4,11 @@ Interactive tutorials demonstrating the **iter8ml** framework.
 
 ## [Quick Start](quick-start.md)
 
-The fastest way to run an experiment — 5 lines of code with `ExperimentSession`.
+The fastest way to run an iter8ml experiment — 5 lines of code.
 
-## [Full Walkthrough](full-walkthrough.md)
+## [Full Walkthrough: End-to-End Classification Experiment](full-walkthrough.md)
 
-Complete lifecycle demo: data exploration, multi-model training, leaderboard, champion promotion, drift detection, and state generation.
+Thorough walkthrough of the iter8ml lifecycle — data exploration, multi-model training, leaderboard analysis, champion promotion, drift detection, and state generation.
 
 ## [Model Comparison & Evaluation](model-comparison.md)
 
@@ -16,7 +16,7 @@ Compare multiple models side-by-side using the Evaluator API with custom cross-v
 
 ## [Drift Detection & Monitoring](drift-monitoring.md)
 
-Three drift detection methods — KS/Chi-squared, PSI, and Domain Classifier — on synthetic data with engineered distribution shift.
+Compare three drift detection methods — KS/Chi-squared, PSI, and Domain Classifier — on synthetic data with engineered distribution shift.
 
 ## [Feature Engineering, Explainability & HPO](feature-engineering-explainability.md)
 
@@ -26,14 +26,18 @@ Automated feature engineering (target transform, permutation importance, interac
 
 Comprehensive overview of modeling methods, evaluation techniques, and the benchmarking system powering iter8ml.
 
-## [Session API](session-api.md)
+## [The iter8ml Session API](session-api.md)
 
-Deep dive into the `ExperimentSession` API — run, leaderboard, promote, export, drift check, state, and YAML config loading.
+The simplest way to use iter8ml — one object to configure, run, compare, promote, export, and monitor experiments.
 
 ## [CLI Cookbook](cli-cookbook.md)
 
-Every CLI command with examples — `init`, `hardware`, `run`, `leaderboard`, `hpo`, `drift`, `export`, `state`.
+Practical examples for every iter8ml CLI command — init, run, leaderboard, hpo, drift, export, state, and hardware.
 
-## [Tracking & Registry](tracking-registry.md)
+## [Tracking, Registry & State](tracking-registry.md)
 
-Experiment tracking (JSONL, W&B, MLflow), model registry with promote/update_if_better, state generation, and a full lifecycle demo.
+Explore experiment tracking with JSONL/W&B/MLflow, the model registry with promote workflows, and automated state generation.
+
+## [Case Study — German Credit: From Benchmark to Production Bundle](case-study-german-credit.md)
+
+A deep dive on the German Credit dataset (credit-g): defaults vs. HPO, SHAP explanations, drift monitoring, and a portable export — the full iter8ml loop on a real, recognizable dataset.

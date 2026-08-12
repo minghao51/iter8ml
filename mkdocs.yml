@@ -45,6 +45,7 @@ nav:
     - Explainability: explainability.md
   - Notebooks:
     - Overview: notebooks/index.md
+    - Case Study — German Credit: notebooks/case-study-german-credit.md
     - Quick Start: notebooks/quick-start.md
     - Model Comparison: notebooks/model-comparison.md
     - Drift Monitoring: notebooks/drift-monitoring.md

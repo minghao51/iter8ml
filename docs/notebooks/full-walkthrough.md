@@ -6,7 +6,7 @@ hide:
 
 # Full Walkthrough: End-to-End Classification Experiment
 
-Complete lifecycle demo: data exploration, multi-model training, leaderboard, champion promotion, drift detection, and state generation.
+Thorough walkthrough of the iter8ml lifecycle — data exploration, multi-model training, leaderboard analysis, champion promotion, drift detection, and state generation.
 
 <div class="iframe-container" id="iframe-wrapper-full-walkthrough">
   <div class="iframe-controls">

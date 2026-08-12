@@ -4,9 +4,9 @@ hide:
   - toc
 ---
 
-# Tracking & Registry
+# Tracking, Registry & State
 
-Experiment tracking (JSONL, W&B, MLflow), model registry with promote/update_if_better, state generation, and a full lifecycle demo.
+Explore experiment tracking with JSONL/W&B/MLflow, the model registry with promote workflows, and automated state generation.
 
 <div class="iframe-container" id="iframe-wrapper-tracking-registry">
   <div class="iframe-controls">

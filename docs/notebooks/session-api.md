@@ -4,9 +4,9 @@ hide:
   - toc
 ---
 
-# Session API
+# The iter8ml Session API
 
-Deep dive into the `ExperimentSession` API — run, leaderboard, promote, export, drift check, state, and YAML config loading.
+The simplest way to use iter8ml — one object to configure, run, compare, promote, export, and monitor experiments.
 
 <div class="iframe-container" id="iframe-wrapper-session-api">
   <div class="iframe-controls">

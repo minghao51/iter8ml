@@ -6,7 +6,7 @@ hide:
 
 # Quick Start
 
-The fastest way to run an iter8ml experiment — 5 lines of code with `ExperimentSession`.
+The fastest way to run an iter8ml experiment — 5 lines of code.
 
 <div class="iframe-container" id="iframe-wrapper-quick-start">
   <div class="iframe-controls">
