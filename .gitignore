@@ -54,6 +54,9 @@ catboost_info/
 *.pkl
 *.parquet
 
+# Bundled demo datasets ship inside the package (override *.parquet above)
+!src/iter8ml/datasets/*.parquet
+
 # Logs
 *.log
 

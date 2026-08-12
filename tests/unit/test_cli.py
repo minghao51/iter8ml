@@ -9,6 +9,7 @@ from sklearn.datasets import make_classification
 from typer.testing import CliRunner
 
 from iter8ml.cli import app
+from iter8ml.workspace import Workspace
 
 runner = CliRunner()
 
@@ -83,6 +84,43 @@ def test_init_with_data(sample_csv):
     result = runner.invoke(app, ["init", "--data", sample_csv])
     assert result.exit_code == 0
     assert "Data path set to" in result.stdout
+
+
+# --- Demo dataset seeding ---
+
+
+def test_init_demo_seeds_telco_churn(isolated_cwd):
+    tmpdir = isolated_cwd
+    result = runner.invoke(app, ["init", "--demo"])
+    assert result.exit_code == 0
+    assert "Workspace initialized" in result.stdout
+    assert "Demo dataset seeded" in result.stdout
+    assert "Churn" in result.stdout
+    assert "iter8 run" in result.stdout
+    seeded = Path(tmpdir, "workspace", "data", "telco_churn.parquet")
+    assert seeded.exists()
+    assert seeded.stat().st_size > 0
+
+
+def test_init_demo_and_data_are_independent(isolated_cwd):
+    result = runner.invoke(app, ["init", "--demo", "--data", "foo.csv"])
+    assert result.exit_code == 0
+    assert "Demo dataset seeded" in result.stdout
+    assert "Data path set to: foo.csv" in result.stdout
+
+
+def test_init_creates_data_dir(isolated_cwd):
+    tmpdir = isolated_cwd
+    result = runner.invoke(app, ["init"])
+    assert result.exit_code == 0
+    assert Path(tmpdir, "workspace", "data").is_dir()
+
+
+def test_workspace_seed_demo_data_unknown_name(tmp_path):
+    ws = Workspace(root=tmp_path / "ws")
+    ws.init()
+    with pytest.raises(KeyError, match="Unknown bundled dataset"):
+        ws.seed_demo_data("does_not_exist")
 
 
 def test_hardware_command():
