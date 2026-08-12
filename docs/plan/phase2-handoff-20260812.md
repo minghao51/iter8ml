@@ -41,30 +41,62 @@ disk — Step 5's blog sources should lean on `ARCHITECTURE.md` instead.
 **Goal:** a public URL returning a leaderboard for an uploaded CSV / the Telco
 sample, then link it from `README.md`.
 
-**Steps:**
-1. Create the Space (one-time, needs the user's HF account): SDK **Gradio**,
-   hardware **CPU basic** (free), visibility **Public**.
-2. Push the demo (the user already has `HF_TOKEN` in `.env`):
-   ```bash
-   # option 1: git push (token as password)
-   git clone https://huggingface.co/spaces/<USER>/iter8ml-demo
-   cp demo/* iter8ml-demo/ && cd iter8ml-demo
-   git add . && git commit -m "iter8ml live demo" && git push
-   # option 2: huggingface_hub
-   uv run --with huggingface_hub python -c "from huggingface_hub import upload_folder; upload_folder(folder_id='<USER>/iter8ml-demo', repo_type='space', folder_path='demo')"
-   ```
-3. After the URL is live, add it to `README.md` (near the Quick Start) with a
-   screenshot: `![demo](docs/img/demo.png)`.
-4. Update `docs/plan/phase2-story-depth-20260808.md` Step 3 acceptance to ✅.
+**Recommended: one-shot `huggingface_hub` script.** Self-discovers the HF username
+from the token, creates the Space, and uploads only the runtime files. The user
+already has `HF_TOKEN` in `.env`.
+
+```python
+# scripts/deploy_hf.py  (or inline)
+import os
+from huggingface_hub import HfApi, create_repo, upload_folder
+
+token = os.environ["HF_TOKEN"]
+api = HfApi(token=token)
+user = api.whoami()["name"]                       # self-discovered — no placeholder
+repo_id = f"{user}/iter8ml-demo"
+create_repo(repo_id, repo_type="space", space_sdk="gradio",
+            private=False, exist_ok=True, token=token)
+upload_folder(repo_id=repo_id, repo_type="space", folder_path="demo",
+              ignore_patterns=["README.md", "__pycache__/*"], token=token)
+print("Space:", f"https://huggingface.co/spaces/{repo_id}")
+print("App:  ", f"https://{user}-iter8ml-demo.hf.space")
+```
+
+Run it (loads the token from `.env` without printing it):
+
+```bash
+set -a; source .env; set +a
+uv run --with huggingface_hub python scripts/deploy_hf.py
+```
+
+**Manual git fallback** (if you prefer the browser): create the Space at
+<https://huggingface.co/new-space> (SDK Gradio, CPU basic, public), then
+`git clone` it, copy `demo/app.py` + `demo/requirements.txt` +
+`demo/telco_churn.parquet` (**NOT** `demo/README.md`) into the Space root,
+commit, push (token as password).
+
+**After the URL is live:**
+1. Screenshot the running app → `docs/img/demo.png`.
+2. Add the live URL + screenshot to `README.md` (near the Quick Start).
+3. Flip Step 3 → ✅ in `docs/plan/phase2-story-depth-20260808.md`.
 
 **Acceptance:** live URL returns a leaderboard for the Telco sample; custom CSV
 works within caps; README has link + screenshot.
 
-**Gotcha:** HF builds from `demo/requirements.txt` → installs `iter8ml[gbdt]`
-**from PyPI 0.1.0** (which predates `iter8ml.datasets`). That's why the demo
-bundles its own `telco_churn.parquet` instead of importing `bundled_dataset_path`
-— do not "fix" that import back to the package module or the Space breaks. Cold
-start ~1–2 min.
+**Gotchas:**
+- **Do NOT upload `demo/README.md` to the Space.** HF Spaces configure the Space
+  via the `README.md` YAML front-matter (`sdk: gradio`, `app_file: app.py`).
+  Uploading our repo `README.md` (no front-matter) clobbers that config. The
+  script's `ignore_patterns=["README.md", ...]` handles this; the manual path
+  copies only the 3 runtime files.
+- **Cold start ~3–5 min** the first time (installs `iter8ml[gbdt]` + gradio +
+  shap + matplotlib, ~1 GB). Subsequent rebuilds are faster.
+- **PyPI pin:** `demo/requirements.txt` installs `iter8ml[gbdt]>=0.1.0` from
+  PyPI (predates Step 1's `iter8ml.datasets`). The demo bundles its own
+  `telco_churn.parquet` precisely so it runs on 0.1.0 — do **not** "fix" the
+  import back to `iter8ml.datasets.bundled_dataset_path` or the Space breaks.
+- **`app.py` already launch-correct:** HF runs `python app.py`, so the
+  `if __name__ == "__main__": demo.launch()` guard fires. No change needed.
 
 ---
 
