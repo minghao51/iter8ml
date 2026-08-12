@@ -136,6 +136,9 @@ edges to the SOTA band; the value is the integrated loop.
 
 ### Step 3 — 2.2: Gradio live demo on HF Spaces
 
+**Status: ✅ Built + verified 2026-08-12 — deploy pending (manual HF Space push,
+a user action requiring the HF token).**
+
 **Goal:** a public URL where a reviewer uploads a CSV (or uses the default
 Telco Churn) and gets a leaderboard + SHAP plot. Free-tier, no persisted user
 data.
@@ -167,6 +170,13 @@ data.
 - Public Space URL returns a leaderboard for the bundled Telco Churn sample.
 - Custom CSV upload works end-to-end within size/row/time caps.
 - URL + screenshot in `README.md`.
+
+**Verified locally (deploy pending):** `run_analysis()` exercised on the Telco
+sample (CatBoost roc_auc=0.84, SHAP top driver `Contract`) and a synthetic
+regression CSV (r2=0.96); bad-target → `ValueError`. No OMP deadlock without
+env vars (lazy GBDT load). Gradio Blocks UI builds (14 children). `ruff` clean;
+`demo/` excluded from `mypy` (entrypoint code, like `notebooks/`). README link
+withheld until the Space is live (no dead links).
 
 ---
 

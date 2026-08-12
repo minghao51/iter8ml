@@ -1,0 +1,7 @@
+# iter8ml live demo — Hugging Face Spaces (Gradio SDK), CPU basic tier.
+# The app runs on the released PyPI package; the Telco Churn sample is bundled
+# alongside the app (demo/telco_churn.parquet).
+iter8ml[gbdt]>=0.1.0
+gradio>=4.0
+shap>=0.44
+matplotlib>=3.7

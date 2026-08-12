@@ -123,7 +123,7 @@ extend-exclude = ["benchmarks/archive"]
 [tool.mypy]
 python_version = "3.11"
 disallow_untyped_defs = true
-exclude = ["tests/", "benchmarks/", "notebooks/", "workspace/"]
+exclude = ["tests/", "benchmarks/", "notebooks/", "demo/", "workspace/"]
 
 [[tool.mypy.overrides]]
 module = ["catboost.*", "lightgbm.*", "xgboost.*", "optuna.*", "polars.*", "sf_hamilton.*", "hamilton.*"]
