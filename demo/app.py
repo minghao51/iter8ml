@@ -217,8 +217,11 @@ def create_demo():  # pragma: no cover (UI shell)
 # HF Spaces convention: a module-level `demo` object.
 try:
     demo = create_demo()
-except ImportError:
-    demo = None  # Gradio not installed (e.g. importing the core for tests)
+except Exception:
+    # Gradio missing OR installed-but-incompatible (e.g. an old version lacking
+    # gr.Blocks). The UI is optional; the run_analysis() core must stay importable
+    # for tests and notebook renders.
+    demo = None
 
 
 if __name__ == "__main__" and demo is not None:  # pragma: no cover

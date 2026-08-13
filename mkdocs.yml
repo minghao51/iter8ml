@@ -45,9 +45,8 @@ nav:
     - Explainability: explainability.md
   - Notebooks:
     - Overview: notebooks/index.md
+    - Live Demo — Telco Churn: notebooks/demo-telco-churn.md
     - Case Study — German Credit: notebooks/case-study-german-credit.md
     - Quick Start: notebooks/quick-start.md
-    - Model Comparison: notebooks/model-comparison.md
-    - Drift Monitoring: notebooks/drift-monitoring.md
-    - Feature Engineering & Explainability: notebooks/feature-engineering-explainability.md
-    - Methodology Benchmarks: notebooks/methodology-benchmarks.md
+    - Case Study — Agent Demo (Phase 3): notebooks/case-study-agent-demo.md
+    - Archive: notebooks/archive/index.md

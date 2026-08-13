@@ -1,0 +1,115 @@
+---
+title: "Live Demo — Telco Churn in One Call"
+description: "The 60-second tour of iter8ml: one call to run_analysis() on the bundled Telco Churn sample produces a cross-validated CatBoost-vs-XGBoost leaderboard and a SHAP explanation. This is the static render of the exact same core that powers the Gradio app."
+author: "iter8ml"
+date: today
+format:
+  html:
+    self-contained: true
+    embed-resources: true
+    code-fold: true
+    code-tools: true
+    toc: true
+---
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/minghao51/iter8ml/blob/main/demo/demo_telco_churn.ipynb)
+
+::: callout-note
+## The 30-second version
+
+Hand iter8ml a CSV and a target column, and it returns a cross-validated
+**leaderboard** plus a **SHAP** explanation of the champion. On the bundled
+**Telco Churn** sample (7,043 rows × 20 features), **CatBoost wins at
+ROC-AUC ≈ 0.84** and the model's top churn driver is **`Contract`** —
+customers on month-to-month plans churn most, which is exactly what domain
+intuition predicts.
+
+This page is the **static render of `run_analysis()`** — the same core that
+powers `demo/app.py`'s Gradio UI. One source of truth: the numbers below are
+computed by that function, not handwritten.
+:::
+
+## 1. One call, the full loop
+
+`run_analysis(csv_path, target_col, task)` runs the complete iter8ml loop —
+load → cross-validate a small GBDT panel → pick the champion → explain it with
+SHAP — in an isolated throwaway workspace. It returns a `(leaderboard,
+shap_figure, summary)` triple. That's the whole demo.
+
+```{python}
+#| label: setup
+#| include: false
+# Cap OpenMP threads BEFORE any GBDT library loads libgomp. On hybrid-core
+# (P+E) CPUs under Linux/WSL2, libgomp deadlocks across all cores (Phase-1
+# issue 1.6b). Must run before `import iter8ml.*` / `get_model_class()`.
+import sys
+import pathlib
+
+from iter8ml.config import HardwareProfile
+
+HardwareProfile.configure_omp_threads()
+
+# The demo core lives in demo/app.py (repo root, not an installed package), so
+# put the repo root on sys.path and import the same function the Gradio UI calls.
+_root = next(
+    (p for p in [pathlib.Path.cwd(), *pathlib.Path.cwd().parents]
+     if (p / "demo" / "app.py").exists()),
+    None,
+)
+if _root and str(_root) not in sys.path:
+    sys.path.insert(0, str(_root))
+
+from demo.app import SAMPLE_PATH, run_analysis
+
+import matplotlib.pyplot as plt
+```
+
+```{python}
+#| label: run
+#| cache: true
+lb, fig, summary = run_analysis(SAMPLE_PATH, "Churn", "classification")
+print(summary)
+```
+
+## 2. The leaderboard
+
+Five-fold stratified cross-validation, two fast CPU GBDTs. CatBoost's native
+handling of the dataset's categoricals is the edge here.
+
+```{python}
+#| label: leaderboard
+lb.select("model", "primary_metric", "primary_score", "duration_seconds").sort(
+    "primary_score", descending=True
+)
+```
+
+## 3. What drives churn
+
+A SHAP beeswarm on the champion (first 500 rows) shows each feature's
+directional impact. The longest bars belong to **`Contract`**, **`tenure`**,
+and **`MonthlyCharges`** — the classic churn signature. This is the same plot
+the Gradio app renders inline.
+
+```{python}
+#| label: shap-beeswarm
+#| fig-cap: "SHAP beeswarm on the CatBoost champion. Contract type and tenure dominate — exactly the features a retention team would act on."
+plt.show()
+```
+
+## 4. Run it yourself
+
+Three ways to get this interactively:
+
+- **One command, locally:** `iter8 init --demo` drops the Telco sample into a
+  workspace and prints the ready-to-paste `iter8 run` line.
+- **The Gradio app, locally:** `uv run --with gradio python demo/app.py`
+  (upload your own CSV and pick the target in the browser).
+- **In your browser, no install:** click the **Open in Colab** badge at the top
+  of this page — a self-contained notebook installs `iter8ml[gbdt]` and reruns
+  this analysis on a free cloud VM.
+
+::: callout-tip
+Want the *deep* version? The [German Credit case study](case_study_german_credit.qmd)
+runs the same loop end-to-end — defaults vs. HPO, calibration, drift, and a
+portable export — on a classic credit-risk benchmark.
+:::

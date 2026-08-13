@@ -64,6 +64,19 @@ uv tool install 'iter8ml[gbdt] @ git+https://github.com/minghao51/iter8ml'
 iter8 run --data data.csv --target label
 ```
 
+## Live Demo
+
+See iter8ml run end-to-end on the bundled **Telco Churn** dataset — a
+cross-validated CatBoost-vs-XGBoost leaderboard (CatBoost wins at
+ROC-AUC ≈ 0.84) plus a SHAP explanation of the champion, from a single call:
+
+- **Rendered walkthrough:** [Live Demo — Telco Churn](https://minghao51.github.io/iter8ml/notebooks/demo-telco-churn/)
+- **Run it in your browser:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/minghao51/iter8ml/blob/main/demo/demo_telco_churn.ipynb) (no install — free cloud VM)
+- **Or one command locally:** `iter8 init --demo` drops the sample into a workspace and prints the ready-to-paste `iter8 run` line.
+
+For the full deep-dive (HPO, calibration, drift, export), see the
+[German Credit case study](https://minghao51.github.io/iter8ml/notebooks/case-study-german-credit/).
+
 ## CLI Commands
 
 All commands below use the `uv run` prefix. Replace with `uvx --from 'iter8ml[gbdt]' iter8` or just `iter8` if using Option B or C from Quick Start.

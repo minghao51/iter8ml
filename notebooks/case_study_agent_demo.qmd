@@ -1,0 +1,41 @@
+---
+title: "Case Study — Agent-Driven ML (Phase 3 Preview)"
+description: "An LLM agent orchestrates the iter8ml loop end-to-end via the MCP server and the Gradio demo's auto-API — ingesting a dataset, choosing models, tuning, and explaining the result in plain English. Coming in Phase 3."
+author: "iter8ml"
+date: today
+format:
+  html:
+    self-contained: true
+    embed-resources: true
+    code-fold: true
+    code-tools: true
+    toc: true
+---
+
+# Coming in Phase 3
+
+This hero doc is a **placeholder**. It will be authored in Phase 3 (roadmap task
+3.1 — *agent showcase*) once the MCP server and the live demo's auto-API are
+wired into an end-to-end agent narrative.
+
+## What it will cover
+
+- An LLM agent drives `iter8ml` through the **MCP server** (`iter8 mcp`), calling
+  the same primitives a human CLI user does.
+- The agent reuses the **Gradio demo's auto-exposed API** as an evaluation
+  surface — the seam is `demo/app.py`'s `run_analysis()`, kept callable rather
+  than buried in a Gradio callback.
+- The same before/after framing as the
+  [German Credit case study](case_study_german_credit.qmd), but with the agent
+  choosing the path.
+
+## Where to look now
+
+- **MCP server setup:** see the `## MCP Server (Agentic ML)` section of the
+  project `README.md`.
+- **German Credit case study:** the reference loop this narrative will extend.
+
+```{python}
+#| eval: false
+# Cell reserved for the Phase-3 walkthrough.
+```

@@ -136,8 +136,20 @@ edges to the SOTA band; the value is the integrated loop.
 
 ### Step 3 — 2.2: Gradio live demo on HF Spaces
 
-**Status: ✅ Built + verified 2026-08-12 — deploy pending (manual HF Space push,
-a user action requiring the HF token).**
+**Status: ✅ Pivoted 2026-08-13 (uncommitted).** HF Spaces deploy is ⛔
+blocked — HF now returns `402 Payment Required` for Gradio on free `cpu-basic`
+(requires a PRO subscription; confirmed `howt51` is not PRO; free-tier VMs at
+256–512MB would OOM CatBoost+SHAP anyway). **Showcase pivoted to a static Quarto
+render + Colab notebook** (free, rides the existing Quarto→Pages CI, no
+RAM/cold-start fragility): `notebooks/demo_telco_churn.qmd` renders the demo's
+`run_analysis()` output (CatBoost ROC-AUC ≈ 0.84, SHAP top driver `Contract`) as
+a hero doc; `demo/demo_telco_churn.ipynb` is the self-contained "Open in Colab"
+target. Both verified cell-by-cell (exit 0). README links both + the
+`iter8 init --demo` one-liner. The Gradio app (`demo/app.py`) +
+`scripts/deploy_hf.py` are kept for local use + Phase-3 readiness — the script
+works unchanged the moment the account is PRO. Side-fix: broadened
+`demo/app.py`'s module-level guard `except ImportError` → `except Exception` so
+`run_analysis` stays importable when gradio is installed-but-incompatible.
 
 **Goal:** a public URL where a reviewer uploads a CSV (or uses the default
 Telco Churn) and gets a leaderboard + SHAP plot. Free-tier, no persisted user
@@ -181,6 +193,11 @@ withheld until the Space is live (no dead links).
 ---
 
 ### Step 4 — 2.4: Trim notebooks to 3 hero docs
+
+**Status: ✅ Implemented 2026-08-12** (uncommitted) — `docs/notebooks/index.md`
+now lists exactly 3 heroes; `02`–`09` `.qmd` + their rendered stubs moved under
+`…/archive/`; `notebooks/case_study_agent_demo.qmd` placeholder added;
+`mkdocs.yml` Notebooks nav → 3 heroes + Archive; ruff/mypy clean; nav resolves.
 
 **Goal:** curation = signal. Keep 3 hero docs, archive the rest.
 
@@ -236,9 +253,10 @@ narrative repackaging of `ARCHITECTURE.md` + `docs/technical_roadmap.md`.
 
 1. `iter8 init --demo` works from a clean shell against PyPI.
 2. Case study published on GitHub Pages; URL + teaser in `README.md`.
-3. Live demo URL on HF Spaces returns a leaderboard; URL + screenshot in
-   `README.md`.
-4. `docs/notebooks/index.md` shows 3 hero docs; rest archived.
+3. Live demo **rendered on GitHub Pages + a self-contained Colab notebook**,
+   both linked from `README.md` (pivoted from HF Spaces — see Step 3 status).
+4. `docs/notebooks/index.md` shows the hero docs (Quick Start, German Credit,
+   Live Demo + a Phase-3 agent-demo placeholder); the rest archived.
 5. (If time) design-decisions post published.
 
 ## Risks & mitigations
