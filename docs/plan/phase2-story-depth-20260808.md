@@ -226,8 +226,17 @@ now lists exactly 3 heroes; `02`–`09` `.qmd` + their rendered stubs moved unde
 
 ### Step 5 — 2.5 (stretch): "Design decisions" blog post
 
-**Goal:** show engineering judgment. Content already exists — mostly a
-narrative repackaging of `ARCHITECTURE.md` + `docs/technical_roadmap.md`.
+**Status: ✅ Done 2026-08-13** (commit `a449a5a`) — `docs/design-decisions.md`,
+ADR-style (Context/Decision/Consequences): ADR-001 Hamilton DAG, ADR-002
+spec-driven pipeline, ADR-003 medallion contract, ADR-004 hardware-aware routing
+(+ OpenMP deadlock), ADR-005 two reliability seams, ADR-006 CPU-first /
+GPU-ready; plus a Polars aside; 3 mermaid diagrams. Sourced from `ARCHITECTURE.md`
++ `docs/pipeline-architecture.md` + `docs/medallion.md` (the deleted
+`docs/technical_roadmap.md` was not referenced). Mermaid enabled in `mkdocs.yml`;
+page nested under Architecture; cross-linked from README + home page.
+`uv run mkdocs build` green.
+
+**Goal:** show engineering judgment — a narrative repackaging of `ARCHITECTURE.md`.
 
 **Steps:**
 1. New `docs/blog/design-decisions.md` (or a Quarto post): medallion choice,
@@ -257,7 +266,7 @@ narrative repackaging of `ARCHITECTURE.md` + `docs/technical_roadmap.md`.
    both linked from `README.md` (pivoted from HF Spaces — see Step 3 status).
 4. `docs/notebooks/index.md` shows the hero docs (Quick Start, German Credit,
    Live Demo + a Phase-3 agent-demo placeholder); the rest archived.
-5. (If time) design-decisions post published.
+5. ✅ Design-decisions post published and linked from README / home page.
 
 ## Risks & mitigations
 

@@ -17,7 +17,7 @@ per-task detail and `docs/plan/portfolio-roadmap-20260805.md` for the overall
 | 2 — German Credit flagship case study | 2.1 | ✅ done | `666b400` |
 | 3 — Live demo (Telco Churn) | 2.2 | ✅ **pivoted** to Quarto→Pages + Colab notebook (HF Spaces ⛔ needs PRO + would OOM at 512MB); Gradio app + `scripts/deploy_hf.py` kept for Phase 3 | `d5eb02d` |
 | 4 — Trim notebooks to 3 hero docs | 2.4 | ✅ **done** (uncommitted) | — |
-| 5 — "Design decisions" blog (stretch) | 2.5 | ⬜ not started | — |
+| 5 — "Design decisions" blog (stretch) | 2.5 | ✅ **done** | `a449a5a` |
 
 Supporting commit: `c7cf0a6` (this implementation map + `.env.example`).
 
