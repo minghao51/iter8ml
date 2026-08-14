@@ -2,7 +2,13 @@ project:
   type: default
   output-dir: ../docs/notebooks/html
   render:
-    - "*.qmd"
+    # Explicit list, not a glob: Quarto's "*.qmd" recurses into archive/,
+    # which would render (and break on) the archived notebooks. Keep this in
+    # sync when a new hero notebook is added at the top level.
+    - 01_quick_start.qmd
+    - case_study_german_credit.qmd
+    - case_study_agent_demo.qmd
+    - demo_telco_churn.qmd
 execute:
   freeze: auto
 format:
