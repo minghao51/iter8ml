@@ -7,6 +7,7 @@ repos:
       - id: end-of-file-fixer
         exclude: ^(docs/notebooks/html/|notebooks/_freeze/)
       - id: check-yaml
+        args: [--allow-unknown-tags]
       - id: check-added-large-files
         args: ['--maxkb=1024']
         exclude: ^docs/notebooks/html/|^notebooks/_freeze/
