@@ -22,9 +22,6 @@ extra_css:
   - stylesheets/notebooks.css
 extra_javascript:
   - javascripts/notebooks.js
-extra:
-  version:
-    provider: mike
 markdown_extensions:
   - pymdownx.blocks.caption
   - md_in_html
