@@ -105,7 +105,7 @@ ws.leaderboard_path   # workspace/leaderboard.md
 - [Hyperparameter Optimization](hpo.md)
 - [Drift Detection](drift-detection.md)
 - [Explainability](explainability.md)
-- [Technical Roadmap](technical_roadmap.md)
+- [Design Decisions](design-decisions.md)
 
 ## Notebooks
 

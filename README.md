@@ -278,6 +278,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the detailed design document.
 | [explainability.md](docs/explainability.md) | SHAP TreeExplainer/KernelExplainer, beeswarm + dependence plots |
 | [data-loading.md](docs/data-loading.md) | CSV/Parquet/SQLite loading, security measures, data hashing |
 | [pipeline-architecture.md](docs/pipeline-architecture.md) | Hamilton DAG composition, config variants, hooks, extension guide |
+| [design-decisions.md](docs/design-decisions.md) | The *why* behind the architecture — ADR-style notes (DAG, medallion contract, hardware routing, CPU-first) |
 | [medallion.md](docs/medallion.md) | Local Bronze/Silver/Gold/Platinum products, atomic artifacts, catalog, and verification |
 
 ## Optional Integrations

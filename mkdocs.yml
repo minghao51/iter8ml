@@ -28,11 +28,17 @@ extra:
 markdown_extensions:
   - pymdownx.blocks.caption
   - md_in_html
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - admonition
 nav:
   - Home: index.md
-  - Architecture: pipeline-architecture.md
+  - Architecture:
+    - Pipeline Architecture: pipeline-architecture.md
+    - Design Decisions: design-decisions.md
   - Medallion Runtime: medallion.md
   - Guides:
     - Data Loading: data-loading.md
