@@ -14,6 +14,8 @@
         <link rel="prev" href="../explainability/">
       
       
+        <link rel="next" href="demo-telco-churn/">
+      
       
         
       
@@ -47,6 +49,8 @@
     
     
       <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../stylesheets/notebooks.css">
     
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -207,14 +211,34 @@
   
   
   
+    
+    
+      <li class="md-tabs__item">
+        <a href="../pipeline-architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
     <li class="md-tabs__item">
-      <a href="../pipeline-architecture/" class="md-tabs__link">
+      <a href="../medallion/" class="md-tabs__link">
         
   
   
     
   
-  Architecture
+  Medallion Runtime
 
       </a>
     </li>
@@ -341,6 +365,58 @@
   
   
   
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="../pipeline-architecture/" class="md-nav__link">
         
@@ -349,7 +425,70 @@
   <span class="md-ellipsis">
     
   
-    Architecture
+    Pipeline Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design-decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Decisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../medallion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Medallion Runtime
   
 
     
@@ -382,10 +521,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
             
   
   
@@ -403,8 +542,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -670,10 +809,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   
@@ -691,8 +830,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -780,10 +919,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#model-comparison" class="md-nav__link">
+  <a href="#case-study-agent-driven-ml-phase-3-preview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Model Comparison
+        Case Study — Agent-Driven ML (Phase 3 Preview)
       
     </span>
   </a>
@@ -791,10 +930,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#drift-monitoring" class="md-nav__link">
+  <a href="#case-study-german-credit-from-benchmark-to-production-bundle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Drift Monitoring
+        Case Study — German Credit: From Benchmark to Production Bundle
       
     </span>
   </a>
@@ -802,21 +941,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#hpo-optimization" class="md-nav__link">
+  <a href="#live-demo-telco-churn-in-one-call" class="md-nav__link">
     <span class="md-ellipsis">
       
-        HPO Optimization
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#methodology-benchmarks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Methodology Benchmarks
+        Live Demo — Telco Churn in One Call
       
     </span>
   </a>
@@ -839,7 +967,63 @@
   
   
     <li class="md-nav__item">
-      <a href="exports/01_quick_start.html" class="md-nav__link">
+      <a href="demo-telco-churn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Live Demo — Telco Churn
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="case-study-german-credit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Case Study — German Credit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="quick-start/" class="md-nav__link">
         
   
   
@@ -867,14 +1051,14 @@
   
   
     <li class="md-nav__item">
-      <a href="exports/02_model_comparison.html" class="md-nav__link">
+      <a href="case-study-agent-demo/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Model Comparison
+    Case Study — Agent Demo (Phase 3)
   
 
     
@@ -895,70 +1079,14 @@
   
   
     <li class="md-nav__item">
-      <a href="exports/03_drift_monitoring.html" class="md-nav__link">
+      <a href="archive/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Drift Monitoring
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="exports/04_hpo_optimization.html" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    HPO Optimization
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="exports/05_methodology_benchmarks.html" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Methodology Benchmarks
+    Archive
   
 
     
@@ -1017,10 +1145,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#model-comparison" class="md-nav__link">
+  <a href="#case-study-agent-driven-ml-phase-3-preview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Model Comparison
+        Case Study — Agent-Driven ML (Phase 3 Preview)
       
     </span>
   </a>
@@ -1028,10 +1156,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#drift-monitoring" class="md-nav__link">
+  <a href="#case-study-german-credit-from-benchmark-to-production-bundle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Drift Monitoring
+        Case Study — German Credit: From Benchmark to Production Bundle
       
     </span>
   </a>
@@ -1039,21 +1167,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#hpo-optimization" class="md-nav__link">
+  <a href="#live-demo-telco-churn-in-one-call" class="md-nav__link">
     <span class="md-ellipsis">
       
-        HPO Optimization
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#methodology-benchmarks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Methodology Benchmarks
+        Live Demo — Telco Churn in One Call
       
     </span>
   </a>
@@ -1081,41 +1198,15 @@
 
 
 <h1 id="notebooks">Notebooks</h1>
-<p>Interactive marimo notebooks demonstrating the <strong>tabular-blueprint</strong> framework. Each notebook walks through a specific workflow using project code and real data.</p>
-<h2 id="quick-start">Quick Start</h2>
-<p>A walkthrough of the core classification workflow — generate data, configure an experiment, train models, inspect the leaderboard, export the champion.</p>
-<p><a href="notebooks/exports/01_quick_start.html"><strong>Quick Start &rarr;</strong></a>
-<a href="https://github.com/minghao51/iter8ml/blob/main/notebooks/01_quick_start.py">Source: <code>notebooks/01_quick_start.py</code></a></p>
-<pre><code class="language-bash">uv run marimo run notebooks/01_quick_start.py
-</code></pre>
-<hr />
-<h2 id="model-comparison">Model Comparison</h2>
-<p>Compare multiple models side-by-side using the Evaluator API with custom cross-validation strategies.</p>
-<p><a href="notebooks/exports/02_model_comparison.html"><strong>Model Comparison &rarr;</strong></a>
-<a href="https://github.com/minghao51/iter8ml/blob/main/notebooks/02_model_comparison.py">Source: <code>notebooks/02_model_comparison.py</code></a></p>
-<pre><code class="language-bash">uv run marimo run notebooks/02_model_comparison.py
-</code></pre>
-<hr />
-<h2 id="drift-monitoring">Drift Monitoring</h2>
-<p>Compare drift detection methods on synthetic data with engineered distribution shifts.</p>
-<p><a href="notebooks/exports/03_drift_monitoring.html"><strong>Drift Monitoring &rarr;</strong></a>
-<a href="https://github.com/minghao51/iter8ml/blob/main/notebooks/03_drift_monitoring.py">Source: <code>notebooks/03_drift_monitoring.py</code></a></p>
-<pre><code class="language-bash">uv run marimo run notebooks/03_drift_monitoring.py
-</code></pre>
-<hr />
-<h2 id="hpo-optimization">HPO Optimization</h2>
-<p>Use Optuna to find optimal hyperparameters for any model.</p>
-<p><a href="notebooks/exports/04_hpo_optimization.html"><strong>HPO Optimization &rarr;</strong></a>
-<a href="https://github.com/minghao51/iter8ml/blob/main/notebooks/04_hpo_optimization.py">Source: <code>notebooks/04_hpo_optimization.py</code></a></p>
-<pre><code class="language-bash">uv run marimo run notebooks/04_hpo_optimization.py
-</code></pre>
-<hr />
-<h2 id="methodology-benchmarks">Methodology Benchmarks</h2>
-<p>Comprehensive overview of modeling methods, evaluation techniques, and the benchmarking system.</p>
-<p><a href="notebooks/exports/05_methodology_benchmarks.html"><strong>Methodology Benchmarks &rarr;</strong></a>
-<a href="https://github.com/minghao51/iter8ml/blob/main/notebooks/05_methodology_benchmarks.py">Source: <code>notebooks/05_methodology_benchmarks.py</code></a></p>
-<pre><code class="language-bash">uv run marimo run notebooks/05_methodology_benchmarks.py
-</code></pre>
+<p>Interactive tutorials demonstrating the <strong>iter8ml</strong> framework.</p>
+<h2 id="quick-start"><a href="quick-start/">Quick Start</a></h2>
+<p>The fastest way to run an iter8ml experiment — 5 lines of code.</p>
+<h2 id="case-study-agent-driven-ml-phase-3-preview"><a href="case-study-agent-demo/">Case Study — Agent-Driven ML (Phase 3 Preview)</a></h2>
+<p>An LLM agent orchestrates the iter8ml loop end-to-end via the MCP server and the Gradio demo's auto-API — ingesting a dataset, choosing models, tuning, and explaining the result in plain English. Coming in Phase 3.</p>
+<h2 id="case-study-german-credit-from-benchmark-to-production-bundle"><a href="case-study-german-credit/">Case Study — German Credit: From Benchmark to Production Bundle</a></h2>
+<p>A deep dive on the German Credit dataset (credit-g): defaults vs. HPO, SHAP explanations, drift monitoring, and a portable export — the full iter8ml loop on a real, recognizable dataset.</p>
+<h2 id="live-demo-telco-churn-in-one-call"><a href="demo-telco-churn/">Live Demo — Telco Churn in One Call</a></h2>
+<p>The 60-second tour of iter8ml: one call to run_analysis() on the bundled Telco Churn sample produces a cross-validated CatBoost-vs-XGBoost leaderboard and a SHAP explanation. This is the static render of the exact same core that powers the Gradio app.</p>
 
 
 
@@ -1175,6 +1266,8 @@
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/notebooks.js"></script>
       
     
   </body>

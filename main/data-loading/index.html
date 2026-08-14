@@ -11,7 +11,7 @@
         <link rel="canonical" href="https://minghao51.github.io/iter8ml/main/data-loading/">
       
       
-        <link rel="prev" href="../pipeline-architecture/">
+        <link rel="prev" href="../medallion/">
       
       
         <link rel="next" href="../preprocessing/">
@@ -49,6 +49,8 @@
     
     
       <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../stylesheets/notebooks.css">
     
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -209,14 +211,34 @@
   
   
   
+    
+    
+      <li class="md-tabs__item">
+        <a href="../pipeline-architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
     <li class="md-tabs__item">
-      <a href="../pipeline-architecture/" class="md-tabs__link">
+      <a href="../medallion/" class="md-tabs__link">
         
   
   
     
   
-  Architecture
+  Medallion Runtime
 
       </a>
     </li>
@@ -343,6 +365,58 @@
   
   
   
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="../pipeline-architecture/" class="md-nav__link">
         
@@ -351,7 +425,70 @@
   <span class="md-ellipsis">
     
   
-    Architecture
+    Pipeline Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design-decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Decisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../medallion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Medallion Runtime
   
 
     
@@ -389,10 +526,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
@@ -410,8 +547,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -802,10 +939,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -823,8 +960,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -869,7 +1006,63 @@
   
   
     <li class="md-nav__item">
-      <a href="../notebooks/exports/01_quick_start.html" class="md-nav__link">
+      <a href="../notebooks/demo-telco-churn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Live Demo — Telco Churn
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/case-study-german-credit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Case Study — German Credit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/quick-start/" class="md-nav__link">
         
   
   
@@ -897,14 +1090,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../notebooks/exports/02_model_comparison.html" class="md-nav__link">
+      <a href="../notebooks/case-study-agent-demo/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Model Comparison
+    Case Study — Agent Demo (Phase 3)
   
 
     
@@ -925,70 +1118,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../notebooks/exports/03_drift_monitoring.html" class="md-nav__link">
+      <a href="../notebooks/archive/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Drift Monitoring
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../notebooks/exports/04_hpo_optimization.html" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    HPO Optimization
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../notebooks/exports/05_methodology_benchmarks.html" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Methodology Benchmarks
+    Archive
   
 
     
@@ -1142,11 +1279,11 @@
 <p>Reference for data ingestion from various sources and data hashing.</p>
 <hr />
 <h2 id="supported-formats">Supported Formats</h2>
-<p><strong>Source:</strong> <code>src/tabular_blueprint/data/loaders.py</code></p>
+<p><strong>Source:</strong> <code>src/iter8ml/data/loader.py</code></p>
 <p>All loading functions return a <strong>Polars DataFrame</strong>.</p>
 <hr />
 <h2 id="csv-loading">CSV Loading</h2>
-<p><strong>Source:</strong> <code>loaders.py:10</code></p>
+<p><strong>Source:</strong> <code>loader.py:10</code></p>
 <p><strong>Function:</strong> <code>load_csv(path, separator, infer_schema_length, low_memory)</code></p>
 <p><strong>Library:</strong> <code>polars</code></p>
 <table>
@@ -1187,13 +1324,13 @@
 </table>
 <hr />
 <h2 id="parquet-loading">Parquet Loading</h2>
-<p><strong>Source:</strong> <code>loaders.py:26</code></p>
+<p><strong>Source:</strong> <code>loader.py:26</code></p>
 <p><strong>Function:</strong> <code>load_parquet(path)</code></p>
 <p><strong>Library:</strong> <code>polars</code></p>
 <p>Direct <code>pl.read_parquet()</code> — zero-copy Arrow-based loading.</p>
 <hr />
 <h2 id="auto-detection">Auto-Detection</h2>
-<p><strong>Source:</strong> <code>loaders.py:31</code></p>
+<p><strong>Source:</strong> <code>loader.py:31</code></p>
 <p><strong>Function:</strong> <code>load_data(path)</code></p>
 <p>Dispatches based on file extension:</p>
 <table>
@@ -1220,7 +1357,7 @@
 </table>
 <hr />
 <h2 id="sqlite-loading">SQLite Loading</h2>
-<p><strong>Source:</strong> <code>loaders.py:41</code></p>
+<p><strong>Source:</strong> <code>loader.py:41</code></p>
 <p><strong>Function:</strong> <code>load_sqlite(db_path, query)</code></p>
 <p><strong>Library:</strong> <code>polars</code>, <code>sqlite3</code></p>
 <p>Executes a SQL query against a SQLite database and returns results as a Polars DataFrame.</p>
@@ -1258,14 +1395,14 @@
 <p>The blocklist check strips common SQL keywords (<code>SELECT</code>, <code>FROM</code>, <code>WHERE</code>, <code>JOIN</code>, <code>GROUP BY</code>, etc.) from the query before scanning for destructive keywords to avoid false positives.</p>
 <hr />
 <h2 id="data-hashing">Data Hashing</h2>
-<p><strong>Source:</strong> <code>loaders.py:102</code></p>
+<p><strong>Source:</strong> <code>loader.py:102</code></p>
 <p><strong>Function:</strong> <code>get_data_hash(df)</code></p>
 <p><strong>Library:</strong> <code>polars</code>, <code>numpy</code>, <code>hashlib</code></p>
 <p>Computes a deterministic SHA-256 hash for data fingerprinting:</p>
-<pre><code>row_hashes = df.hash_rows()           # per-row hash via Polars
+<div class="highlight"><pre><span></span><code>row_hashes = df.hash_rows()           # per-row hash via Polars
 combined   = XOR-reduce(row_hashes)   # combine into single value
 hash       = SHA256(combined)[:16]    # first 16 hex chars
-</code></pre>
+</code></pre></div>
 <p><strong>Output format:</strong> <code>"sha256:&lt;16 hex characters&gt;"</code></p>
 <p>Used for cache invalidation and experiment deduplication.</p>
 
@@ -1327,6 +1464,8 @@ hash       = SHA256(combined)[:16]    # first 16 hex chars
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/notebooks.js"></script>
       
     
   </body>

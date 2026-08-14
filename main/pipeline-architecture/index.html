@@ -14,7 +14,7 @@
         <link rel="prev" href="..">
       
       
-        <link rel="next" href="../data-loading/">
+        <link rel="next" href="../design-decisions/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Architecture - Tabular Blueprint</title>
+        <title>Pipeline Architecture - Tabular Blueprint</title>
       
     
     
@@ -49,6 +49,8 @@
     
     
       <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../stylesheets/notebooks.css">
     
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -106,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Architecture
+              Pipeline Architecture
             
           </span>
         </div>
@@ -211,14 +213,34 @@
     
   
   
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../medallion/" class="md-tabs__link">
         
   
   
     
   
-  Architecture
+  Medallion Runtime
 
       </a>
     </li>
@@ -345,6 +367,63 @@
   
   
   
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
     <li class="md-nav__item md-nav__item--active">
       
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
@@ -360,7 +439,7 @@
   <span class="md-ellipsis">
     
   
-    Architecture
+    Pipeline Architecture
   
 
     
@@ -378,7 +457,7 @@
   <span class="md-ellipsis">
     
   
-    Architecture
+    Pipeline Architecture
   
 
     
@@ -482,16 +561,27 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#training-pipeline-dag-7-modules" class="md-nav__link">
+  <a href="#training-pipeline-dag-spec-driven-modules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Training Pipeline DAG (7 Modules)
+        Training Pipeline DAG (Spec-Driven Modules)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Training Pipeline DAG (7 Modules)">
+    <nav class="md-nav" aria-label="Training Pipeline DAG (Spec-Driven Modules)">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default Steps
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#full-dag-flow" class="md-nav__link">
@@ -676,6 +766,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#pipelinespec-step-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PipelineSpec — Step Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -760,6 +861,69 @@
     </li>
   
 
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design-decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Decisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../medallion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Medallion Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
     
       
       
@@ -781,10 +945,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
             
   
   
@@ -802,8 +966,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1064,10 +1228,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -1085,8 +1249,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1131,7 +1295,63 @@
   
   
     <li class="md-nav__item">
-      <a href="../notebooks/exports/01_quick_start.html" class="md-nav__link">
+      <a href="../notebooks/demo-telco-churn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Live Demo — Telco Churn
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/case-study-german-credit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Case Study — German Credit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/quick-start/" class="md-nav__link">
         
   
   
@@ -1159,14 +1379,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../notebooks/exports/02_model_comparison.html" class="md-nav__link">
+      <a href="../notebooks/case-study-agent-demo/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Model Comparison
+    Case Study — Agent Demo (Phase 3)
   
 
     
@@ -1187,70 +1407,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../notebooks/exports/03_drift_monitoring.html" class="md-nav__link">
+      <a href="../notebooks/archive/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Drift Monitoring
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../notebooks/exports/04_hpo_optimization.html" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    HPO Optimization
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../notebooks/exports/05_methodology_benchmarks.html" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Methodology Benchmarks
+    Archive
   
 
     
@@ -1376,16 +1540,27 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#training-pipeline-dag-7-modules" class="md-nav__link">
+  <a href="#training-pipeline-dag-spec-driven-modules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Training Pipeline DAG (7 Modules)
+        Training Pipeline DAG (Spec-Driven Modules)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Training Pipeline DAG (7 Modules)">
+    <nav class="md-nav" aria-label="Training Pipeline DAG (Spec-Driven Modules)">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default Steps
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#full-dag-flow" class="md-nav__link">
@@ -1570,6 +1745,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#pipelinespec-step-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PipelineSpec — Step Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1676,31 +1862,36 @@
 - <strong>Declarative wiring:</strong> Function signatures define the DAG — no manual orchestration
 - <strong>Config variants:</strong> <code>@config.when(...)</code> activates different node implementations based on config
 - <strong>Observability:</strong> Every node execution can be tracked via lifecycle hooks
-- <strong>Two paths:</strong> The system tries Hamilton first; falls back to an imperative path if unavailable</p>
+- <strong>Single path:</strong> Training execution is DAG-only through Hamilton</p>
 <hr />
 <h2 id="architecture">Architecture</h2>
-<pre><code>                        ┌─────────────┐
+<div class="highlight"><pre><span></span><code>                        ┌─────────────┐
                         │   Trainer    │
                         └──────┬───────┘
                                │
                     ┌──────────┴──────────┐
-                    │ try Hamilton DAG?   │
-                    └──┬──────────────┬───┘
-                 yes   │              │  no
-                ┌──────┴──────┐  ┌────┴─────┐
-                │ Pipeline    │  │ Imperative│
-                │ Executor    │  │ Path      │
-                └─────────────┘  └──────────┘
-</code></pre>
+                    │  Hamilton DAG run   │
+                    └──────────┬──────────┘
+                               │
+                          ┌────┴────┐
+                          │ Pipeline │
+                          │ Executor │
+                          └──────────┘
+</code></pre></div>
 <h3 id="entry-point-trainerrun">Entry Point: <code>Trainer.run()</code></h3>
-<p><strong>Source:</strong> <code>src/tabular_blueprint/engine/trainer.py:55</code></p>
+<p><strong>Source:</strong> <code>src/iter8ml/engine/trainer.py:50</code></p>
 <ol>
-<li>Calls <code>_try_hamilton_training()</code> — builds and executes the full DAG</li>
-<li>If Hamilton is unavailable or fails, calls <code>_run_imperative()</code> — runs stages sequentially</li>
+<li>Calls <code>PipelineExecutor.run_training()</code> — builds and executes the full DAG.</li>
+<li>Publishes run/model events through a best-effort event adapter seam.</li>
+<li>Publishes state files through a required state adapter seam.</li>
 </ol>
+<p>Trainer defaults for these seams are built in <code>src/iter8ml/engine/trainer_factory.py</code>:
+- <code>TrackerEventAdapter</code> (event publication)
+- <code>ObserverStateAdapter</code> (state publication)</p>
+<p>If required state publication fails, Trainer raises <code>TrainerStatePublishError</code>.</p>
 <hr />
 <h2 id="pipeline-executor">Pipeline Executor</h2>
-<p><strong>Source:</strong> <code>src/tabular_blueprint/pipelines/executor.py:77</code></p>
+<p><strong>Source:</strong> <code>src/iter8ml/engine/pipelines/executor.py:122</code></p>
 <p><strong>Class:</strong> <code>PipelineExecutor</code></p>
 <h3 id="pipeline-modes">Pipeline Modes</h3>
 <table>
@@ -1755,14 +1946,9 @@
 <td>Preprocessing-only pipeline</td>
 </tr>
 <tr>
-<td><code>run_data_prep(df, target_col, ...)</code></td>
-<td><code>["data_prep_result"]</code></td>
-<td>Preprocessing + quality audit + leakage + target transform</td>
-</tr>
-<tr>
-<td><code>run_training(df, target_col, ...)</code></td>
+<td><code>run_training(config, df, ...)</code></td>
 <td><code>["training_state"]</code></td>
-<td>Full training pipeline (all 7 modules)</td>
+<td>Full training pipeline (spec-driven modules)</td>
 </tr>
 <tr>
 <td><code>run_drift(reference_df, live_df, method)</code></td>
@@ -1770,9 +1956,14 @@
 <td>Drift detection pipeline</td>
 </tr>
 <tr>
-<td><code>get_mermaid_graph()</code></td>
+<td><code>get_mermaid_graph(spec)</code></td>
 <td>—</td>
-<td>Returns Mermaid diagram of the DAG</td>
+<td>Returns Mermaid diagram of the DAG (spec-aware if provided)</td>
+</tr>
+<tr>
+<td><code>describe_pipeline(spec)</code></td>
+<td>—</td>
+<td>Returns list of dicts with step name, enabled, params</td>
 </tr>
 <tr>
 <td><code>execute(inputs, final_vars, overrides)</code></td>
@@ -1782,21 +1973,84 @@
 </tbody>
 </table>
 <hr />
-<h2 id="training-pipeline-dag-7-modules">Training Pipeline DAG (7 Modules)</h2>
-<p><strong>Source:</strong> <code>pipelines/executor.py:29</code></p>
-<p>The full training pipeline composes 7 node modules in order:</p>
-<pre><code class="language-python">modules = [
-    preprocessing,        # 1. Column detection + imputation + encoding
-    data_preparation,     # 2. Quality audit + leakage + target transform
-    model_selection,      # 3. Hardware-aware model routing
-    baselines,            # 4. Naive + Linear baseline CV
-    feature_engineering,  # 5. AFE (config-variant: enabled/disabled)
-    model_training,       # 6. Per-model train + calibrate + save
-    state_generation,     # 7. Leaderboard + registry + champion update
-]
-</code></pre>
+<h2 id="training-pipeline-dag-spec-driven-modules">Training Pipeline DAG (Spec-Driven Modules)</h2>
+<p><strong>Source:</strong> <code>engine/pipelines/executor.py:56</code></p>
+<p>The full training pipeline composes node modules based on the <code>PipelineSpec</code> attached to <code>ExperimentConfig</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="n">modules</span> <span class="o">=</span> <span class="p">[</span><span class="n">prep</span><span class="p">]</span>
+<span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">is_enabled</span><span class="p">(</span><span class="n">StepName</span><span class="o">.</span><span class="n">FEATURE_ENGINEERING</span><span class="p">):</span>
+    <span class="n">modules</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+<span class="n">modules</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+</code></pre></div>
+<p>Each module contains Hamilton nodes that may use <code>@config.when()</code> variants, resolved from <code>_resolve_hamilton_config()</code> which reads step params from the <code>PipelineSpec</code>.</p>
+<h3 id="default-steps">Default Steps</h3>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th><code>StepName</code></th>
+<th>Default</th>
+<th>Configurable Params</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Data Prep</td>
+<td><code>DATA_PREP</code></td>
+<td>enabled</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Quality Audit</td>
+<td><code>QUALITY_AUDIT</code></td>
+<td>enabled</td>
+<td><code>auto_clean_noise: bool</code>, <code>noise_quality_threshold: float</code></td>
+</tr>
+<tr>
+<td>Leakage Audit</td>
+<td><code>LEAKAGE_AUDIT</code></td>
+<td>enabled</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Target Transform</td>
+<td><code>TARGET_TRANSFORM</code></td>
+<td>enabled</td>
+<td><code>method: "none"\|"auto"\|"log1p"\|"yeo-johnson"\|"box-cox"</code>, <code>skewness_threshold: float</code></td>
+</tr>
+<tr>
+<td>Feature Engineering</td>
+<td><code>FEATURE_ENGINEERING</code></td>
+<td>enabled</td>
+<td><code>strategy: "none"\|"default"\|...</code></td>
+</tr>
+<tr>
+<td>Model Training</td>
+<td><code>MODEL_TRAINING</code></td>
+<td>enabled</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Calibration</td>
+<td><code>CALIBRATION</code></td>
+<td>enabled</td>
+<td><code>method: "none"\|"platt"\|"isotonic"</code></td>
+</tr>
+<tr>
+<td>Evaluation</td>
+<td><code>EVALUATION</code></td>
+<td>enabled</td>
+<td>—</td>
+</tr>
+<tr>
+<td>HPO</td>
+<td><code>HPO</code></td>
+<td>disabled</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
 <h3 id="full-dag-flow">Full DAG Flow</h3>
-<pre><code>df (input)
+<div class="highlight"><pre><span></span><code>df (input)
  │
  ├─→ raw_dataframe
  │     ├─→ numeric_columns
@@ -1815,7 +2069,8 @@
  │                             │
  │              ┌──────────────┤
  │              │              │
- │     quality_cleaned_df   (run_quality_audit,
+ │     quality_cleaned_df   (Hamilton config:
+ │              │            run_quality_audit,
  │              │            auto_clean_noise,
  │              │            noise_quality_threshold)
  │              │
@@ -1823,9 +2078,10 @@
  │     │                 │
  │  adapter_result    feature_names
  │     │
- │  leakage_report ──→ (run_leakage_audit, task)
+ │  leakage_report ──→ (Hamilton config: run_leakage_audit, task)
  │     │
- │  target_transform_result
+ │  target_transform_result ──→ (Hamilton config: target_transform,
+ │     │                        target_skewness_threshold)
  │     │
  │  data_prep_result
  │     │
@@ -1833,16 +2089,16 @@
  │     │
  │  baseline_models → baseline_scores
  │     │                 │
- │  training_features ──┤  ← @config.when(afe_enabled=True/False)
+ │  training_features ──┤  ← @config.when(feature_strategy=...)
  │     │                 │
- │  training_results ←───┘  (per-model loop)
+ │  training_results ←───┘  (per-model loop, Hamilton config: calibration)
  │     │
  │  training_state ──→ (leaderboard, registry, champion)
-</code></pre>
+</code></pre></div>
 <hr />
 <h2 id="module-details">Module Details</h2>
 <h3 id="1-preprocessing">1. Preprocessing</h3>
-<p><strong>Source:</strong> <code>pipelines/nodes/preprocessing.py</code></p>
+<p><strong>Source:</strong> <code>engine/pipelines/nodes/prep.py</code></p>
 <table>
 <thead>
 <tr>
@@ -1906,7 +2162,8 @@
 </table>
 <p>See <a href="../preprocessing/">preprocessing.md</a> for method details.</p>
 <h3 id="2-data-preparation">2. Data Preparation</h3>
-<p><strong>Source:</strong> <code>pipelines/nodes/data_preparation.py</code></p>
+<p><strong>Source:</strong> <code>engine/pipelines/nodes/prep.py</code></p>
+<p>These nodes use <code>@config.when()</code> variants resolved from <code>_resolve_hamilton_config()</code>, which reads step params from <code>PipelineSpec</code>.</p>
 <table>
 <thead>
 <tr>
@@ -1923,7 +2180,7 @@
 </tr>
 <tr>
 <td><code>quality_cleaned_df</code></td>
-<td><code>validate_target</code>, <code>target_col</code>, <code>run_quality_audit</code>, <code>auto_clean_noise</code>, <code>noise_quality_threshold</code></td>
+<td><code>validate_target</code>, <code>target_col</code> + Hamilton config (<code>run_quality_audit</code>, <code>auto_clean_noise</code>, <code>noise_quality_threshold</code>)</td>
 <td><code>tuple[df, cleaned, n_dropped]</code></td>
 </tr>
 <tr>
@@ -1938,12 +2195,12 @@
 </tr>
 <tr>
 <td><code>leakage_report</code></td>
-<td><code>adapter_result</code>, <code>run_leakage_audit</code>, <code>task</code></td>
+<td><code>adapter_result</code>, <code>task</code> + Hamilton config (<code>run_leakage_audit</code>)</td>
 <td><code>LeakageReport \| None</code></td>
 </tr>
 <tr>
 <td><code>target_transform_result</code></td>
-<td><code>adapter_result</code>, <code>target_transform</code>, <code>target_skewness_threshold</code></td>
+<td><code>adapter_result</code> + Hamilton config (<code>target_transform</code>, <code>target_skewness_threshold</code>)</td>
 <td><code>(y, transformer, method, skew_orig, skew_trans, applied)</code></td>
 </tr>
 <tr>
@@ -1954,7 +2211,7 @@
 </tbody>
 </table>
 <h3 id="3-model-selection">3. Model Selection</h3>
-<p><strong>Source:</strong> <code>pipelines/nodes/model_selection.py</code></p>
+<p><strong>Source:</strong> <code>engine/pipelines/nodes/train.py</code></p>
 <table>
 <thead>
 <tr>
@@ -1973,7 +2230,7 @@
 </table>
 <p>If <code>config_models="auto"</code>, uses <code>ModelSelector.select()</code>. Otherwise uses the provided list.</p>
 <h3 id="4-baselines">4. Baselines</h3>
-<p><strong>Source:</strong> <code>pipelines/nodes/baselines.py</code></p>
+<p><strong>Source:</strong> <code>engine/pipelines/nodes/train.py</code></p>
 <table>
 <thead>
 <tr>
@@ -1996,8 +2253,8 @@
 </tbody>
 </table>
 <h3 id="5-feature-engineering-config-variant">5. Feature Engineering (Config Variant)</h3>
-<p><strong>Source:</strong> <code>pipelines/nodes/feature_engineering.py</code></p>
-<p>Uses <code>@config.when()</code> to activate different implementations:</p>
+<p><strong>Source:</strong> <code>engine/pipelines/nodes/features.py</code></p>
+<p>The features module is only loaded when <code>PipelineSpec.is_enabled(StepName.FEATURE_ENGINEERING)</code> is true. Uses <code>@config.when()</code> to activate different implementations:</p>
 <table>
 <thead>
 <tr>
@@ -2009,7 +2266,7 @@
 <tbody>
 <tr>
 <td><code>training_features__default</code></td>
-<td><code>afe_enabled != True</code></td>
+<td><code>feature_strategy != "auto"</code> and not in <code>afe</code> variants</td>
 <td>Pass-through: returns <code>(X, feature_names)</code> from <code>data_prep_result</code></td>
 </tr>
 <tr>
@@ -2019,9 +2276,9 @@
 </tr>
 </tbody>
 </table>
-<p>Config is set via <code>builder.with_config({"afe_enabled": True/False})</code>.</p>
+<p>Config is set via <code>_resolve_hamilton_config()</code> which reads <code>feature_strategy</code> from <code>PipelineSpec.step_params(StepName.FEATURE_ENGINEERING)</code>.</p>
 <h3 id="6-model-training">6. Model Training</h3>
-<p><strong>Source:</strong> <code>pipelines/nodes/model_training.py</code></p>
+<p><strong>Source:</strong> <code>engine/pipelines/nodes/train.py</code></p>
 <table>
 <thead>
 <tr>
@@ -2033,7 +2290,7 @@
 <tbody>
 <tr>
 <td><code>training_results</code></td>
-<td><code>training_features</code>, <code>data_prep_result</code>, <code>models_to_run</code>, <code>baseline_scores</code>, <code>task</code>, <code>cv_folds</code>, <code>cv_strategy</code>, <code>metrics</code>, <code>calibration</code>, <code>workspace_dir</code>, <code>run_id</code></td>
+<td><code>training_features</code>, <code>data_prep_result</code>, <code>models_to_run</code>, <code>baseline_scores</code>, <code>task</code>, <code>cv_folds</code>, <code>cv_strategy</code>, <code>metrics</code>, <code>workspace</code>, <code>run_id</code> + Hamilton config (<code>calibration</code>)</td>
 <td><code>list[ModelResult]</code></td>
 </tr>
 </tbody>
@@ -2041,11 +2298,11 @@
 <p>For each model in <code>models_to_run</code> (excluding baselines):
 1. Resolve class via <code>get_model_class(name)</code>
 2. Cross-validate via <code>Evaluator.evaluate()</code>
-3. Fit on full data (with optional calibration)
+3. Fit on full data (with optional calibration via Hamilton config)
 4. Save artifact
 5. Compute lift over baselines</p>
 <h3 id="7-state-generation">7. State Generation</h3>
-<p><strong>Source:</strong> <code>pipelines/nodes/state_generation.py</code></p>
+<p><strong>Source:</strong> <code>engine/pipelines/nodes/train.py</code></p>
 <table>
 <thead>
 <tr>
@@ -2057,7 +2314,7 @@
 <tbody>
 <tr>
 <td><code>training_state</code></td>
-<td><code>training_results</code>, <code>baseline_scores</code>, <code>metrics</code>, <code>run_id</code>, <code>experiment_name</code>, <code>task</code>, <code>workspace_dir</code></td>
+<td><code>training_results</code>, <code>baseline_scores</code>, <code>metrics</code>, <code>run_id</code>, <code>experiment_name</code>, <code>task</code>, <code>workspace</code></td>
 <td><code>TrainingState</code></td>
 </tr>
 </tbody>
@@ -2065,7 +2322,7 @@
 <p>Aggregates all results, builds leaderboard, promotes champion to registry.</p>
 <hr />
 <h2 id="drift-detection-pipeline">Drift Detection Pipeline</h2>
-<p><strong>Source:</strong> <code>pipelines/nodes/drift_detection.py</code></p>
+<p><strong>Source:</strong> <code>engine/pipelines/nodes/drift_detection.py</code></p>
 <p>Uses <code>@config.when(drift_method=...)</code> for three variants:</p>
 <table>
 <thead>
@@ -2096,7 +2353,7 @@
 <p>Config is set via <code>builder.with_config({"drift_method": "psi"})</code>.</p>
 <hr />
 <h2 id="tracking-hooks">Tracking Hooks</h2>
-<p><strong>Source:</strong> <code>src/tabular_blueprint/pipelines/hooks/tracking_hook.py</code></p>
+<p><strong>Source:</strong> <code>src/iter8ml/engine/pipelines/hooks/tracking_hook.py</code></p>
 <p><strong>Class:</strong> <code>TrackingHook</code> — a Hamilton lifecycle adapter that logs node execution to the experiment tracker.</p>
 <h3 id="hook-points">Hook Points</h3>
 <table>
@@ -2132,14 +2389,14 @@
 </table>
 <h3 id="attachment">Attachment</h3>
 <p>Hooks are attached when building the Hamilton driver:</p>
-<pre><code class="language-python">builder = driver.Builder().with_modules(*modules)
-hook = TrackingHook(tracker, run_id)
-builder = builder.with_adapters(hook)
-dr = builder.build()
-</code></pre>
+<div class="highlight"><pre><span></span><code><span class="n">builder</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">Builder</span><span class="p">()</span><span class="o">.</span><span class="n">with_modules</span><span class="p">(</span><span class="o">*</span><span class="n">modules</span><span class="p">)</span>
+<span class="n">hook</span> <span class="o">=</span> <span class="n">TrackingHook</span><span class="p">(</span><span class="n">tracker</span><span class="p">,</span> <span class="n">run_id</span><span class="p">)</span>
+<span class="n">builder</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">with_adapters</span><span class="p">(</span><span class="n">hook</span><span class="p">)</span>
+<span class="n">dr</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
+</code></pre></div>
 <hr />
 <h2 id="configuration">Configuration</h2>
-<p><strong>Source:</strong> <code>src/tabular_blueprint/config.py</code></p>
+<p><strong>Source:</strong> <code>src/iter8ml/config.py</code></p>
 <h3 id="experimentconfig-pipeline-parameters"><code>ExperimentConfig</code> — Pipeline Parameters</h3>
 <table>
 <thead>
@@ -2206,14 +2463,9 @@ dr = builder.build()
 <td>Enable feature pruning after AFE</td>
 </tr>
 <tr>
-<td><code>target_transform</code></td>
-<td><code>"none"</code></td>
-<td>Target transformation: <code>"none"</code>, <code>"auto"</code>, <code>"log1p"</code>, <code>"yeo-johnson"</code>, <code>"box-cox"</code></td>
-</tr>
-<tr>
-<td><code>calibration</code></td>
-<td><code>"none"</code></td>
-<td>Probability calibration: <code>"none"</code>, <code>"platt"</code>, <code>"isotonic"</code></td>
+<td><code>pipeline</code></td>
+<td><code>PipelineSpec()</code> (all steps enabled except HPO)</td>
+<td>Pipeline step configuration (see below)</td>
 </tr>
 <tr>
 <td><code>drift_detection</code></td>
@@ -2231,54 +2483,78 @@ dr = builder.build()
 <td>Concurrent model training (auto-reduced to 1 for low-VRAM GPUs)</td>
 </tr>
 <tr>
-<td><code>run_quality_audit</code></td>
-<td><code>True</code></td>
-<td>Enable Cleanlab label noise detection</td>
-</tr>
-<tr>
-<td><code>auto_clean_noise</code></td>
-<td><code>False</code></td>
-<td>Auto-drop noisy labels</td>
-</tr>
-<tr>
 <td><code>tracker</code></td>
 <td><code>JSONL</code></td>
 <td>Tracker backend: <code>JSONL</code>, <code>WANDB</code>, <code>MLFLOW</code></td>
 </tr>
 </tbody>
 </table>
+<h3 id="pipelinespec-step-configuration"><code>PipelineSpec</code> — Step Configuration</h3>
+<p>Pipeline behavior is controlled via the <code>pipeline</code> field on <code>ExperimentConfig</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">iter8ml</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExperimentConfig</span><span class="p">,</span> <span class="n">PipelineSpec</span><span class="p">,</span> <span class="n">PipelineStep</span><span class="p">,</span> <span class="n">StepName</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">ExperimentConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_experiment&quot;</span><span class="p">,</span>
+    <span class="n">task</span><span class="o">=</span><span class="s2">&quot;classification&quot;</span><span class="p">,</span>
+    <span class="n">target_col</span><span class="o">=</span><span class="s2">&quot;label&quot;</span><span class="p">,</span>
+    <span class="n">data_path</span><span class="o">=</span><span class="s2">&quot;data.csv&quot;</span><span class="p">,</span>
+    <span class="n">pipeline</span><span class="o">=</span><span class="n">PipelineSpec</span><span class="p">(</span><span class="n">steps</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">PipelineStep</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">StepName</span><span class="o">.</span><span class="n">DATA_PREP</span><span class="p">),</span>
+        <span class="n">PipelineStep</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">StepName</span><span class="o">.</span><span class="n">QUALITY_AUDIT</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;auto_clean_noise&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;noise_quality_threshold&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">}),</span>
+        <span class="n">PipelineStep</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">StepName</span><span class="o">.</span><span class="n">LEAKAGE_AUDIT</span><span class="p">),</span>
+        <span class="n">PipelineStep</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">StepName</span><span class="o">.</span><span class="n">TARGET_TRANSFORM</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="s2">&quot;skewness_threshold&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">}),</span>
+        <span class="n">PipelineStep</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">StepName</span><span class="o">.</span><span class="n">FEATURE_ENGINEERING</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;strategy&quot;</span><span class="p">:</span> <span class="s2">&quot;auto&quot;</span><span class="p">}),</span>
+        <span class="n">PipelineStep</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">StepName</span><span class="o">.</span><span class="n">MODEL_TRAINING</span><span class="p">),</span>
+        <span class="n">PipelineStep</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">StepName</span><span class="o">.</span><span class="n">CALIBRATION</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;platt&quot;</span><span class="p">}),</span>
+        <span class="n">PipelineStep</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">StepName</span><span class="o">.</span><span class="n">EVALUATION</span><span class="p">),</span>
+    <span class="p">]),</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Disable a step by setting <code>enabled=False</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="n">PipelineStep</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">StepName</span><span class="o">.</span><span class="n">LEAKAGE_AUDIT</span><span class="p">,</span> <span class="n">enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+<p>Query at runtime:</p>
+<div class="highlight"><pre><span></span><code><span class="n">config</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">is_enabled</span><span class="p">(</span><span class="n">StepName</span><span class="o">.</span><span class="n">CALIBRATION</span><span class="p">)</span>  <span class="c1"># True</span>
+<span class="n">config</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">step_params</span><span class="p">(</span><span class="n">StepName</span><span class="o">.</span><span class="n">TARGET_TRANSFORM</span><span class="p">)</span>  <span class="c1"># {&quot;method&quot;: &quot;auto&quot;, &quot;skewness_threshold&quot;: 1.0}</span>
+</code></pre></div>
+<p>Inspect or visualize:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">iter8ml.engine.pipelines</span><span class="w"> </span><span class="kn">import</span> <span class="n">describe_pipeline</span><span class="p">,</span> <span class="n">visualize_pipeline</span>
+
+<span class="n">steps</span> <span class="o">=</span> <span class="n">describe_pipeline</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">pipeline</span><span class="p">)</span>  <span class="c1"># list[dict] with name, enabled, params</span>
+<span class="n">graph</span> <span class="o">=</span> <span class="n">visualize_pipeline</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">pipeline</span><span class="p">)</span>  <span class="c1"># Mermaid diagram</span>
+</code></pre></div>
 <hr />
 <h2 id="how-to-extend-the-dag">How to Extend the DAG</h2>
 <h3 id="adding-a-new-node">Adding a New Node</h3>
 <ol>
-<li>Create a function in the appropriate module under <code>pipelines/nodes/</code></li>
+<li>Create a function in the appropriate module under <code>engine/pipelines/nodes/</code></li>
 <li>Its parameters are automatically resolved as dependencies by Hamilton</li>
 <li>The function name becomes the node name in the DAG</li>
 </ol>
-<pre><code class="language-python"># In pipelines/nodes/my_module.py
-def my_custom_feature(processed_dataframe: pl.DataFrame) -&gt; pl.DataFrame:
-    # processed_dataframe is auto-resolved from the preprocessing module
-    return processed_dataframe.with_columns(...)
-</code></pre>
+<div class="highlight"><pre><span></span><code><span class="c1"># In engine/pipelines/nodes/my_module.py</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_custom_feature</span><span class="p">(</span><span class="n">processed_dataframe</span><span class="p">:</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="c1"># processed_dataframe is auto-resolved from the preprocessing module</span>
+    <span class="k">return</span> <span class="n">processed_dataframe</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</code></pre></div>
 <h3 id="adding-a-config-variant">Adding a Config Variant</h3>
-<p>Use <code>@config.when()</code> to create conditional node implementations:</p>
-<pre><code class="language-python">from hamilton.function_modifiers import config
+<p>Use <code>@config.when()</code> to create conditional node implementations. These are resolved from <code>_resolve_hamilton_config()</code>, which reads step params from <code>PipelineSpec</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">hamilton.function_modifiers</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
 
-@config.when(feature_method=&quot;advanced&quot;)
-def training_features__advanced(
-    data_prep_result: object,
-    task: str,
-) -&gt; tuple[np.ndarray, list[str]]:
-    # Advanced feature engineering
-    ...
+<span class="nd">@config</span><span class="o">.</span><span class="n">when</span><span class="p">(</span><span class="n">feature_method</span><span class="o">=</span><span class="s2">&quot;advanced&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">training_features__advanced</span><span class="p">(</span>
+    <span class="n">data_prep_result</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span>
+    <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+    <span class="c1"># Advanced feature engineering</span>
+    <span class="o">...</span>
 
-@config.when_not(feature_method=&quot;advanced&quot;)
-def training_features__default(
-    data_prep_result: object,
-) -&gt; tuple[np.ndarray, list[str]]:
-    return data_prep_result.X, data_prep_result.feature_names
-</code></pre>
-<p>Then set the config when building: <code>builder.with_config({"feature_method": "advanced"})</code>.</p>
+<span class="nd">@config</span><span class="o">.</span><span class="n">when_not</span><span class="p">(</span><span class="n">feature_method</span><span class="o">=</span><span class="s2">&quot;advanced&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">training_features__default</span><span class="p">(</span>
+    <span class="n">data_prep_result</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+    <span class="k">return</span> <span class="n">data_prep_result</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="n">data_prep_result</span><span class="o">.</span><span class="n">feature_names</span>
+</code></pre></div>
+<p>The config key is set automatically by <code>_resolve_hamilton_config()</code> reading from <code>PipelineSpec.step_params()</code>. To add a new config key, add it to <code>_resolve_hamilton_config()</code> in <code>executor.py</code> and document it as a param on the corresponding <code>PipelineStep</code>.</p>
 <h3 id="adding-a-new-pipeline-mode">Adding a New Pipeline Mode</h3>
 <ol>
 <li>Add a new value to <code>PipelineMode</code> enum in <code>executor.py</code></li>
@@ -2297,9 +2573,23 @@ def training_features__default(
 <hr />
 <h2 id="dag-visualization">DAG Visualization</h2>
 <p>The executor can generate a Mermaid diagram of the current DAG:</p>
-<pre><code class="language-python">executor = PipelineExecutor(mode=PipelineMode.TRAINING)
-print(executor.get_mermaid_graph())
-</code></pre>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">iter8ml.engine.pipelines</span><span class="w"> </span><span class="kn">import</span> <span class="n">visualize_pipeline</span>
+
+<span class="c1"># Spec-aware diagram (annotates disabled steps)</span>
+<span class="n">graph</span> <span class="o">=</span> <span class="n">visualize_pipeline</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">pipeline</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+
+<span class="c1"># Full Hamilton DAG (requires Hamilton installed)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">iter8ml.engine.pipelines.executor</span><span class="w"> </span><span class="kn">import</span> <span class="n">PipelineExecutor</span>
+<span class="n">executor</span> <span class="o">=</span> <span class="n">PipelineExecutor</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">executor</span><span class="o">.</span><span class="n">get_mermaid_graph</span><span class="p">())</span>
+</code></pre></div>
+<p>Or inspect the pipeline steps programmatically:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">iter8ml.engine.pipelines</span><span class="w"> </span><span class="kn">import</span> <span class="n">describe_pipeline</span>
+
+<span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">describe_pipeline</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">pipeline</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;step&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">: enabled=</span><span class="si">{</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;enabled&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">, params=</span><span class="si">{</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
 <p>This is also logged automatically in the <code>experiment_started</code> event under <code>pipeline_lineage</code>.</p>
 
 
@@ -2360,6 +2650,8 @@ print(executor.get_mermaid_graph())
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/notebooks.js"></script>
       
     
   </body>

@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://minghao51.github.io/iter8ml/main/explainability/">
+        <link rel="canonical" href="https://minghao51.github.io/iter8ml/main/design-decisions/">
       
       
-        <link rel="prev" href="../drift-detection/">
+        <link rel="prev" href="../pipeline-architecture/">
       
       
-        <link rel="next" href="../notebooks/">
+        <link rel="next" href="../medallion/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Explainability - Tabular Blueprint</title>
+        <title>Design Decisions - Tabular Blueprint</title>
       
     
     
@@ -70,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#explainability" class="md-skip">
+        <a href="#design-decisions" class="md-skip">
           Skip to content
         </a>
       
@@ -108,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Explainability
+              Design Decisions
             
           </span>
         </div>
@@ -210,10 +210,12 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../pipeline-architecture/" class="md-tabs__link">
           
   
@@ -249,12 +251,10 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
+      <li class="md-tabs__item">
         <a href="../data-loading/" class="md-tabs__link">
           
   
@@ -363,26 +363,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
             
   
   
@@ -400,7 +405,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -443,10 +448,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../design-decisions/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Decisions
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -462,6 +494,114 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#adr-001-one-hamilton-dag-for-training-not-imperative-orchestration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-001 — One Hamilton DAG for training, not imperative orchestration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-002-pipeline-behavior-is-data-pipelinespec-configwhen-not-branches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-002 — Pipeline behavior is data (PipelineSpec + @config.when), not branches
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-003-a-medallion-artifact-contract-for-durable-lineage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-003 — A medallion artifact contract for durable lineage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-004-hardware-aware-model-routing-and-the-openmp-war-story" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-004 — Hardware-aware model routing (and the OpenMP war story)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-005-two-reliability-seams-best-effort-events-required-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-005 — Two reliability seams: best-effort events, required state
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-006-cpu-first-gpu-ready" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-006 — CPU-first, GPU-ready
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aside-polars-native-with-a-narrow-numpy-seam" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Aside — Polars-native, with a narrow numpy seam
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -505,31 +645,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
             
   
   
@@ -547,7 +682,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -758,37 +893,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Explainability
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../explainability/" class="md-nav__link">
         
   
   
@@ -804,193 +912,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#shap-explainer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SHAP Explainer
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="SHAP Explainer">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#method-selection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Method Selection
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#mathematical-formulation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Mathematical Formulation
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Mathematical Formulation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#shapley-values" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Shapley Values
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#treeexplainer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        TreeExplainer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#kernelexplainer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        KernelExplainer
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#global-feature-importance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Global Feature Importance
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Global Feature Importance">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#computation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Computation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Output
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#visualization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Visualization
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Visualization">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#beeswarm-plot" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Beeswarm Plot
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dependence-plots" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dependence Plots
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#orchestration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Orchestration
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1257,166 +1178,87 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#shap-explainer" class="md-nav__link">
+  <a href="#adr-001-one-hamilton-dag-for-training-not-imperative-orchestration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SHAP Explainer
+        ADR-001 — One Hamilton DAG for training, not imperative orchestration
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="SHAP Explainer">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#method-selection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Method Selection
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#mathematical-formulation" class="md-nav__link">
+  <a href="#adr-002-pipeline-behavior-is-data-pipelinespec-configwhen-not-branches" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Mathematical Formulation
+        ADR-002 — Pipeline behavior is data (PipelineSpec + @config.when), not branches
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Mathematical Formulation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#shapley-values" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Shapley Values
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#treeexplainer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        TreeExplainer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#kernelexplainer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        KernelExplainer
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#global-feature-importance" class="md-nav__link">
+  <a href="#adr-003-a-medallion-artifact-contract-for-durable-lineage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Global Feature Importance
+        ADR-003 — A medallion artifact contract for durable lineage
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Global Feature Importance">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#computation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Computation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Output
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#visualization" class="md-nav__link">
+  <a href="#adr-004-hardware-aware-model-routing-and-the-openmp-war-story" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Visualization
+        ADR-004 — Hardware-aware model routing (and the OpenMP war story)
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Visualization">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#beeswarm-plot" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Beeswarm Plot
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dependence-plots" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dependence Plots
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#orchestration" class="md-nav__link">
+  <a href="#adr-005-two-reliability-seams-best-effort-events-required-state" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Orchestration
+        ADR-005 — Two reliability seams: best-effort events, required state
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-006-cpu-first-gpu-ready" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR-006 — CPU-first, GPU-ready
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aside-polars-native-with-a-narrow-numpy-seam" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Aside — Polars-native, with a narrow numpy seam
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
       
     </span>
   </a>
@@ -1443,133 +1285,159 @@
   
 
 
-<h1 id="explainability">Explainability</h1>
-<p>Reference for SHAP-based model explanations: global feature importance and visualization.</p>
+<h1 id="design-decisions">Design Decisions</h1>
+<p>iter8ml's architecture is the product of a handful of deliberate tradeoffs. This
+page records the <strong>why</strong>, not the <strong>what</strong> — for each decision, the context that
+forced the choice, the decision we made, and the consequences we accepted. It is
+intentionally honest about what is finished and what is not.</p>
+<p>Each record follows the ADR shape: <strong>Context → Decision → Consequences</strong>.
+Reference detail lives in <a href="../pipeline-architecture/">Pipeline Architecture</a> and
+<a href="../medallion/">Medallion Runtime</a>.</p>
 <hr />
-<h2 id="shap-explainer">SHAP Explainer</h2>
-<p><strong>Source:</strong> <code>src/iter8ml/analysis/explainability.py:24</code></p>
-<p><strong>Class:</strong> <code>Explainer</code></p>
-<h3 id="method-selection">Method Selection</h3>
-<p><strong>Source:</strong> <code>analysis/explainability.py:76</code></p>
-<p>The explainer automatically selects the appropriate SHAP method based on the model type:</p>
-<table>
-<thead>
-<tr>
-<th>Model Type</th>
-<th>SHAP Method</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>LightGBM, XGBoost, CatBoost, GBDT</td>
-<td><strong><code>shap.TreeExplainer</code></strong></td>
-<td>Exact Shapley values for tree models in O(TLD²) time</td>
-</tr>
-<tr>
-<td>All others</td>
-<td><strong><code>shap.KernelExplainer</code></strong></td>
-<td>Model-agnostic approximation using a background sample</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Detection Logic:</strong> Checks if <code>model_type</code> or <code>model_name</code> contains any of: <code>"lgbm"</code>, <code>"lightgbm"</code>, <code>"xgboost"</code>, <code>"xgb"</code>, <code>"catboost"</code>, <code>"gbdt"</code>.</p>
-<p>For <code>KernelExplainer</code>, a background dataset of <code>min(100, n_samples)</code> rows is sampled via <code>shap.sample()</code>.</p>
+<h2 id="adr-001-one-hamilton-dag-for-training-not-imperative-orchestration">ADR-001 — One Hamilton DAG for training, not imperative orchestration</h2>
+<p><strong>Context.</strong> Tabular-ML codebases tend to grow into a tangle of notebooks and
+scripts where preprocessing is copy-pasted between train, inference, and drift
+paths. Three artifacts that should be identical slowly diverge; lineage is
+"read the notebook"; nothing is replayable below the run level.</p>
+<p><strong>Decision.</strong> Training execution is a <strong>single Hamilton DAG</strong>. Each Python
+function is a node whose parameters <em>declare</em> its dependencies; Hamilton resolves
+execution order. There is no parallel imperative path for training.</p>
+<pre class="mermaid"><code>flowchart TD
+    df[(input df)] --&gt; P[preprocessing&lt;br/&gt;nodes]
+    P --&gt; DP[data_prep_result]
+    DP --&gt; FE[feature engineering&lt;br/&gt;@config.when variant]
+    FE --&gt; TR[model training&lt;br/&gt;per-model CV + calibration]
+    TR --&gt; ST[training_state&lt;br/&gt;leaderboard + champion]
+    classDef opt fill:#eee,stroke:#999,stroke-dasharray:3 3;
+    class FE opt;</code></pre>
+<p><strong>Consequences.</strong>
+- <strong>+</strong> Lineage and per-node timing come free via lifecycle hooks; preprocessing
+  is defined once and reused across every pipeline mode.
+- <strong>+</strong> Any node is independently runnable (<code>run_preprocessing</code>, <code>run_drift</code>),
+  which is what makes <code>iter8 drift</code> and <code>iter8 run</code> share the same graph.
+- <strong>−</strong> Framework lock-in to Hamilton; every stage must be a pure function, which
+  is occasionally awkward for stateful fits.
+- <strong>−</strong> A reader can't follow execution top-to-bottom in one file — they read the
+  graph. <code>iter8 plan --graph</code> and <code>describe_pipeline()</code> exist to compensate.</p>
 <hr />
-<h2 id="mathematical-formulation">Mathematical Formulation</h2>
-<h3 id="shapley-values">Shapley Values</h3>
-<p>SHAP (SHapley Additive exPlanations) computes feature attributions based on Shapley values from cooperative game theory:</p>
-<div class="highlight"><pre><span></span><code>φ_i = Σ_{S⊆F\{i}} (|S|!(|F|-|S|-1)!) / |F|! × [f(S∪{i}) - f(S)]
-</code></pre></div>
-<p>where:
-- <code>φ_i</code> is the Shapley value for feature <code>i</code>
-- <code>F</code> is the set of all features
-- <code>S</code> is a subset of features not containing <code>i</code>
-- <code>f(S)</code> is the model prediction using only features in <code>S</code></p>
-<h3 id="treeexplainer">TreeExplainer</h3>
-<p>For tree ensembles, TreeExplainer computes exact Shapley values in polynomial time by traversing all tree paths. The algorithm exploits the tree structure to avoid the exponential enumeration of feature subsets.</p>
-<h3 id="kernelexplainer">KernelExplainer</h3>
-<p>Uses a weighted linear regression on a synthetic dataset of feature coalitions:</p>
-<div class="highlight"><pre><span></span><code>minimize Σ_{z∈Z} π(z) × (f(h_x(z)) - g(z))²
-</code></pre></div>
-<p>where <code>π(z)</code> is the SHAP kernel weight and <code>h_x(z)</code> maps binary coalitions to actual feature values.</p>
+<h2 id="adr-002-pipeline-behavior-is-data-pipelinespec-configwhen-not-branches">ADR-002 — Pipeline behavior is <em>data</em> (<code>PipelineSpec</code> + <code>@config.when</code>), not branches</h2>
+<p><strong>Context.</strong> A real pipeline has many behavior switches: drift method
+(psi / domain-classifier / both), target transform (none / log1p / yeo-johnson /
+box-cox), calibration (none / platt / isotonic), feature strategy. Encoding these
+as <code>if/else</code> inside node code produces an exponential tangle that is impossible
+to introspect or serialize.</p>
+<p><strong>Decision.</strong> Steps and their parameters live in a serializable
+<a href="../pipeline-architecture/"><code>PipelineSpec</code></a>; nodes
+select implementations with Hamilton's <code>@config.when(...)</code>. The node code itself
+has no branching — the config activates the right variant.</p>
+<p><strong>Consequences.</strong>
+- <strong>+</strong> A pipeline is queryable and describable — <code>describe_pipeline(spec)</code>
+  returns exactly what will run, and <code>visualize_pipeline(spec)</code> annotates disabled
+  steps. That same data drives <code>iter8 plan --graph</code>.
+- <strong>+</strong> Adding a variant is purely additive (a new <code>@config.when</code> function); no
+  existing node changes.
+- <strong>−</strong> Indirection: to know <em>what</em> runs you read the spec, not the code. The
+  spec→config resolver (<code>_resolve_hamilton_config</code>) is a thing that can be
+  forgotten when adding a param.</p>
 <hr />
-<h2 id="global-feature-importance">Global Feature Importance</h2>
-<p><strong>Source:</strong> <code>analysis/explainability.py:35</code></p>
-<p><strong>Method:</strong> <code>Explainer.explain(X, run_id, max_display, generate_plots)</code></p>
-<h3 id="computation">Computation</h3>
-<ol>
-<li>Compute SHAP values for all samples: <code>explainer(X)</code></li>
-<li>Handle multi-output models: if <code>values.ndim == 3</code>, aggregate across classes: <code>mean(|φ|)</code> over <code>(samples, classes)</code> → per-feature scalar</li>
-<li>For 2D output: <code>mean(|φ|)</code> over samples → per-feature scalar</li>
-<li>Rank features by descending mean absolute SHAP value</li>
-</ol>
-<h3 id="output">Output</h3>
-<p><code>SHAPExplanationResult</code>:</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>model_name</code></td>
-<td>Name of the explained model</td>
-</tr>
-<tr>
-<td><code>n_features</code></td>
-<td>Total number of features</td>
-</tr>
-<tr>
-<td><code>top_features</code></td>
-<td>Ranked list of <code>FeatureImportance(feature_name, importance)</code> up to <code>max_display</code></td>
-</tr>
-<tr>
-<td><code>plot_paths</code></td>
-<td>File paths to generated plots</td>
-</tr>
-</tbody>
-</table>
+<h2 id="adr-003-a-medallion-artifact-contract-for-durable-lineage">ADR-003 — A medallion artifact contract for durable lineage</h2>
+<p><strong>Context.</strong> ML artifacts are too often ad-hoc <code>parquet</code> dumps with no schema,
+no fingerprint, and no lineage. "Resume this run" usually means "trust the last
+line in the log" — which is exactly the thing most likely to be wrong after a
+crash.</p>
+<p><strong>Decision.</strong> Borrow the data-engineering medallion pattern as a local-first
+artifact contract:</p>
+<pre class="mermaid"><code>flowchart LR
+    Br["**Bronze**&lt;br/&gt;immutable source snapshot&lt;br/&gt;+ observed schema / fingerprint"]
+    Si["**Silver**&lt;br/&gt;validated canonical frame&lt;br/&gt;(pre learned transforms)"]
+    Go["**Gold**&lt;br/&gt;features + labels&lt;br/&gt;+ split membership"]
+    Pt["**Platinum**&lt;br/&gt;run metrics + model evidence"]
+    Br --&gt; Si --&gt; Go --&gt; Pt</code></pre>
+<p>A product is readable only after its manifest and <code>_SUCCESS</code> marker commit
+atomically. <code>MedallionExecutionService.resume(run_id)</code> trusts <strong>only</strong> a terminal
+<code>run.json</code> whose recorded stage products pass deep checksum verification — event
+history alone is never a checkpoint. The Gold split artifact records
+<code>row_id / fold / role / repeat</code>, and verification rejects train/validation
+overlap within a fold.</p>
+<p><strong>Consequences.</strong>
+- <strong>+</strong> Runs are reproducible and auditable; resume is safe; the most common
+  leakage bug (train/val overlap) is caught at the contract boundary.
+- <strong>−</strong> More plumbing and more disk than dumping files.
+- <strong>− Honest status:</strong> this is a hardened <em>local reference slice</em>, not completion
+  of every medallion phase. Model-per-fold Platinum, OOF artifacts, a true DuckDB
+  catalog over Parquet views, and migration tooling remain future work.</p>
 <hr />
-<h2 id="visualization">Visualization</h2>
-<p><strong>Source:</strong> <code>analysis/explainability.py:99</code></p>
-<p><strong>Library:</strong> <code>shap</code>, <code>matplotlib</code></p>
-<h3 id="beeswarm-plot">Beeswarm Plot</h3>
-<p>Shows the distribution of SHAP values for each feature across all samples. Features are ordered by importance (top = most important). Color represents feature value (red = high, blue = low).</p>
-<div class="highlight"><pre><span></span><code>workspace.artifacts_dir / f&quot;shap_{run_id}/beeswarm.png&quot;
-</code></pre></div>
-<h3 id="dependence-plots">Dependence Plots</h3>
-<p>Scatter plots of SHAP value vs feature value for the top 5 features, showing the marginal effect of each feature on the prediction.</p>
-<div class="highlight"><pre><span></span><code>workspace.artifacts_dir / f&quot;shap_{run_id}/dependence_{i}.png&quot;
-</code></pre></div>
-<table>
-<thead>
-<tr>
-<th>Plot</th>
-<th>DPI</th>
-<th>Format</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Beeswarm</td>
-<td>150</td>
-<td>PNG</td>
-</tr>
-<tr>
-<td>Dependence</td>
-<td>150</td>
-<td>PNG (top 5 features)</td>
-</tr>
-</tbody>
-</table>
+<h2 id="adr-004-hardware-aware-model-routing-and-the-openmp-war-story">ADR-004 — Hardware-aware model routing (and the OpenMP war story)</h2>
+<p><strong>Context.</strong> "Which models should I run?" should not be a manual decision, and
+the defaults should not depend on hoping the host has a GPU. Worse, the naive
+defaults actively break: on hybrid (P+E-core) CPUs under Linux/WSL2, the GBDT
+libraries' libgomp <strong>deadlocks across all cores</strong> — the process hangs silently
+and exits <code>124</code> (Phase-1 issue 1.6b). <code>n_jobs=-1</code> is a footgun.</p>
+<p><strong>Decision.</strong> <code>models="auto"</code> resolves through a <code>ModelSelector</code> keyed on the
+task and <strong>detected VRAM</strong>; <code>max_workers</code> is auto-reduced to 1 on low-VRAM GPUs;
+and OpenMP threads are capped (<code>HardwareProfile.configure_omp_threads()</code>,
+≤8 on Linux) <strong>before any GBDT library is allowed to load libgomp</strong>.</p>
+<p><strong>Consequences.</strong>
+- <strong>+</strong> A sensible, host-appropriate default with zero configuration; no
+  silent deadlocks; reproducible CPU runs.
+- <strong>−</strong> "auto" can surprise a user who expected a specific model — pin an
+  explicit <code>models=[...]</code> list to opt out. The lazy GBDT load also means the OMP
+  guard must run early in any entrypoint (notebook/demo/CLI) — see the case
+  study's hidden setup cell.</p>
 <hr />
-<h2 id="orchestration">Orchestration</h2>
-<p><strong>Source:</strong> <code>src/iter8ml/analysis/explainability.py:28</code></p>
-<p><strong>Class:</strong> <code>Explainer</code></p>
-<p>The explainer orchestrates SHAP explanation and logs results to the experiment tracker. Called automatically during the training pipeline when SHAP is enabled in the experiment config.</p>
+<h2 id="adr-005-two-reliability-seams-best-effort-events-required-state">ADR-005 — Two reliability seams: best-effort events, required state</h2>
+<p><strong>Context.</strong> A training run emits two qualitatively different outputs:
+<em>telemetry</em> (node timings, trial logs — nice to have) and <em>state</em> (the
+leaderboard, the registered champion — must not be lost). Treating both as
+"logging" means a telemetry hiccup can abort a run, or a partial-failure state
+can be silently dropped.</p>
+<p><strong>Decision.</strong> The <code>Trainer</code> exposes two seams with deliberately different
+reliability contracts:</p>
+<pre class="mermaid"><code>flowchart TD
+    T[Trainer.run] --&gt; E["event adapter&lt;br/&gt;**best-effort**"]
+    T --&gt; S["state adapter&lt;br/&gt;**required**"]
+    E -.-&gt;|fire-and-forget| L[(tracker / logs)]
+    S ==&gt;|must succeed, else raises| F[(state files)]</code></pre>
+<p>The event adapter (<code>TrackerEventAdapter</code>) is best-effort — a failure is logged
+and the run continues. The state adapter (<code>ObserverStateAdapter</code>) is <strong>required</strong>:
+if it fails, the <code>Trainer</code> raises <code>TrainerStatePublishError</code> rather than claim
+success.</p>
+<p><strong>Consequences.</strong>
+- <strong>+</strong> State integrity is guaranteed; telemetry can never crash a run.
+- <strong>−</strong> Two concepts to understand instead of one "logger." That is the point —
+  conflating them is what loses state.</p>
+<hr />
+<h2 id="adr-006-cpu-first-gpu-ready">ADR-006 — CPU-first, GPU-ready</h2>
+<p><strong>Context.</strong> Most tabular datasets fit comfortably on a laptop CPU, and CPU
+access is near-universal while GPU access is uneven. Yet many frameworks treat
+CPU as an afterthought or assume a GPU. That inverts the real distribution of
+tabular work.</p>
+<p><strong>Decision.</strong> iter8ml is <strong>CPU-first</strong>: a dedicated CPU benchmark suite and the
+OpenMP hardening above (ADR-004) make the CPU path a first-class, reproducible
+target — the path that runs in CI and on any machine.</p>
+<p>This is <strong>not</strong> CPU-only. The same hardware detection that powers model routing
+(ADR-004) auto-detects VRAM when a GPU is present and routes to it —
+GPU-appropriate models are selected, <code>max_workers</code> scales up, and the GPU path is
+exercised, not merely permitted. Both paths are real and tested; CPU is the
+default, GPU is a first-class opt-in the host enables by having one.</p>
+<p><strong>Consequences.</strong>
+- <strong>+</strong> Runs anywhere; reproducible, free CI; low friction for the common
+  (small-to-medium tabular) case.
+- <strong>−</strong> For very large data or deep models the CPU path is slower — which is
+  exactly when the auto-detected GPU path takes over.</p>
+<hr />
+<h2 id="aside-polars-native-with-a-narrow-numpy-seam">Aside — Polars-native, with a narrow numpy seam</h2>
+<p>End-to-end data is <a href="https://pola.rs">Polars</a> (<code>pl.DataFrame</code>); numpy <code>(X, y)</code>
+arrays appear only at the model boundary via <code>DataAdapter</code>. This gives
+lazy/Arrow-native throughput and keeps transforms memoizable inside the DAG, at
+the cost of one conversion at the seam — kept deliberately narrow.</p>
+<hr />
+<h2 id="status">Status</h2>
+<p>These decisions are stable; the implementation around them is staged. The
+medallion contract (ADR-003) in particular is explicitly a hardened local slice
+today, with a real catalog and further Platinum execution on the roadmap. See
+the <a href="../notebooks/case-study-german-credit/">German Credit case study</a> for these
+decisions exercised end-to-end on a real dataset.</p>
 
 
 

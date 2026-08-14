@@ -48,6 +48,8 @@
     
       <link rel="stylesheet" href="assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="stylesheets/notebooks.css">
+    
     <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -66,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#tabular-blueprint" class="md-skip">
+        <a href="#iter8ml" class="md-skip">
           Skip to content
         </a>
       
@@ -209,14 +211,34 @@
   
   
   
+    
+    
+      <li class="md-tabs__item">
+        <a href="pipeline-architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
     <li class="md-tabs__item">
-      <a href="pipeline-architecture/" class="md-tabs__link">
+      <a href="medallion/" class="md-tabs__link">
         
   
   
     
   
-  Architecture
+  Medallion Runtime
 
       </a>
     </li>
@@ -375,13 +397,52 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#quick-links" class="md-nav__link">
+  <a href="#getting-started" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick Links
+        Getting Started
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#public-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Public API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#session-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Session API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Session API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workspace
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -390,6 +451,28 @@
     <span class="md-ellipsis">
       
         Guides
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#notebooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notebooks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI
       
     </span>
   </a>
@@ -410,6 +493,58 @@
   
   
   
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="pipeline-architecture/" class="md-nav__link">
         
@@ -418,7 +553,70 @@
   <span class="md-ellipsis">
     
   
-    Architecture
+    Pipeline Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="design-decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Decisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="medallion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Medallion Runtime
   
 
     
@@ -451,10 +649,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
             
   
   
@@ -472,8 +670,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -734,10 +932,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -755,8 +953,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -801,7 +999,63 @@
   
   
     <li class="md-nav__item">
-      <a href="notebooks/exports/01_quick_start.html" class="md-nav__link">
+      <a href="notebooks/demo-telco-churn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Live Demo — Telco Churn
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="notebooks/case-study-german-credit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Case Study — German Credit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="notebooks/quick-start/" class="md-nav__link">
         
   
   
@@ -829,14 +1083,14 @@
   
   
     <li class="md-nav__item">
-      <a href="notebooks/exports/02_model_comparison.html" class="md-nav__link">
+      <a href="notebooks/case-study-agent-demo/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Model Comparison
+    Case Study — Agent Demo (Phase 3)
   
 
     
@@ -857,70 +1111,14 @@
   
   
     <li class="md-nav__item">
-      <a href="notebooks/exports/03_drift_monitoring.html" class="md-nav__link">
+      <a href="notebooks/archive/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Drift Monitoring
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="notebooks/exports/04_hpo_optimization.html" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    HPO Optimization
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="notebooks/exports/05_methodology_benchmarks.html" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Methodology Benchmarks
+    Archive
   
 
     
@@ -968,13 +1166,52 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#quick-links" class="md-nav__link">
+  <a href="#getting-started" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick Links
+        Getting Started
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#public-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Public API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#session-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Session API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Session API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workspace
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -983,6 +1220,28 @@
     <span class="md-ellipsis">
       
         Guides
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#notebooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notebooks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI
       
     </span>
   </a>
@@ -1009,24 +1268,187 @@
   
 
 
-<h1 id="tabular-blueprint">Tabular Blueprint</h1>
+<h1 id="iter8ml">iter8ml</h1>
 <p>A high-velocity iteration framework for tabular ML.</p>
-<h2 id="quick-links">Quick Links</h2>
-<ul>
-<li><a href="pipeline-architecture/">Architecture Overview</a></li>
-<li><a href="notebooks/">Notebooks</a></li>
-</ul>
+<hr />
+<h2 id="getting-started">Getting Started</h2>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">iter8ml</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">iml</span>
+
+<span class="n">session</span> <span class="o">=</span> <span class="n">iml</span><span class="o">.</span><span class="n">ExperimentSession</span><span class="p">()</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">iml</span><span class="o">.</span><span class="n">ExperimentConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;demo&quot;</span><span class="p">,</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">iml</span><span class="o">.</span><span class="n">TaskType</span><span class="o">.</span><span class="n">CLASSIFICATION</span><span class="p">,</span>
+    <span class="n">target_col</span><span class="o">=</span><span class="s2">&quot;y&quot;</span><span class="p">,</span>
+    <span class="n">data_path</span><span class="o">=</span><span class="s2">&quot;data.csv&quot;</span><span class="p">,</span>
+    <span class="n">models</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;catboost&quot;</span><span class="p">,</span> <span class="s2">&quot;lightgbm&quot;</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">iml</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span><span class="s2">&quot;data.csv&quot;</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
+
+<span class="n">lb</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">leaderboard</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">lb</span><span class="p">)</span>
+
+<span class="n">session</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">&quot;demo:classification&quot;</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="public-api">Public API</h2>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Source</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ExperimentSession</code></td>
+<td><code>session.py</code></td>
+<td>Primary high-level interface</td>
+</tr>
+<tr>
+<td><code>Workspace</code></td>
+<td><code>workspace.py</code></td>
+<td>Filesystem paths dataclass</td>
+</tr>
+<tr>
+<td><code>ExperimentConfig</code></td>
+<td><code>config.py</code></td>
+<td>Pydantic experiment config</td>
+</tr>
+<tr>
+<td><code>HardwareProfile</code></td>
+<td><code>config.py</code></td>
+<td>GPU/RAM/CPU detection</td>
+</tr>
+<tr>
+<td><code>Trainer</code></td>
+<td><code>engine/trainer.py</code></td>
+<td>Orchestrates experiment runs</td>
+</tr>
+<tr>
+<td><code>Evaluator</code></td>
+<td><code>engine/evaluator.py</code></td>
+<td>Cross-validation + metrics</td>
+</tr>
+<tr>
+<td><code>ModelSelector</code></td>
+<td><code>engine/models/selector.py</code></td>
+<td>Hardware-aware model routing</td>
+</tr>
+<tr>
+<td><code>Tracker</code> / <code>JSONLTracker</code></td>
+<td><code>engine/tracker.py</code></td>
+<td>Tracking protocol + default impl</td>
+</tr>
+<tr>
+<td><code>ExportService</code></td>
+<td><code>services/export.py</code></td>
+<td>Package champion models</td>
+</tr>
+<tr>
+<td><code>RegistryService</code></td>
+<td><code>services/registry.py</code></td>
+<td>Thread-safe model registry</td>
+</tr>
+<tr>
+<td><code>PromotionResult</code></td>
+<td><code>services/registry.py</code></td>
+<td>Pydantic promotion result</td>
+</tr>
+<tr>
+<td><code>ReportService</code></td>
+<td><code>services/reporting.py</code></td>
+<td>Leaderboard reports</td>
+</tr>
+<tr>
+<td><code>load_data</code></td>
+<td><code>data/loader.py</code></td>
+<td>CSV/Parquet → Polars</td>
+</tr>
+<tr>
+<td><code>available_model_names</code></td>
+<td><code>engine/models/factory.py</code></td>
+<td>Registered model names</td>
+</tr>
+<tr>
+<td><code>get_model_class</code></td>
+<td><code>engine/models/factory.py</code></td>
+<td>Resolve model class by name</td>
+</tr>
+<tr>
+<td>Enums: <code>TaskType</code>, <code>CVStrategy</code>, <code>FeatureStrategy</code>, <code>EmbeddingMethod</code>, <code>TrackerType</code></td>
+<td><code>constants.py</code></td>
+<td>Type-safe config</td>
+</tr>
+<tr>
+<td>Exceptions: <code>TabularBlueprintError</code>, <code>DataLoadError</code>, <code>ModelFitError</code>, <code>RegistryError</code></td>
+<td><code>exceptions.py</code></td>
+<td>Error hierarchy</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="session-api">Session API</h2>
+<p><code>ExperimentSession</code> is the recommended entry point:</p>
+<div class="highlight"><pre><span></span><code><span class="n">session</span> <span class="o">=</span> <span class="n">ExperimentSession</span><span class="p">()</span>                    <span class="c1"># auto-creates Workspace</span>
+
+<span class="c1"># Run experiment</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
+
+<span class="c1"># Inspect results</span>
+<span class="n">lb</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">leaderboard</span><span class="p">(</span><span class="n">metric</span><span class="o">=</span><span class="s2">&quot;roc_auc&quot;</span><span class="p">)</span>       <span class="c1"># → pl.DataFrame</span>
+
+<span class="c1"># Promote and export</span>
+<span class="n">session</span><span class="o">.</span><span class="n">promote</span><span class="p">(</span><span class="s2">&quot;run_id&quot;</span><span class="p">,</span> <span class="s2">&quot;key&quot;</span><span class="p">)</span>                  <span class="c1"># → PromotionResult</span>
+<span class="n">session</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">&quot;key&quot;</span><span class="p">)</span>                             <span class="c1"># → Path</span>
+
+<span class="c1"># Drift detection</span>
+<span class="n">session</span><span class="o">.</span><span class="n">drift_check</span><span class="p">(</span><span class="n">ref_df</span><span class="p">,</span> <span class="n">live_df</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;psi&quot;</span><span class="p">)</span>
+
+<span class="c1"># State summary (LLM-readable markdown)</span>
+<span class="n">md</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">state</span><span class="p">()</span>
+</code></pre></div>
+<h3 id="workspace">Workspace</h3>
+<div class="highlight"><pre><span></span><code><span class="n">ws</span> <span class="o">=</span> <span class="n">Workspace</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;./workspace&quot;</span><span class="p">)</span>    <span class="c1"># or set ITER8ML_WORKSPACE env var</span>
+<span class="n">ws</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>                             <span class="c1"># create dirs + touch files</span>
+
+<span class="n">ws</span><span class="o">.</span><span class="n">experiments_path</span>   <span class="c1"># workspace/experiments.jsonl</span>
+<span class="n">ws</span><span class="o">.</span><span class="n">registry_path</span>      <span class="c1"># workspace/registry.json</span>
+<span class="n">ws</span><span class="o">.</span><span class="n">artifacts_dir</span>      <span class="c1"># workspace/artifacts/</span>
+<span class="n">ws</span><span class="o">.</span><span class="n">exports_dir</span>        <span class="c1"># workspace/exports/</span>
+<span class="n">ws</span><span class="o">.</span><span class="n">state_path</span>         <span class="c1"># workspace/current_state.md</span>
+<span class="n">ws</span><span class="o">.</span><span class="n">leaderboard_path</span>   <span class="c1"># workspace/leaderboard.md</span>
+</code></pre></div>
+<hr />
 <h2 id="guides">Guides</h2>
 <ul>
+<li><a href="pipeline-architecture/">Pipeline Architecture</a></li>
 <li><a href="data-loading/">Data Loading</a></li>
 <li><a href="preprocessing/">Preprocessing</a></li>
 <li><a href="feature-engineering/">Feature Engineering</a></li>
 <li><a href="models/">Models</a></li>
-<li><a href="evaluation/">Evaluation</a></li>
+<li><a href="evaluation/">Evaluation &amp; Metrics</a></li>
 <li><a href="hpo/">Hyperparameter Optimization</a></li>
 <li><a href="drift-detection/">Drift Detection</a></li>
 <li><a href="explainability/">Explainability</a></li>
+<li><a href="design-decisions/">Design Decisions</a></li>
 </ul>
+<h2 id="notebooks">Notebooks</h2>
+<ul>
+<li><a href="notebooks/">Notebook Tutorials</a></li>
+</ul>
+<h2 id="cli">CLI</h2>
+<div class="highlight"><pre><span></span><code>iter8 init                  Initialize workspace
+iter8 run config.yaml       Run experiment
+iter8 leaderboard           Show leaderboard
+iter8 hpo config.yaml       Run HPO
+iter8 drift ref.csv live.csv  Drift detection
+iter8 export key            Export champion
+iter8 state                 Show experiment state
+</code></pre></div>
 
 
 
@@ -1086,6 +1508,8 @@
     
     
       <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="javascripts/notebooks.js"></script>
       
     
   </body>

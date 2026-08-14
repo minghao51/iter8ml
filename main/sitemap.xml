@@ -2,46 +2,122 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://minghao51.github.io/iter8ml/main/</loc>
-         <lastmod>2026-05-02</lastmod>
+         <lastmod>2026-08-14</lastmod>
     </url>
     <url>
          <loc>https://minghao51.github.io/iter8ml/main/data-loading/</loc>
-         <lastmod>2026-05-02</lastmod>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/design-decisions/</loc>
+         <lastmod>2026-08-14</lastmod>
     </url>
     <url>
          <loc>https://minghao51.github.io/iter8ml/main/drift-detection/</loc>
-         <lastmod>2026-05-02</lastmod>
+         <lastmod>2026-08-14</lastmod>
     </url>
     <url>
          <loc>https://minghao51.github.io/iter8ml/main/evaluation/</loc>
-         <lastmod>2026-05-02</lastmod>
+         <lastmod>2026-08-14</lastmod>
     </url>
     <url>
          <loc>https://minghao51.github.io/iter8ml/main/explainability/</loc>
-         <lastmod>2026-05-02</lastmod>
+         <lastmod>2026-08-14</lastmod>
     </url>
     <url>
          <loc>https://minghao51.github.io/iter8ml/main/feature-engineering/</loc>
-         <lastmod>2026-05-02</lastmod>
+         <lastmod>2026-08-14</lastmod>
     </url>
     <url>
          <loc>https://minghao51.github.io/iter8ml/main/hpo/</loc>
-         <lastmod>2026-05-02</lastmod>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/medallion/</loc>
+         <lastmod>2026-08-14</lastmod>
     </url>
     <url>
          <loc>https://minghao51.github.io/iter8ml/main/models/</loc>
-         <lastmod>2026-05-02</lastmod>
-    </url>
-    <url>
-         <loc>https://minghao51.github.io/iter8ml/main/notebooks/</loc>
-         <lastmod>2026-05-02</lastmod>
+         <lastmod>2026-08-14</lastmod>
     </url>
     <url>
          <loc>https://minghao51.github.io/iter8ml/main/pipeline-architecture/</loc>
-         <lastmod>2026-05-02</lastmod>
+         <lastmod>2026-08-14</lastmod>
     </url>
     <url>
          <loc>https://minghao51.github.io/iter8ml/main/preprocessing/</loc>
-         <lastmod>2026-05-02</lastmod>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/notebooks/</loc>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/notebooks/case-study-agent-demo/</loc>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/notebooks/case-study-german-credit/</loc>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/notebooks/demo-telco-churn/</loc>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/notebooks/quick-start/</loc>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/notebooks/archive/</loc>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/notebooks/archive/cli-cookbook/</loc>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/notebooks/archive/drift-monitoring/</loc>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/notebooks/archive/feature-engineering-explainability/</loc>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/notebooks/archive/full-walkthrough/</loc>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/notebooks/archive/methodology-benchmarks/</loc>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/notebooks/archive/model-comparison/</loc>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/notebooks/archive/session-api/</loc>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/notebooks/archive/tracking-registry/</loc>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/plan/phase2-handoff-20260812/</loc>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/plan/phase2-story-depth-20260808/</loc>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/plan/portfolio-roadmap-20260805/</loc>
+         <lastmod>2026-08-14</lastmod>
+    </url>
+    <url>
+         <loc>https://minghao51.github.io/iter8ml/main/releases/v0.1.0/</loc>
+         <lastmod>2026-08-14</lastmod>
     </url>
 </urlset>

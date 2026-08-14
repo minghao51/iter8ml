@@ -1,0 +1,1594 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://minghao51.github.io/iter8ml/main/plan/phase2-story-depth-20260808/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Phase 2 — Story & Depth (Implementation Map / Handoff) - Tabular Blueprint</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/notebooks.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#phase-2-story-depth-implementation-map-handoff" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Tabular Blueprint" class="md-header__button md-logo" aria-label="Tabular Blueprint" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Tabular Blueprint
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Phase 2 — Story &amp; Depth (Implementation Map / Handoff)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/minghao51/iter8ml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../pipeline-architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../medallion/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Medallion Runtime
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../data-loading/" class="md-tabs__link">
+          
+  
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../notebooks/" class="md-tabs__link">
+          
+  
+  
+  Notebooks
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Tabular Blueprint" class="md-nav__button md-logo" aria-label="Tabular Blueprint" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Tabular Blueprint
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/minghao51/iter8ml" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipeline Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design-decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Decisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../medallion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Medallion Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data-loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../preprocessing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Preprocessing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../feature-engineering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Engineering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hpo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HPO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../drift-detection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drift Detection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explainability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explainability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Notebooks
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Notebooks
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/demo-telco-churn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Live Demo — Telco Churn
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/case-study-german-credit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Case Study — German Credit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/case-study-agent-demo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Case Study — Agent Demo (Phase 3)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/archive/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Archive
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decisions-locked-2026-08-08" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decisions locked (2026-08-08)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sequencing-re-ordered-23-unblocks-the-p0s" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sequencing (re-ordered; 2.3 unblocks the P0s)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#task-breakdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Task breakdown
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Task breakdown">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-23-bundled-demo-dataset-iter8-init-demo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1 — 2.3: Bundled demo dataset + iter8 init --demo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-21-german-credit-flagship-case-study" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2 — 2.1: German Credit flagship case study
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-22-gradio-live-demo-on-hf-spaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3 — 2.2: Gradio live demo on HF Spaces
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-24-trim-notebooks-to-3-hero-docs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4 — 2.4: Trim notebooks to 3 hero docs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-25-stretch-design-decisions-blog-post" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5 — 2.5 (stretch): "Design decisions" blog post
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-3-reuse-forward-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase-3 reuse (forward notes)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exit-criteria-phase-2-done" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exit criteria (Phase 2 done)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#risks-mitigations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Risks &amp; mitigations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verification-checklist-per-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification checklist (per change)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="phase-2-story-depth-implementation-map-handoff">Phase 2 — Story &amp; Depth (Implementation Map / Handoff)</h1>
+<p><strong>Date:</strong> 2026-08-08
+<strong>Status:</strong> Draft (awaiting execution)
+<strong>Horizon:</strong> ~1 month (Month 2 of <code>portfolio-roadmap-20260805.md</code>)
+<strong>Capacity:</strong> Solo, part-time
+<strong>Theme:</strong> One deep story beats nine shallow ones. Make iter8ml <em>accessible</em>
+(one-command demo) and <em>memorable</em> (a case study reviewers actually read + a
+clickable live demo).</p>
+<p><strong>Source:</strong> <code>docs/plan/portfolio-roadmap-20260805.md</code> → Phase 2 (tasks 2.1–2.5).
+<strong>Phase 1 status:</strong> shipped — v0.1.0 on PyPI, CPU benchmark results committed,
+OpenMP fix landed, CI/badges added. This phase builds on that proof.</p>
+<hr />
+<h2 id="decisions-locked-2026-08-08">Decisions locked (2026-08-08)</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Decision</th>
+<th>Choice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>D1</td>
+<td>Flagship datasets</td>
+<td><strong>German Credit</strong> (case study, 2.1) + <strong>Telco Churn</strong> (bundled <code>--demo</code> + live demo default, 2.2/2.3)</td>
+</tr>
+<tr>
+<td>D2</td>
+<td>Demo stack</td>
+<td><strong>Gradio on HF Spaces</strong> (auto-exposes an API for Phase 3 agent reuse)</td>
+</tr>
+<tr>
+<td>D3</td>
+<td>Drift framing</td>
+<td>Constructed reference-vs-current split (matches <code>iter8 drift</code> interface); stated honestly</td>
+</tr>
+<tr>
+<td>D4</td>
+<td>Case study host</td>
+<td><strong>GitHub Pages</strong> (renders <code>.qmd</code>, zero cost, same repo)</td>
+</tr>
+<tr>
+<td>D5</td>
+<td>P2.5 design-decisions blog</td>
+<td><strong>Stretch / in-if-time</strong> (content exists in <code>ARCHITECTURE.md</code>)</td>
+</tr>
+<tr>
+<td>D6</td>
+<td>Sequencing + bundling</td>
+<td>Re-order <strong>2.3 first</strong>; bundle demo parquet in-package (&lt;100KB)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Rationale for D1 split:</strong> German Credit gives continuity with the Phase 1
+benchmark (<code>benchmarks/results/credit-g_default.json</code> → 0.796 AUC) so the case
+study reads as <em>"defaults got 0.796; after HPO + FE + calibration we hit X."</em>
+Telco Churn (~7k rows) gives a more recognizable, bigger-feeling first touch
+for <code>iter8 init --demo</code> and the live demo. Using two datasets across roles also
+shows the loop generalizes.</p>
+<hr />
+<h2 id="sequencing-re-ordered-23-unblocks-the-p0s">Sequencing (re-ordered; 2.3 unblocks the P0s)</h2>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Roadmap #</th>
+<th>Pri</th>
+<th>Task</th>
+<th>Blocks / unblocks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>2.3</td>
+<td>P1</td>
+<td>Bundled Telco Churn + <code>iter8 init --demo</code></td>
+<td>Unblocks 2.1 (flow) &amp; 2.2 (default data)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>2.1</td>
+<td><strong>P0</strong></td>
+<td>German Credit flagship case study (Quarto → GH Pages)</td>
+<td>The artifact reviewers read</td>
+</tr>
+<tr>
+<td>3</td>
+<td>2.2</td>
+<td><strong>P0</strong></td>
+<td>Gradio live demo on HF Spaces</td>
+<td>Clickable URL in README</td>
+</tr>
+<tr>
+<td>4</td>
+<td>2.4</td>
+<td>P1</td>
+<td>Trim notebooks → 3 hero docs, archive rest</td>
+<td>Curation = signal</td>
+</tr>
+<tr>
+<td>5</td>
+<td>2.5</td>
+<td>P2 <em>(stretch)</em></td>
+<td>"Design decisions" blog post</td>
+<td>In-if-time</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="task-breakdown">Task breakdown</h2>
+<h3 id="step-1-23-bundled-demo-dataset-iter8-init-demo">Step 1 — 2.3: Bundled demo dataset + <code>iter8 init --demo</code></h3>
+<p><strong>Status: ✅ Implemented 2026-08-10</strong> (pending PyPI release to surface <code>--demo</code>)</p>
+<p><strong>Goal:</strong> one command (<code>iter8 init --demo</code>) drops a Telco Churn parquet into the
+workspace and prints the exact next command to run, so first-run is zero-friction.</p>
+<p><strong>Steps:</strong>
+1. Add bundled dataset under <code>src/iter8ml/datasets/telco_churn.parquet</code> (~7k
+   rows, &lt;100KB). Source: Kaggle IBM Telco Churn (document license in
+   <code>src/iter8ml/datasets/README.md</code>).
+2. Confirm hatchling ships it (files under <code>src/iter8ml/</code> are included by
+   default; verify with <code>uv build</code> + inspect wheel). Add explicit include in
+   <code>pyproject.toml</code> only if the wheel is missing it.
+3. Add <code>--demo</code> flag to <code>init</code> in <code>src/iter8ml/cli/main.py:12</code>:
+   - <code>--demo</code> → copy bundled parquet to <code>workspace.data_dir / "telco_churn.parquet"</code>,
+     echo a ready-to-paste <code>iter8 run --data ... --target churn</code> line.
+4. Add a <code>Workspace</code> helper (e.g. <code>workspace.seed_demo_data()</code>) rather than
+   inlining IO in the CLI — keeps it testable.
+5. Smoke-test from a clean install: <code>uvx --from 'iter8ml[gbdt]' iter8 init --demo</code>.</p>
+<p><strong>File refs:</strong> <code>src/iter8ml/cli/main.py:12</code>, <code>src/iter8ml/workspace.py</code>,
+<code>src/iter8ml/data/loader.py:30</code> (<code>load_parquet</code>), <code>pyproject.toml:116</code>.</p>
+<p><strong>Acceptance:</strong>
+- <code>iter8 init --demo</code> works from a clean shell (no local clone) against PyPI.
+- Bundled parquet present in the installed wheel.
+- One unit test for the <code>--demo</code> path.</p>
+<hr />
+<h3 id="step-2-21-german-credit-flagship-case-study">Step 2 — 2.1: German Credit flagship case study</h3>
+<p><strong>Status: ✅ Implemented 2026-08-11</strong> — <code>.qmd</code> authored + verified executable
+end-to-end (all cells chain, real numbers). Auto-publishes via the <strong>existing</strong>
+<code>.github/workflows/docs.yml</code> Quarto→mike pipeline (no new workflow).</p>
+<p><strong>Goal:</strong> a published, polished Quarto case study a reviewer reads in 5 minutes
+and remembers. Full loop: ingest → preprocess → HPO → drift → SHAP → export,
+framed as a before/after on the same dataset Phase 1 benchmarked.</p>
+<p><strong>Steps:</strong>
+1. Author <code>notebooks/case_study_german_credit.qmd</code> (new hero doc). Narrative:
+   - <strong>Setup:</strong> German Credit, 1k×20, binary classification (credit risk).
+   - <strong>Baseline:</strong> reuse Phase 1 result — CatBoost 0.796 AUC with defaults
+     (<code>benchmarks/results/credit-g_default.json</code>).
+   - <strong>Improve:</strong> Optuna HPO (40 trials) on the champion; report new AUC +
+     parameter importances (calibration curve omitted — would need an unverified
+     OOF-prob API; the in-pipeline <code>CALIBRATION</code> step is noted in prose).
+   - <strong>Explain:</strong> SHAP beeswarm + global importance bar — top risk drivers
+     (<code>checking_status</code>, <code>credit_history</code>, <code>savings_status</code>).
+   - <strong>Drift:</strong> constructed reference-vs-current split (D3) via
+     <code>iter8 drift --reference train.parquet --new batch.parquet</code>; flag the
+     strongest shifted feature.
+   - <strong>Export:</strong> <code>iter8 export</code> → show the portable bundle.
+2. <code>_quarto.yml</code>'s <code>*.qmd</code> glob auto-includes it (no edit needed).
+3. <strong>Publishing:</strong> the existing <code>.github/workflows/docs.yml</code> already runs
+   <code>quarto render notebooks/</code> + <code>scripts/generate_notebook_docs.py</code> +
+   <code>mike deploy</code> on push to main. The case study flows through automatically;
+   the script auto-generates the mkdocs stub
+   (<code>docs/notebooks/case-study-german-credit.md</code>). A manual <code>mkdocs.yml</code> nav
+   entry was added (no new <code>quarto-pages.yml</code> workflow needed).
+4. <strong>OMP guard:</strong> the <code>.qmd</code> has a hidden setup cell calling
+   <code>HardwareProfile.configure_omp_threads()</code> before any GBDT import — without
+   it, lightgbm/xgboost deadlock in CI on hybrid-core CPUs (Phase-1 issue 1.6b).
+   Verified: the notebook executes with no env vars set.
+5. Teaser + link added to <code>README.md</code> right after the <code>credit-g</code> benchmark row.</p>
+<p><strong>File refs:</strong> <code>notebooks/</code> (new <code>.qmd</code>), <code>notebooks/_quarto.yml</code>,
+<code>benchmarks/results/credit-g_default.json</code>, <code>examples/credit_risk.{py,yaml}</code>
+(reusable config scaffold), <code>src/iter8ml/services/export.py:229</code>
+(<code>ExportService</code>), <code>README.md</code>.</p>
+<p><strong>Verified results (German Credit, credit-g):</strong> baseline CatBoost <strong>0.7913</strong>
+(LightGBM 0.769, XGBoost 0.760); HPO (40 trials) → <strong>0.7963</strong>; param importances
+all &lt;0.05 (lr &gt; iter &gt; depth &gt; l2) → the dataset, not the knobs, is the ceiling.
+Narrative framed honestly: defaults match the published 0.796 benchmark; HPO
+edges to the SOTA band; the value is the integrated loop.</p>
+<p><strong>Acceptance:</strong>
+- Case study URL renders on GitHub Pages and is linked from <code>README.md</code>.
+- Before/after metric is stated explicitly and reproducible from the <code>.qmd</code>.
+- Drift section honestly labels the split as constructed.</p>
+<hr />
+<h3 id="step-3-22-gradio-live-demo-on-hf-spaces">Step 3 — 2.2: Gradio live demo on HF Spaces</h3>
+<p><strong>Status: ✅ Pivoted 2026-08-13 (uncommitted).</strong> HF Spaces deploy is ⛔
+blocked — HF now returns <code>402 Payment Required</code> for Gradio on free <code>cpu-basic</code>
+(requires a PRO subscription; confirmed <code>howt51</code> is not PRO; free-tier VMs at
+256–512MB would OOM CatBoost+SHAP anyway). <strong>Showcase pivoted to a static Quarto
+render + Colab notebook</strong> (free, rides the existing Quarto→Pages CI, no
+RAM/cold-start fragility): <code>notebooks/demo_telco_churn.qmd</code> renders the demo's
+<code>run_analysis()</code> output (CatBoost ROC-AUC ≈ 0.84, SHAP top driver <code>Contract</code>) as
+a hero doc; <code>demo/demo_telco_churn.ipynb</code> is the self-contained "Open in Colab"
+target. Both verified cell-by-cell (exit 0). README links both + the
+<code>iter8 init --demo</code> one-liner. The Gradio app (<code>demo/app.py</code>) +
+<code>scripts/deploy_hf.py</code> are kept for local use + Phase-3 readiness — the script
+works unchanged the moment the account is PRO. Side-fix: broadened
+<code>demo/app.py</code>'s module-level guard <code>except ImportError</code> → <code>except Exception</code> so
+<code>run_analysis</code> stays importable when gradio is installed-but-incompatible.</p>
+<p><strong>Goal:</strong> a public URL where a reviewer uploads a CSV (or uses the default
+Telco Churn) and gets a leaderboard + SHAP plot. Free-tier, no persisted user
+data.</p>
+<p><strong>Steps:</strong>
+1. New <code>demo/</code> dir: <code>demo/app.py</code> (Gradio), <code>demo/requirements.txt</code>
+   (<code>iter8ml[gbdt]</code> + <code>gradio</code> + <code>shap</code>), <code>demo/README.md</code>.
+2. <code>app.py</code> flow: file upload (or "use sample Telco Churn" button) → target
+   column picker → <code>iter8 run</code> under the hood → render leaderboard table +
+   SHAP summary for the champion model. Reuse <code>ExportService</code> /
+   <code>Predictor</code> (<code>src/iter8ml/services/export.py:41</code>) for SHAP.
+3. <strong>Hardening (free-tier + anti-abuse):</strong> cap upload size (~5MB), row cap
+   (~20k), wall-clock timeout (~120s), ephemeral temp dir, no DB.
+4. <strong>Deploy (manual first):</strong> create HF Space (SDK=gradio, CPU basic, free),
+   <code>git push</code> the <code>demo/</code> contents to the Space repo (token auth).
+5. <strong>Deploy (automated, optional later):</strong> <code>.github/workflows/deploy-hf.yml</code>
+   using <code>HF_TOKEN</code> secret + <code>huggingface_hub.upload_folder(..., repo_type="space")</code>.
+6. Put the live URL + screenshot in <code>README.md</code>.</p>
+<p><strong>Infra prerequisites:</strong>
+- HF account + access token (<strong>write</strong> scope).
+- Manual path: token used as git password to push the Space. No CI secret needed.
+- Automated path: <code>HF_TOKEN</code> stored as a GitHub Actions secret.</p>
+<p><strong>File refs:</strong> new <code>demo/</code>, <code>src/iter8ml/services/export.py:41,229</code>,
+<code>src/iter8ml/cli/main.py</code> (reuse <code>run</code> entrypoint logic), <code>README.md</code>.</p>
+<p><strong>Acceptance:</strong>
+- Public Space URL returns a leaderboard for the bundled Telco Churn sample.
+- Custom CSV upload works end-to-end within size/row/time caps.
+- URL + screenshot in <code>README.md</code>.</p>
+<p><strong>Verified locally (deploy pending):</strong> <code>run_analysis()</code> exercised on the Telco
+sample (CatBoost roc_auc=0.84, SHAP top driver <code>Contract</code>) and a synthetic
+regression CSV (r2=0.96); bad-target → <code>ValueError</code>. No OMP deadlock without
+env vars (lazy GBDT load). Gradio Blocks UI builds (14 children). <code>ruff</code> clean;
+<code>demo/</code> excluded from <code>mypy</code> (entrypoint code, like <code>notebooks/</code>). README link
+withheld until the Space is live (no dead links).</p>
+<hr />
+<h3 id="step-4-24-trim-notebooks-to-3-hero-docs">Step 4 — 2.4: Trim notebooks to 3 hero docs</h3>
+<p><strong>Status: ✅ Implemented 2026-08-12</strong> (uncommitted) — <code>docs/notebooks/index.md</code>
+now lists exactly 3 heroes; <code>02</code>–<code>09</code> <code>.qmd</code> + their rendered stubs moved under
+<code>…/archive/</code>; <code>notebooks/case_study_agent_demo.qmd</code> placeholder added;
+<code>mkdocs.yml</code> Notebooks nav → 3 heroes + Archive; ruff/mypy clean; nav resolves.</p>
+<p><strong>Goal:</strong> curation = signal. Keep 3 hero docs, archive the rest.</p>
+<p><strong>Hero keepers (per roadmap):</strong>
+- <code>quick-start</code> ← current <code>01_quick_start.qmd</code>
+- <code>case-study</code> ← new from Step 2 (<code>case_study_german_credit.qmd</code>)
+- <code>agent-demo</code> ← <strong>placeholder</strong>, filled in Phase 3 (3.1)</p>
+<p><strong>Steps:</strong>
+1. <code>git mv</code> <code>02</code>–<code>09</code> <code>.qmd</code> + their rendered <code>.md</code> under
+   <code>docs/notebooks/archive/</code>.
+2. Rewrite <code>docs/notebooks/index.md</code> to list only the 3 hero docs (remove the
+   9-entry index currently there).
+3. Update <code>notebooks/_quarto.yml</code> render list to the 3 hero <code>.qmd</code>.
+4. Add a one-line pointer in <code>index.md</code> to the archive for depth-seekers.</p>
+<p><strong>File refs:</strong> <code>notebooks/*.qmd</code>, <code>docs/notebooks/index.md</code>,
+<code>notebooks/_quarto.yml</code>.</p>
+<p><strong>Acceptance:</strong>
+- <code>docs/notebooks/index.md</code> shows exactly 3 hero docs.
+- Archived notebooks still render (links not broken).
+- <code>_quarto.yml</code> builds cleanly.</p>
+<hr />
+<h3 id="step-5-25-stretch-design-decisions-blog-post">Step 5 — 2.5 (stretch): "Design decisions" blog post</h3>
+<p><strong>Status: ✅ Done 2026-08-13</strong> (commit <code>a449a5a</code>) — <code>docs/design-decisions.md</code>,
+ADR-style (Context/Decision/Consequences): ADR-001 Hamilton DAG, ADR-002
+spec-driven pipeline, ADR-003 medallion contract, ADR-004 hardware-aware routing
+(+ OpenMP deadlock), ADR-005 two reliability seams, ADR-006 CPU-first /
+GPU-ready; plus a Polars aside; 3 mermaid diagrams. Sourced from <code>ARCHITECTURE.md</code>
++ <code>docs/pipeline-architecture.md</code> + <code>docs/medallion.md</code> (the deleted
+<code>docs/technical_roadmap.md</code> was not referenced). Mermaid enabled in <code>mkdocs.yml</code>;
+page nested under Architecture; cross-linked from README + home page.
+<code>uv run mkdocs build</code> green.</p>
+<p><strong>Goal:</strong> show engineering judgment — a narrative repackaging of <code>ARCHITECTURE.md</code>.</p>
+<p><strong>Steps:</strong>
+1. New <code>docs/blog/design-decisions.md</code> (or a Quarto post): medallion choice,
+   Hamilton DAG, hardware-aware model routing, Polars-native data layer,
+   why CPU-first framing.
+2. Cross-link from the case study and README.</p>
+<p><strong>Acceptance:</strong> published post linked from README. <strong>Cut if Steps 1–4 slip.</strong></p>
+<hr />
+<h2 id="phase-3-reuse-forward-notes">Phase-3 reuse (forward notes)</h2>
+<ul>
+<li>The Gradio demo's auto-API (D2) is the seam Phase 3.1 (agent showcase) will
+  drive — design <code>app.py</code> so its core predict function is callable directly,
+  not buried in a callback.</li>
+<li>The case study's drift section doubles as a reference for the agent demo
+  narrative.</li>
+</ul>
+<hr />
+<h2 id="exit-criteria-phase-2-done">Exit criteria (Phase 2 done)</h2>
+<ol>
+<li><code>iter8 init --demo</code> works from a clean shell against PyPI.</li>
+<li>Case study published on GitHub Pages; URL + teaser in <code>README.md</code>.</li>
+<li>Live demo <strong>rendered on GitHub Pages + a self-contained Colab notebook</strong>,
+   both linked from <code>README.md</code> (pivoted from HF Spaces — see Step 3 status).</li>
+<li><code>docs/notebooks/index.md</code> shows the hero docs (Quick Start, German Credit,
+   Live Demo + a Phase-3 agent-demo placeholder); the rest archived.</li>
+<li>✅ Design-decisions post published and linked from README / home page.</li>
+</ol>
+<h2 id="risks-mitigations">Risks &amp; mitigations</h2>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Likelihood</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HF Spaces free-tier cold starts / abuse</td>
+<td>Medium</td>
+<td>Size + row + timeout caps; no persistence; keep-alive optional</td>
+</tr>
+<tr>
+<td>Case study HPO slow on 1k rows (noisy optima)</td>
+<td>Medium</td>
+<td>Cap trials (50); fix seeds; report CV variance honestly</td>
+</tr>
+<tr>
+<td>GitHub Pages Quarto render breaks CI</td>
+<td>Low</td>
+<td><code>freeze: auto</code> already set; pin Quarto version in workflow</td>
+</tr>
+<tr>
+<td>Bundled parquet licensing</td>
+<td>Low</td>
+<td>Telco Churn (IBM) + German Credit (OpenML/UCI) terms documented in-dataset README</td>
+</tr>
+<tr>
+<td>Scope creep into Phase 3 (agent demo)</td>
+<td>Medium</td>
+<td>Agent-demo kept as Phase 3 placeholder only; do not start in Phase 2</td>
+</tr>
+</tbody>
+</table>
+<h2 id="verification-checklist-per-change">Verification checklist (per change)</h2>
+<ul>
+<li><code>uv run ruff check .</code> green</li>
+<li><code>uv run mypy src/iter8ml/</code> green</li>
+<li><code>uv run pytest</code> green (add tests for <code>--demo</code> path)</li>
+<li><code>uv build</code> → inspect wheel includes bundled parquet</li>
+<li>Smoke-test any PyPI-facing claim with <code>uvx</code> from a clean shell</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/notebooks.js"></script>
+      
+    
+  </body>
+</html>
