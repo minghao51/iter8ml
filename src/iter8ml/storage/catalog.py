@@ -1,7 +1,7 @@
 """Rebuildable local SQLite catalog over committed manifests.
 
-The current compatibility filename remains ``catalog.duckdb``. The manifest and
-artifact store are authoritative, so a future DuckDB migration can rebuild it.
+The catalog is a projection of the authoritative manifest/artifact store and
+``control/runs/*/run.json`` files, so it can always be rebuilt from disk.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from iter8ml.storage.local import LocalArtifactStore
 
 class LocalCatalogStore:
     def __init__(self, workspace_root: str | Path):
-        self.path = Path(workspace_root) / "control" / "catalog" / "catalog.duckdb"
+        self.path = Path(workspace_root) / "control" / "catalog" / "catalog.sqlite"
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._initialize()
 
@@ -123,6 +123,11 @@ class LocalCatalogStore:
         with self._connect() as conn:
             rows = conn.execute("SELECT manifest_json FROM products ORDER BY created_at").fetchall()
         return [ProductManifest.model_validate_json(row[0]) for row in rows]
+
+    def runs(self) -> list[RunManifest]:
+        with self._connect() as conn:
+            rows = conn.execute("SELECT manifest_json FROM runs ORDER BY created_at").fetchall()
+        return [RunManifest.model_validate_json(row[0]) for row in rows]
 
     def export_summary(self, limit: int = 100) -> dict[str, Any]:
         with self._connect() as conn:

@@ -53,7 +53,7 @@ class Workspace:
 
     @property
     def catalog_path(self) -> Path:
-        return self.control_dir / "catalog" / "catalog.duckdb"
+        return self.control_dir / "catalog" / "catalog.sqlite"
 
     @property
     def site_data_dir(self) -> Path:

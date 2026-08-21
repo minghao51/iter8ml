@@ -21,21 +21,21 @@ class DocsExporter:
         output = self.workspace.site_data_dir
         output.mkdir(parents=True, exist_ok=True)
         products = list(self.store.list_products())
-        runs = []
-        for path in sorted(self.workspace.runs_dir.glob("*/run.json"), reverse=True)[:limit]:
-            data = json.loads(path.read_text(encoding="utf-8"))
-            runs.append(
-                {
-                    "run_id": data.get("run_id"),
-                    "run_key": data.get("run_key"),
-                    "status": data.get("status"),
-                    "created_at": data.get("created_at"),
-                    "stages": [
-                        {"name": stage.get("name"), "status": stage.get("status")}
-                        for stage in data.get("stages", [])
-                    ],
-                }
-            )
+
+        # The catalog is the single read surface for runs; rebuild it from the
+        # authoritative run.json files so it always mirrors disk.
+        self.catalog.rebuild(self.store)
+        run_manifests = list(reversed(self.catalog.runs()))[:limit]
+        runs = [
+            {
+                "run_id": r.run_id,
+                "run_key": r.run_key,
+                "status": r.status,
+                "created_at": r.created_at.isoformat(),
+                "stages": [{"name": s.name, "status": s.status} for s in r.stages],
+            }
+            for r in run_manifests
+        ]
         _write(output / "summary.json", {"products": len(products), "runs": len(runs)})
         _write(output / "runs" / "index.json", {"runs": runs})
         _write(
@@ -49,15 +49,14 @@ class DocsExporter:
                 ],
             },
         )
-        for path in sorted(self.workspace.runs_dir.glob("*/run.json"), reverse=True)[:limit]:
-            data = json.loads(path.read_text(encoding="utf-8"))
+        for r in run_manifests:
             _write(
-                output / "runs" / f"{data['run_id']}.json",
+                output / "runs" / f"{r.run_id}.json",
                 {
-                    "run_id": data.get("run_id"),
-                    "status": data.get("status"),
-                    "run_key": data.get("run_key"),
-                    "stages": [_project_stage(stage) for stage in data.get("stages", [])],
+                    "run_id": r.run_id,
+                    "status": r.status,
+                    "run_key": r.run_key,
+                    "stages": [_project_stage(s.model_dump()) for s in r.stages],
                 },
             )
         _write(
