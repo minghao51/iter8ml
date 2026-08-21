@@ -104,6 +104,29 @@ def _try_import_hamilton() -> Any:
         return None
 
 
+def build_driver(
+    *modules: Any,
+    config: dict[str, Any] | None = None,
+    adapters: list[Any] | None = None,
+) -> Any:
+    """Build a Hamilton driver, or ``None`` when Hamilton is unavailable.
+
+    Centralizes the otherwise-duplicated ``driver.Builder().with_modules(...)``
+    construction used across the executor and (in spirit) the export template.
+    Returns ``None`` when Hamilton is not installed; callers that require Hamilton
+    should invoke :meth:`PipelineExecutor.require_available` first.
+    """
+    driver_mod = _try_import_hamilton()
+    if driver_mod is None:
+        return None
+    builder = driver_mod.Builder().with_modules(*modules)
+    if config:
+        builder = builder.with_config(config)
+    if adapters:
+        builder = builder.with_adapters(*adapters)
+    return builder.build()
+
+
 def _config_to_inputs(
     config: ExperimentConfig,
     df: pl.DataFrame,
@@ -143,11 +166,7 @@ class PipelineExecutor:
         self._tracker = tracker
 
         if self._driver_mod is not None:
-            modules = _get_module(mode)
-            builder = self._driver_mod.Builder().with_modules(*modules)
-            if self._config:
-                builder = builder.with_config(self._config)
-            self._dr = builder.build()
+            self._dr = build_driver(*_get_module(mode), config=self._config)
 
     @property
     def available(self) -> bool:
@@ -224,13 +243,12 @@ class PipelineExecutor:
 
         modules = _get_training_modules(config.pipeline)
         hamilton_config = _resolve_hamilton_config(config)
-        builder = self._driver_mod.Builder().with_modules(*modules).with_config(hamilton_config)
+        adapters = None
         if self._tracker is not None:
             from iter8ml.engine.pipelines.hooks.tracking_hook import TrackingHook
 
-            hook = TrackingHook(self._tracker, run_id)
-            builder = builder.with_adapters(hook)
-        dr = builder.build()
+            adapters = [TrackingHook(self._tracker, run_id)]
+        dr = build_driver(*modules, config=hamilton_config, adapters=adapters)
 
         inputs = _config_to_inputs(
             config,
@@ -255,9 +273,7 @@ class PipelineExecutor:
         from iter8ml.engine.pipelines.nodes import drift_detection, prep
 
         modules = [prep, drift_detection]
-        builder = self._driver_mod.Builder().with_modules(*modules)
-        builder = builder.with_config({"drift_method": drift_method})
-        dr = builder.build()
+        dr = build_driver(*modules, config={"drift_method": drift_method})
         result = dr.execute(
             ["drift_report"],
             inputs={"reference_df": reference_df, "live_df": live_df},
