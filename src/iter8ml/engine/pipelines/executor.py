@@ -237,6 +237,7 @@ class PipelineExecutor:
         vram_gb: float = 0.0,
         completed_models: set[str] | None = None,
         workspace: Workspace | None = None,
+        split_frame: pl.DataFrame | None = None,
     ) -> Any:
         if self._driver_mod is None:
             self.require_available()
@@ -258,6 +259,7 @@ class PipelineExecutor:
             completed_models=completed_models,
             workspace=workspace,
         )
+        inputs["split_frame"] = split_frame
         result = dr.execute(["training_state"], inputs=inputs)
         return result.get("training_state")
 

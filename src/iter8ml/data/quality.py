@@ -73,7 +73,13 @@ def clean_noise(
         Tuple of (cleaned DataFrame, summary dict).
     """
     if not report.get("enabled"):
-        return df, {"n_before": len(df), "n_after": len(df), "n_dropped": 0}
+        return df, {
+            "n_before": len(df),
+            "n_after": len(df),
+            "n_dropped": 0,
+            "kept_indices": list(range(len(df))),
+            "threshold": quality_threshold,
+        }
 
     quality_scores = report.get("quality_scores")
     drop_mask = None
@@ -83,15 +89,23 @@ def clean_noise(
         drop_mask = score_array < quality_threshold
 
     if drop_mask is None:
-        return df, {"n_before": len(df), "n_after": len(df), "n_dropped": 0}
+        return df, {
+            "n_before": len(df),
+            "n_after": len(df),
+            "n_dropped": 0,
+            "kept_indices": list(range(len(df))),
+            "threshold": quality_threshold,
+        }
 
     mask = pl.Series("drop_mask", drop_mask)
     cleaned = df.filter(~mask)
+    kept_indices = [i for i, keep in enumerate((~mask).to_list()) if keep]
 
     summary = {
         "n_before": len(df),
         "n_after": len(cleaned),
         "n_dropped": len(df) - len(cleaned),
+        "kept_indices": kept_indices,
         "threshold": quality_threshold,
     }
     return cleaned, summary

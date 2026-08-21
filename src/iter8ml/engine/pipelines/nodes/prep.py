@@ -9,6 +9,7 @@ from polars import selectors as cs
 
 from iter8ml.data.adapter import DataAdapter
 from iter8ml.data.leakage import LeakageReport, detect_leakage
+from iter8ml.domain.hashing import row_ids as frame_row_ids
 from iter8ml.engine.pipelines.nodes._hamilton_compat import hamilton_config
 
 _hamilton_config = hamilton_config()
@@ -30,6 +31,7 @@ class DataPrepResult:
     target_transform_applied: bool
     noise_cleaned: bool
     n_noise_dropped: int
+    row_ids: list[str]
 
 
 # ── preprocessing node layer ────────────────────────────────────────────
@@ -37,6 +39,15 @@ class DataPrepResult:
 
 def raw_dataframe(df: pl.DataFrame) -> pl.DataFrame:
     return df
+
+
+def row_ids(raw_dataframe: pl.DataFrame) -> list[str]:
+    """Stable per-row content digests, aligned to the engine's feature matrix.
+
+    Computed from the raw frame so the training path can align its engineered
+    rows to a split assigned on the same frame by the medallion layer.
+    """
+    return frame_row_ids(raw_dataframe)
 
 
 def numeric_columns(raw_dataframe: pl.DataFrame) -> list[str]:
@@ -146,26 +157,30 @@ if _hamilton_config is not None:
         target_col: str,
         auto_clean_noise: bool,
         noise_quality_threshold: float,
-    ) -> tuple[pl.DataFrame, bool, int]:
+        row_ids: list[str],
+    ) -> tuple[pl.DataFrame, bool, int, list[str]]:
         if not auto_clean_noise:
-            return validate_target, False, 0
+            return validate_target, False, 0, row_ids
 
         from iter8ml.data.quality import audit_data_quality, clean_noise
 
         quality_report = audit_data_quality(validate_target, target_col, enabled=True)
         if not quality_report.get("enabled") or quality_report.get("n_issues", 0) == 0:
-            return validate_target, False, 0
+            return validate_target, False, 0, row_ids
 
         cleaned_df, summary = clean_noise(
             validate_target, quality_report, target_col, quality_threshold=noise_quality_threshold
         )
-        return cleaned_df, True, summary.get("n_dropped", 0)
+        kept = summary.get("kept_indices", list(range(len(row_ids))))
+        kept_row_ids = [row_ids[i] for i in kept]
+        return cleaned_df, True, summary.get("n_dropped", 0), kept_row_ids
 
     @_hamilton_config.when_not(run_quality_audit=True)
     def quality_cleaned_df__skip(
         validate_target: pl.DataFrame,
-    ) -> tuple[pl.DataFrame, bool, int]:
-        return validate_target, False, 0
+        row_ids: list[str],
+    ) -> tuple[pl.DataFrame, bool, int, list[str]]:
+        return validate_target, False, 0, row_ids
 
     @_hamilton_config.when(run_leakage_audit=True)
     def leakage_report__enabled(
@@ -221,20 +236,23 @@ else:
         run_quality_audit: bool,
         auto_clean_noise: bool,
         noise_quality_threshold: float,
-    ) -> tuple[pl.DataFrame, bool, int]:
+        row_ids: list[str],
+    ) -> tuple[pl.DataFrame, bool, int, list[str]]:
         if not (run_quality_audit and auto_clean_noise):
-            return validate_target, False, 0
+            return validate_target, False, 0, row_ids
 
         from iter8ml.data.quality import audit_data_quality, clean_noise
 
         quality_report = audit_data_quality(validate_target, target_col, enabled=True)
         if not quality_report.get("enabled") or quality_report.get("n_issues", 0) == 0:
-            return validate_target, False, 0
+            return validate_target, False, 0, row_ids
 
         cleaned_df, summary = clean_noise(
             validate_target, quality_report, target_col, quality_threshold=noise_quality_threshold
         )
-        return cleaned_df, True, summary.get("n_dropped", 0)
+        kept = summary.get("kept_indices", list(range(len(row_ids))))
+        kept_row_ids = [row_ids[i] for i in kept]
+        return cleaned_df, True, summary.get("n_dropped", 0), kept_row_ids
 
     def leakage_report(
         adapter_result: tuple[np.ndarray, np.ndarray],
@@ -271,7 +289,7 @@ else:
 
 
 def adapter_result(
-    quality_cleaned_df: tuple[pl.DataFrame, bool, int],
+    quality_cleaned_df: tuple[pl.DataFrame, bool, int, list[str]],
     target_col: str,
 ) -> tuple[np.ndarray, np.ndarray]:
     df = quality_cleaned_df[0]
@@ -280,7 +298,7 @@ def adapter_result(
 
 
 def feature_names(
-    quality_cleaned_df: tuple[pl.DataFrame, bool, int],
+    quality_cleaned_df: tuple[pl.DataFrame, bool, int, list[str]],
     target_col: str,
 ) -> list[str]:
     return [c for c in quality_cleaned_df[0].columns if c != target_col]
@@ -291,11 +309,11 @@ def data_prep_result(
     target_transform_result: tuple[np.ndarray, Any | None, str, float, float, bool],
     feature_names: list[str],
     leakage_report: LeakageReport | None,
-    quality_cleaned_df: tuple[pl.DataFrame, bool, int],
+    quality_cleaned_df: tuple[pl.DataFrame, bool, int, list[str]],
 ) -> DataPrepResult:
     X, _ = adapter_result
     y, transformer, method, orig_skew, trans_skew, applied = target_transform_result
-    _, noise_cleaned, n_dropped = quality_cleaned_df
+    _, noise_cleaned, n_dropped, row_ids = quality_cleaned_df
     df = quality_cleaned_df[0]
     return DataPrepResult(
         dataframe=df,
@@ -312,4 +330,5 @@ def data_prep_result(
         target_transform_applied=applied,
         noise_cleaned=noise_cleaned,
         n_noise_dropped=n_dropped,
+        row_ids=row_ids,
     )

@@ -58,7 +58,7 @@ class Trainer:
         )
         self.hardware = HardwareProfile.detect()
 
-    def run(self, df: pl.DataFrame) -> dict:
+    def run(self, df: pl.DataFrame, split_frame: pl.DataFrame | None = None) -> dict:
         """Run full experiment on a Polars DataFrame via Hamilton DAG."""
         run_id = f"exp_{int(time.time())}_{str(uuid.uuid4())[:6]}"
         self.tracker.current_run_id = run_id
@@ -80,6 +80,7 @@ class Trainer:
                 vram_gb=self.hardware.vram_gb,
                 completed_models=self._completed_models,
                 workspace=self.workspace,
+                split_frame=split_frame,
             )
 
             if state is not None:

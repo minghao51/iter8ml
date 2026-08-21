@@ -6,12 +6,45 @@ from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
+import polars as pl
 
 from iter8ml.services.registry import RegistryService
 from iter8ml.services.reporting import metric_sort_value, metric_value_is_better
 from iter8ml.workspace import Workspace
 
 _GBDT_MODEL_NAMES = frozenset({"catboost", "lightgbm", "xgboost"})
+
+
+def _fold_indices_from_split(
+    split_frame: pl.DataFrame, row_ids: list[str]
+) -> list[tuple[np.ndarray, np.ndarray]]:
+    """Map surviving ``row_ids`` to train/validation index pairs from a split frame.
+
+    The split frame carries one row per ``(row_id, fold)`` membership, so a single
+    row_id appears in multiple folds. Group by fold, then translate surviving
+    row_ids into positional indices of the engineered feature matrix.
+    """
+    index_by_row_id = {rid: i for i, rid in enumerate(row_ids)}
+    train_idx_by_fold: dict[int, list[int]] = {}
+    val_idx_by_fold: dict[int, list[int]] = {}
+    for row in split_frame.iter_rows(named=True):
+        idx = index_by_row_id.get(row["row_id"])
+        if idx is None:
+            continue
+        if row["role"] == "train":
+            train_idx_by_fold.setdefault(row["fold"], []).append(idx)
+        elif row["role"] == "validation":
+            val_idx_by_fold.setdefault(row["fold"], []).append(idx)
+    folds = sorted(set(train_idx_by_fold) | set(val_idx_by_fold))
+    out: list[tuple[np.ndarray, np.ndarray]] = []
+    for fold in folds:
+        out.append(
+            (
+                np.array(train_idx_by_fold.get(fold, []), dtype=int),
+                np.array(val_idx_by_fold.get(fold, []), dtype=int),
+            )
+        )
+    return out
 
 
 @dataclass
@@ -82,6 +115,7 @@ def baseline_scores(
     cv_folds: int,
     cv_strategy: str,
     metrics: list[str],
+    split_frame: pl.DataFrame | None = None,
 ) -> dict[str, dict[str, float]]:
     from iter8ml.config import CVStrategy, ExperimentConfig
     from iter8ml.constants import TaskType
@@ -97,12 +131,20 @@ def baseline_scores(
         metrics=metrics,
     )
     evaluator = Evaluator(config)
+    fold_indices = None
+    if split_frame is not None:
+        fold_indices = _fold_indices_from_split(split_frame, data_prep_result.row_ids)
     scores: dict[str, dict[str, float]] = {}
     for name, cls in baseline_models.items():
         try:
-            scores[name] = evaluator.evaluate(
-                cls, data_prep_result.X, data_prep_result.y, task=task
-            )
+            if fold_indices is not None:
+                scores[name] = evaluator.evaluate_with_folds(
+                    cls, data_prep_result.X, data_prep_result.y, fold_indices, task=task
+                )
+            else:
+                scores[name] = evaluator.evaluate(
+                    cls, data_prep_result.X, data_prep_result.y, task=task
+                )
         except (ValueError, RuntimeError):
             continue
     return scores
@@ -119,6 +161,7 @@ def _evaluate_model(
     cv_folds: int,
     cv_strategy: str,
     metrics: list[str],
+    fold_indices: list[tuple[np.ndarray, np.ndarray]] | None = None,
 ) -> dict[str, float]:
     from iter8ml.config import CVStrategy, ExperimentConfig
     from iter8ml.constants import TaskType
@@ -133,7 +176,10 @@ def _evaluate_model(
         cv_strategy=CVStrategy(cv_strategy),
         metrics=metrics,
     )
-    return Evaluator(config).evaluate(model_cls, X, y, task=task)
+    evaluator = Evaluator(config)
+    if fold_indices is not None:
+        return evaluator.evaluate_with_folds(model_cls, X, y, fold_indices, task=task)
+    return evaluator.evaluate(model_cls, X, y, task=task)
 
 
 def _extract_params(model: object) -> dict:
@@ -163,6 +209,7 @@ def _train_one(
     run_id: str,
     baseline_scores: dict[str, dict[str, float]],
     model_overrides: dict[str, dict[str, Any]] | None = None,
+    fold_indices: list[tuple[np.ndarray, np.ndarray]] | None = None,
 ) -> ModelResult:
     start = time.time()
     n_features = X.shape[1]
@@ -172,7 +219,9 @@ def _train_one(
         from iter8ml.engine.models.factory import get_model_class
 
         model_cls = get_model_class(name)
-        cv_scores = _evaluate_model(model_cls, X, y, task, cv_folds, cv_strategy, metrics)
+        cv_scores = _evaluate_model(
+            model_cls, X, y, task, cv_folds, cv_strategy, metrics, fold_indices=fold_indices
+        )
 
         if name == "ft_transformer":
             n_classes = len(np.unique(y)) if task == "classification" else 1
@@ -239,12 +288,16 @@ def training_results(
     model_overrides: dict[str, dict[str, Any]] | None = None,
     max_workers: int = 1,
     strict_thread_safety: bool = True,
+    split_frame: pl.DataFrame | None = None,
 ) -> list[ModelResult]:
     X, _ = training_features
     y = data_prep_result.y
     non_baseline = [
         name for name in models_to_run if name not in ("naive_baseline", "linear_baseline")
     ]
+    fold_indices = None
+    if split_frame is not None:
+        fold_indices = _fold_indices_from_split(split_frame, data_prep_result.row_ids)
 
     effective_workers = _effective_training_workers(
         max_workers,
@@ -269,6 +322,7 @@ def training_results(
                     run_id,
                     baseline_scores,
                     model_overrides=model_overrides,
+                    fold_indices=fold_indices,
                 )
             )
         return results
@@ -290,6 +344,7 @@ def training_results(
                 run_id,
                 baseline_scores,
                 model_overrides=model_overrides,
+                fold_indices=fold_indices,
             ): name
             for name in non_baseline
         }

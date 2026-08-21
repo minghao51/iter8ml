@@ -251,7 +251,9 @@ def test_run_service_does_not_reuse_untrained_run_for_training(tmp_path, monkeyp
     )
     service = MedallionExecutionService(Workspace(root=tmp_path))
     untrained = service.run(config, _frame(), execute_training=False)
-    monkeypatch.setattr("iter8ml.engine.trainer.Trainer.run", lambda self, frame: {})
+    monkeypatch.setattr(
+        "iter8ml.engine.trainer.Trainer.run", lambda self, frame, split_frame=None: {}
+    )
 
     trained = service.run(config, _frame(), execute_training=True)
 

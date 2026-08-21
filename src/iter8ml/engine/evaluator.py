@@ -71,13 +71,18 @@ class Evaluator:
         X: np.ndarray,
         y: np.ndarray,
         task: str,
+        fold_indices: list[tuple[np.ndarray, np.ndarray]] | None = None,
         **model_kwargs: Any,
     ) -> dict[str, list[float]]:
         """Run cross-validation and return per-fold scores keyed by metric.
 
         A fresh model instance is created for each fold to prevent state leakage.
+        When ``fold_indices`` is provided (explicit train/validation index pairs),
+        it is used instead of the configured CV splitter.
         """
-        cv = get_cv_split(self.config.cv_strategy, self.cv_folds)
+        if fold_indices is None:
+            cv = get_cv_split(self.config.cv_strategy, self.cv_folds)
+            fold_indices = list(cv.split(X, y))
         fold_scores: dict[str, list[float]] = {m: [] for m in self.metrics}
 
         metric_fns = {
@@ -86,7 +91,7 @@ class Evaluator:
 
         all_classes = np.unique(y)
 
-        for train_idx, val_idx in cv.split(X, y):
+        for train_idx, val_idx in fold_indices:
             X_train, X_val = X[train_idx], X[val_idx]
             y_train, y_val = y[train_idx], y[val_idx]
 
@@ -126,6 +131,21 @@ class Evaluator:
                     fold_scores[metric_name].append(metric_fn(y_val, y_pred))
 
         return fold_scores
+
+    def evaluate_with_folds(
+        self,
+        model_cls: Any,
+        X: np.ndarray,
+        y: np.ndarray,
+        fold_indices: list[tuple[np.ndarray, np.ndarray]],
+        task: str | None = None,
+        **model_kwargs: Any,
+    ) -> dict[str, float]:
+        """Cross-validate using explicit fold index pairs (from an external split)."""
+        fold_scores = self._run_cv(
+            model_cls, X, y, task or self.task, fold_indices=fold_indices, **model_kwargs
+        )
+        return {m: float(np.mean(scores)) for m, scores in fold_scores.items()}
 
     def evaluate(
         self,

@@ -149,7 +149,9 @@ class MedallionExecutionService:
             if execute_training:
                 from iter8ml.engine.trainer import Trainer
 
-                results = Trainer(config=config, workspace=self.workspace).run(frame)
+                results = Trainer(config=config, workspace=self.workspace).run(
+                    frame, split_frame=split_frame
+                )
             platinum = self._stage(
                 manifest,
                 event_sink,
