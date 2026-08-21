@@ -36,3 +36,20 @@ def dataframe_digest(df: pl.DataFrame) -> str:
     for row_digest in row_digests:
         hasher.update(row_digest)
     return "sha256:" + hasher.hexdigest()
+
+
+def row_ids(frame: pl.DataFrame) -> list[str]:
+    """Stable per-row content digests, preserving frame order.
+
+    Used by both the medallion split materialization and the engine training
+    path so a split assigned on the raw frame can be aligned to the engineered
+    feature matrix after preprocessing.
+    """
+    occurrences: dict[str, int] = {}
+    result: list[str] = []
+    for row in frame.iter_rows(named=True):
+        row_key = digest(row)
+        occurrence = occurrences.get(row_key, 0)
+        occurrences[row_key] = occurrence + 1
+        result.append(digest({"row": row_key, "occurrence": occurrence})[7:])
+    return result

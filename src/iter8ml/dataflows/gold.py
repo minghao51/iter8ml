@@ -11,28 +11,17 @@ import polars as pl
 from sklearn.model_selection import GroupKFold, KFold, StratifiedKFold, TimeSeriesSplit
 
 from iter8ml.domain.hashing import digest
+from iter8ml.domain.hashing import row_ids as frame_row_ids
 from iter8ml.domain.ids import product_id
 from iter8ml.domain.manifests import LineageEdge, ProductManifest, SplitManifest, SplitSpec
 from iter8ml.storage.local import LocalArtifactStore
 from iter8ml.verification.split_validation import validate_split
 
 
-def _row_ids(frame: pl.DataFrame) -> list[str]:
-    occurrences: dict[str, int] = {}
-    row_ids: list[str] = []
-    for row in frame.iter_rows(named=True):
-        row_key = digest(row)
-        occurrence = occurrences.get(row_key, 0)
-        occurrences[row_key] = occurrence + 1
-        row_ids.append(digest({"row": row_key, "occurrence": occurrence})[7:])
-    return row_ids
-
-
 def build_split_frame(frame: pl.DataFrame, target_col: str, spec: SplitSpec) -> pl.DataFrame:
     if target_col not in frame.columns:
         raise ValueError(f"target_col '{target_col}' is not present")
-    row_ids = _row_ids(frame)
-    return _build_split_frame(frame, target_col, spec, row_ids)
+    return _build_split_frame(frame, target_col, spec, frame_row_ids(frame))
 
 
 def _build_split_frame(
@@ -136,7 +125,7 @@ def materialize_gold(
         with store.open_artifact(split_ref) as handle:
             split_manifest = SplitManifest.model_validate_json(handle.read())
         return committed, split_manifest
-    row_id_values = _row_ids(frame)
+    row_id_values = frame_row_ids(frame)
     split_frame = _build_split_frame(frame, target_col, spec, row_id_values)
     split_result = validate_split(split_frame)
     if not split_result["ok"]:
