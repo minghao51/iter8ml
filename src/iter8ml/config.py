@@ -123,8 +123,14 @@ class PipelineSpec(BaseModel):
         return {}
 
 
-# Map flat YAML keys → nested model attribute names
-# Also powers __getattr__/__setattr__ delegate access on ExperimentConfig.
+# --- Legacy flat-key compatibility layer (single supported shim) -------------
+# These mappings are the ONLY supported way to accept the older flat YAML/JSON
+# config schema. ``_FLAT_DELEGATES`` maps flat keys onto nested sub-config
+# attributes (and powers __getattr__/__setattr__ delegate access),
+# ``_LEGACY_PIPELINE_KEYS`` covers deprecated step-level keys, and
+# ``ExperimentConfig.accept_legacy_flat_keys`` performs the nesting at parse time.
+# Do not add new flat keys elsewhere — extend this layer only.
+# ---------------------------------------------------------------------------
 _FLAT_DELEGATES: dict[str, tuple[str, str]] = {
     "embedding_method": ("embedding", "method"),
     "embedding_dim": ("embedding", "dim"),
@@ -237,8 +243,14 @@ class ExperimentConfig(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def nest_flat_config_fields(cls, data: Any) -> Any:
-        """Accept flat field keys from YAML/JSON and nest them into sub-configs."""
+    def accept_legacy_flat_keys(cls, data: Any) -> Any:
+        """Accept flat field keys from YAML/JSON and nest them into sub-configs.
+
+        This is the single supported compatibility layer for legacy flat-key
+        configs (see ``_FLAT_DELEGATES`` / ``_LEGACY_PIPELINE_KEYS``). It is
+        intentionally the only place that maps the older flat schema onto the
+        nested ``ExperimentConfig`` model.
+        """
         if not isinstance(data, dict):
             return data
 

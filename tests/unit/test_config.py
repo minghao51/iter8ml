@@ -283,6 +283,23 @@ def test_section_comments_in_config():
     assert "Model Overrides" in source
 
 
+def test_legacy_flat_keys_from_example_config() -> None:
+    """The shipped credit_risk.yaml uses legacy flat keys; loading it must
+    resolve them onto the nested model (the supported compat layer)."""
+    config_path = Path(__file__).resolve().parents[2] / "examples" / "credit_risk.yaml"
+    config = ExperimentConfig.from_file(config_path)
+
+    # Flat delegate keys → nested sub-configs.
+    assert config.hpo.run is False
+    assert config.hpo.n_trials == 100
+
+    # Legacy step-level keys → pipeline step enablement/params.
+    quality_step = next(
+        s for s in config.pipeline.steps if s.name == StepName.QUALITY_AUDIT
+    )
+    assert quality_step.enabled is True
+
+
 # --- HardwareProfile tests ---
 
 
