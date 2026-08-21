@@ -6,6 +6,8 @@ import polars as pl
 from pydantic import BaseModel
 from scipy import stats
 
+from iter8ml.analysis._protocol import DriftReportBase
+
 
 class ColumnDriftResult(BaseModel):
     """Per-column statistical test result."""
@@ -16,10 +18,10 @@ class ColumnDriftResult(BaseModel):
     test_used: str
 
 
-class DriftReport(BaseModel):
+class DriftReport(DriftReportBase):
     """Aggregate drift detection report across all columns."""
 
-    drift_detected: bool
+    method: str = "ks"
     n_columns_tested: int
     n_drifted: int
     column_results: list[ColumnDriftResult]

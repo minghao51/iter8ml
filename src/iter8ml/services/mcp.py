@@ -157,17 +157,35 @@ def registry_promote(run_id: str, key: str) -> str:
 
 
 @_tool
-def detect_drift(reference_path: str, new_path: str) -> str:
-    """Detects distribution drift between reference and new datasets."""
-    from iter8ml.analysis.drift import DriftDetector
+def detect_drift(reference_path: str, new_path: str, method: str = "ks") -> str:
+    """Detects distribution drift between reference and new datasets.
+
+    ``method`` is one of ``ks``, ``psi``, ``domain``, or ``both`` and is routed
+    through the unified drift pipeline.
+    """
+    from iter8ml.engine.pipelines.executor import PipelineExecutor
 
     ref_df = load_data(reference_path)
     new_df = load_data(new_path)
 
-    detector = DriftDetector(ref_df)
-    report = detector.detect(new_df)
+    drift_method = {
+        "ks": "ks",
+        "psi": "psi",
+        "domain": "domain_classifier",
+        "both": "both",
+    }.get(method, method)
 
-    return json.dumps(report.model_dump(), indent=2)
+    executor = PipelineExecutor()
+    result = executor.run_drift(ref_df, new_df, drift_method=drift_method)
+    if result is None:
+        return json.dumps({"error": "drift pipeline unavailable"}, indent=2)
+
+    reports: dict[str, object] = {"drift_detected": result.drift_detected}
+    for slot in ("psi_report", "domain_report", "ks_report"):
+        report = getattr(result, slot)
+        if report is not None:
+            reports[slot] = report.model_dump()
+    return json.dumps(reports, indent=2)
 
 
 @_tool

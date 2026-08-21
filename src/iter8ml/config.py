@@ -211,7 +211,7 @@ class ExperimentConfig(BaseModel):
     data_sample: float = Field(
         default=1.0, description="Fraction of data to use (0.0, 1.0]. 1.0 = full dataset"
     )
-    drift_detection: Literal["none", "psi", "domain_classifier", "both"] = "psi"
+    drift_detection: Literal["none", "ks", "psi", "domain_classifier", "both"] = "psi"
     shap_enabled: bool = False
 
     # --- LLM ---

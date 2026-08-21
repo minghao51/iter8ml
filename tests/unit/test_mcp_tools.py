@@ -185,11 +185,11 @@ def test_detect_drift(sample_parquet, tmp_path):
     new_path = str(tmp_path / "shifted.parquet")
     df_shifted.write_parquet(new_path)
 
-    result = detect_drift(sample_parquet, new_path)
+    result = detect_drift(sample_parquet, new_path, method="ks")
     data = json.loads(result)
     assert "drift_detected" in data
-    assert "n_columns_tested" in data
-    assert "n_drifted" in data
+    assert "ks_report" in data
+    assert data["ks_report"]["n_columns_tested"] >= 5
 
 
 def test_run_hpo_forwards_task(sample_csv, monkeypatch):

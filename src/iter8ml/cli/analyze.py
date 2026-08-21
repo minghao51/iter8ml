@@ -41,56 +41,40 @@ def drift(
     ref_df = load_data(reference)
     new_df = load_data(new)
 
-    if method in ("psi", "domain", "both"):
-        from iter8ml.engine.pipelines.executor import PipelineExecutor
+    from iter8ml.engine.pipelines.executor import PipelineExecutor
 
-        executor = PipelineExecutor()
-        drift_method_map = {"psi": "psi", "domain": "domain_classifier", "both": "both"}
-        hamilton_method = drift_method_map.get(method, method)
+    drift_method_map = {
+        "ks": "ks",
+        "psi": "psi",
+        "domain": "domain_classifier",
+        "both": "both",
+    }
+    hamilton_method = drift_method_map.get(method, method)
 
-        if executor.available:
-            report = executor.run_drift(ref_df, new_df, drift_method=hamilton_method)
-            if report is not None:
-                typer.echo("\n# Drift Detection Report")
-                typer.echo(f"Drift detected: {report.drift_detected}")
-                if report.psi_report is not None:
-                    _print_psi_report(report.psi_report)
-                if report.domain_report is not None:
-                    _print_domain_report(report.domain_report)
-                return
+    executor = PipelineExecutor()
+    report = executor.run_drift(ref_df, new_df, drift_method=hamilton_method)
+    if report is None:
+        return
 
-    if method in ("ks", "both"):
-        from iter8ml.analysis.drift import DriftDetector
-
-        detector = DriftDetector(ref_df)
-        report = detector.detect(new_df)
+    typer.echo("\n# Drift Detection Report")
+    typer.echo(f"Drift detected: {report.drift_detected}")
+    if report.psi_report is not None:
+        typer.echo()
+        _print_psi_report(report.psi_report)
+    if report.domain_report is not None:
+        typer.echo()
+        _print_domain_report(report.domain_report)
+    if report.ks_report is not None:
         typer.echo("\n# KS/Chi2 Drift Detection Report")
-        typer.echo(f"Drift detected: {report.drift_detected}")
-        typer.echo(f"Columns tested: {report.n_columns_tested}")
-        typer.echo(f"Columns drifted: {report.n_drifted}\n")
-        for col_result in report.column_results:
+        typer.echo(f"Drift detected: {report.ks_report.drift_detected}")
+        typer.echo(f"Columns tested: {report.ks_report.n_columns_tested}")
+        typer.echo(f"Columns drifted: {report.ks_report.n_drifted}\n")
+        for col_result in report.ks_report.column_results:
             status = "DRIFT" if col_result.drift_detected else "OK"
             typer.echo(
                 f"{status} | {col_result.column} | "
                 f"p={col_result.p_value:.6f} | {col_result.test_used}"
             )
-
-    if method in ("psi", "both"):
-        from iter8ml.analysis.psi import PSIDriftDetector
-
-        psi_detector = PSIDriftDetector(ref_df)
-        psi_report = psi_detector.detect(new_df)
-        typer.echo("\n# PSI Drift Detection Report")
-        typer.echo(f"Drift detected: {psi_report.drift_detected}")
-        _print_psi_report(psi_report)
-
-    if method == "domain":
-        from iter8ml.analysis.domain_classifier import DomainClassifierDriftDetector
-
-        domain_detector = DomainClassifierDriftDetector(ref_df)
-        domain_report = domain_detector.detect(new_df)
-        typer.echo("\n# Domain Classifier Drift Report")
-        _print_domain_report(domain_report)
 
 
 @app.command()

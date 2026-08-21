@@ -4,15 +4,16 @@ from __future__ import annotations
 
 import numpy as np
 import polars as pl
-from pydantic import BaseModel
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
 
+from iter8ml.analysis._protocol import DriftReportBase
 
-class DomainDriftReport(BaseModel):
+
+class DomainDriftReport(DriftReportBase):
     """Multivariate drift detection result from domain classifier AUC."""
 
-    drift_detected: bool
+    method: str = "domain_classifier"
     auc_score: float
     threshold: float
     n_reference: int

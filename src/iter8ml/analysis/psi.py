@@ -6,6 +6,8 @@ import numpy as np
 import polars as pl
 from pydantic import BaseModel
 
+from iter8ml.analysis._protocol import DriftReportBase
+
 
 class FeaturePSI(BaseModel):
     """PSI drift score for a single feature."""
@@ -15,10 +17,10 @@ class FeaturePSI(BaseModel):
     drift_level: str  # "none", "moderate", "severe"
 
 
-class PSIDriftReport(BaseModel):
+class PSIDriftReport(DriftReportBase):
     """Aggregate PSI drift report across all numeric features."""
 
-    drift_detected: bool
+    method: str = "psi"
     n_features_tested: int
     n_moderate: int
     n_severe: int
