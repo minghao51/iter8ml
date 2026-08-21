@@ -14,17 +14,7 @@ from iter8ml.engine.models.model_configs import (
 class TestCatBoostConfig:
     def test_defaults(self):
         config = CatBoostConfig()
-        assert config.iterations == 1000
-        assert config.depth == 6
-        assert config.learning_rate == 0.05
-        assert config.l2_leaf_reg == 3.0
-        assert config.early_stopping_rounds == 50
-        assert config.task_type == "auto"
         assert config.random_seed == 42
-
-    def test_explicit_task_type_unchanged(self):
-        config = CatBoostConfig(task_type="GPU")
-        assert config.task_type == "GPU"
 
     def test_hpo_search_space_structure(self):
         config = CatBoostConfig()
@@ -35,23 +25,10 @@ class TestCatBoostConfig:
             assert isinstance(val, tuple)
             assert len(val) >= 2
 
-    def test_explicit_values(self):
-        config = CatBoostConfig(iterations=500, depth=8, learning_rate=0.1)
-        assert config.iterations == 500
-        assert config.depth == 8
-        assert config.learning_rate == 0.1
-
 
 class TestLightGBMConfig:
     def test_defaults(self):
         config = LightGBMConfig()
-        assert config.n_estimators == 1000
-        assert config.max_depth == -1
-        assert config.learning_rate == 0.05
-        assert config.num_leaves == 31
-        assert config.min_child_samples == 20
-        assert config.subsample == 0.8
-        assert config.colsample_bytree == 0.8
         assert config.random_seed == 42
 
     def test_hpo_search_space_keys(self):
@@ -67,21 +44,10 @@ class TestLightGBMConfig:
         }
         assert set(space.keys()) == expected_keys
 
-    def test_explicit_values(self):
-        config = LightGBMConfig(num_leaves=63, subsample=1.0)
-        assert config.num_leaves == 63
-        assert config.subsample == 1.0
-
 
 class TestXGBoostConfig:
     def test_defaults(self):
         config = XGBoostConfig()
-        assert config.n_estimators == 1000
-        assert config.max_depth == 6
-        assert config.learning_rate == 0.05
-        assert config.subsample == 0.8
-        assert config.colsample_bytree == 0.8
-        assert config.gamma == 0.0
         assert config.random_seed == 42
 
     def test_hpo_search_space_keys(self):
@@ -155,9 +121,9 @@ class TestModelConfigs:
         assert isinstance(configs.tabnet, TabNetConfig)
 
     def test_override_single_config(self):
-        configs = ModelConfigs(catboost=CatBoostConfig(iterations=500))
-        assert configs.catboost.iterations == 500
-        assert configs.lightgbm.n_estimators == 1000
+        configs = ModelConfigs(catboost=CatBoostConfig(random_seed=7))
+        assert configs.catboost.random_seed == 7
+        assert configs.lightgbm.random_seed == 42
 
     def test_all_hpo_spaces_return_dicts(self):
         configs = ModelConfigs()

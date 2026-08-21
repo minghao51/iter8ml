@@ -6,17 +6,13 @@ from pydantic import BaseModel, Field
 
 
 class CatBoostConfig(BaseModel):
-    """CatBoost hyperparameter configuration and HPO search space."""
+    """CatBoost hyperparameter configuration and HPO search space.
 
-    iterations: int = 1000
-    depth: int = 6
-    learning_rate: float = 0.05
-    l2_leaf_reg: float = 3.0
-    early_stopping_rounds: int = 50
-    task_type: str = Field(
-        default="auto",
-        description="'auto' resolves to GPU if available, else CPU",
-    )
+    Training defaults live in the wrapper (``catboost_model.py``); this config
+    only carries ``random_seed`` and the HPO search space consumed by
+    ``engine/hpo.py``.
+    """
+
     random_seed: int = 42
 
     def hpo_search_space(self) -> dict[str, Any]:
@@ -29,15 +25,13 @@ class CatBoostConfig(BaseModel):
 
 
 class LightGBMConfig(BaseModel):
-    """LightGBM hyperparameter configuration and HPO search space."""
+    """LightGBM hyperparameter configuration and HPO search space.
 
-    n_estimators: int = 1000
-    max_depth: int = -1
-    learning_rate: float = 0.05
-    num_leaves: int = 31
-    min_child_samples: int = 20
-    subsample: float = 0.8
-    colsample_bytree: float = 0.8
+    Training defaults live in the wrapper (``lightgbm_model.py``); this config
+    only carries ``random_seed`` and the HPO search space consumed by
+    ``engine/hpo.py``.
+    """
+
     random_seed: int = 42
 
     def hpo_search_space(self) -> dict[str, Any]:
@@ -52,14 +46,13 @@ class LightGBMConfig(BaseModel):
 
 
 class XGBoostConfig(BaseModel):
-    """XGBoost hyperparameter configuration and HPO search space."""
+    """XGBoost hyperparameter configuration and HPO search space.
 
-    n_estimators: int = 1000
-    max_depth: int = 6
-    learning_rate: float = 0.05
-    subsample: float = 0.8
-    colsample_bytree: float = 0.8
-    gamma: float = 0.0
+    Training defaults live in the wrapper (``xgboost_model.py``); this config
+    only carries ``random_seed`` and the HPO search space consumed by
+    ``engine/hpo.py``.
+    """
+
     random_seed: int = 42
 
     def hpo_search_space(self) -> dict[str, Any]:

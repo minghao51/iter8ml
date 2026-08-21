@@ -23,7 +23,7 @@ def _multiclass_dataset_with_noncontiguous_labels() -> tuple[np.ndarray, np.ndar
     return X, y
 
 
-def _assert_multiclass_behavior(model_class: type[LightGBMModel] | type[XGBoostModel]) -> None:
+def _assert_multiclass_behavior(model_class) -> None:
     X, y = _multiclass_dataset_with_noncontiguous_labels()
     model = model_class(task="classification")
     model.fit(X, y)
