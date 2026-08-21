@@ -250,7 +250,6 @@ class EmbeddingEngine:
                 loss.backward()
                 optimizer.step()
 
-        model._update_oov_means()
         model.eval()
         return model, len(sorted_cols) * self._config.dim
 
@@ -295,7 +294,6 @@ class EmbeddingEngine:
                 loss.backward()
                 optimizer.step()
 
-        model._update_oov_means()
         model.eval()
         return model, self._config.ae_latent_dim
 

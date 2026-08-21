@@ -22,26 +22,7 @@ def _check_torch() -> None:
         )
 
 
-class _OOVEmbeddingMixin:
-    """Shared OOV buffer management for embedding models."""
-
-    _column_order: list[str]
-    embedding_dim: int
-
-    def _init_oov_buffers(self) -> None:
-        for col in self._column_order:
-            self.register_buffer(  # type: ignore[attr-defined]
-                f"_oov_mean_{col}",
-                torch.zeros(self.embedding_dim),
-            )
-
-    def _update_oov_means(self) -> None:
-        for col in self._column_order:
-            buf = getattr(self, f"_oov_mean_{col}")
-            buf.data.copy_(self.embeddings[col].weight.data.mean(dim=0))  # type: ignore[attr-defined, operator]
-
-
-class EntityEmbedding(nn.Module, _OOVEmbeddingMixin):  # type: ignore[misc]
+class EntityEmbedding(nn.Module):
     """Per-column embedding tables with a configurable MLP training head.
 
     Each high-cardinality column gets its own ``nn.Embedding`` lookup table.
@@ -82,8 +63,6 @@ class EntityEmbedding(nn.Module, _OOVEmbeddingMixin):  # type: ignore[misc]
         layers.append(nn.Linear(in_dim, output_dim))
         self.mlp_head = nn.Sequential(*layers)
 
-        self._init_oov_buffers()
-
     def forward(self, cat_codes: dict[str, torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
         emb_list = [self.embeddings[col](cat_codes[col]) for col in self._column_order]
         concatenated = torch.cat(emb_list, dim=1)
@@ -95,7 +74,7 @@ class EntityEmbedding(nn.Module, _OOVEmbeddingMixin):  # type: ignore[misc]
         return torch.cat(emb_list, dim=1)
 
 
-class TabularDAE(nn.Module, _OOVEmbeddingMixin):  # type: ignore[misc]
+class TabularDAE(nn.Module):
     """Denoising autoencoder for sparse high-cardinality categorical features.
 
     Architecture:
@@ -138,8 +117,6 @@ class TabularDAE(nn.Module, _OOVEmbeddingMixin):  # type: ignore[misc]
             nn.ReLU(),
             nn.Linear(hidden_dim, total_emb_dim),
         )
-
-        self._init_oov_buffers()
 
     def _embed_and_concat(self, cat_codes: dict[str, torch.Tensor]) -> torch.Tensor:
         emb_list = [self.embeddings[col](cat_codes[col]) for col in self._column_order]

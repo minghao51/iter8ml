@@ -46,20 +46,6 @@ class TestEntityEmbedding:
         logits, _ = model(sample_codes)
         assert logits.shape == (32, 1)
 
-    def test_oov_mean_buffer(self, vocab_sizes):
-        model = EntityEmbedding(
-            vocab_sizes,
-            embedding_dim=8,
-            mlp_width=16,
-            mlp_depth=1,
-            task="classification",
-            n_classes=2,
-        )
-        model._update_oov_means()
-        for col in vocab_sizes:
-            buf = getattr(model, f"_oov_mean_{col}")
-            assert buf.shape == (8,)
-
     def test_single_column(self):
         model = EntityEmbedding(
             {"x": 50},
