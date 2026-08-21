@@ -141,6 +141,7 @@ def materialize_gold(
     split_result = validate_split(split_frame)
     if not split_result["ok"]:
         raise ValueError(f"Gold split validation failed: {split_result['errors']}")
+    split_overlap = any("overlap" in str(e) for e in split_result["errors"])
     temporal_checks_passed = _validate_temporal_order(frame, split_frame, spec, row_id_values)
     writer = store.begin(pid, product_type="gold", name=silver.name)
     try:
@@ -160,7 +161,7 @@ def materialize_gold(
             spec=spec,
             artifact=splits_ref,
             fold_counts=_fold_counts(split_frame),
-            overlap_checks_passed=True,
+            overlap_checks_passed=not split_overlap,
             temporal_checks_passed=temporal_checks_passed,
         )
         split_ref = writer.write_json(
@@ -181,7 +182,10 @@ def materialize_gold(
             graph_version=silver.graph_version,
             artifacts=[features_ref, labels_ref, splits_ref, split_ref],
             schema_digest=digest({"features": features.schema, "labels": labels.schema}),
-            quality_summary={"split_overlap": False, "folds": spec.folds},
+            quality_summary={
+                "split_overlap": split_overlap,
+                "folds": spec.folds,
+            },
             lineage=[LineageEdge(upstream=silver.product_id, downstream=pid)],
             metadata={"target_col": target_col},
         )
