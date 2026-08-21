@@ -8,7 +8,6 @@ from iter8ml.engine.hpo_importance import (
     ImportanceReport,
     ParamImportance,
     compute_param_importance,
-    suggest_refined_space,
 )
 
 
@@ -100,49 +99,3 @@ class TestImportanceReportDataclass:
         )
         with pytest.raises(ValidationError, match="Instance is frozen"):
             report.n_trials = 10
-
-
-class TestSuggestRefinedSpace:
-    def test_returns_dict_with_all_original_keys(self, study_with_trials):
-        study, original_space = study_with_trials
-        refined = suggest_refined_space(study, original_space)
-        for key in original_space:
-            assert key in refined
-
-    def test_refined_preserves_param_types(self, study_with_trials):
-        study, original_space = study_with_trials
-        refined = suggest_refined_space(study, original_space)
-        for key, val in refined.items():
-            if key in original_space:
-                assert isinstance(val, type(original_space[key]))
-
-    def test_keeps_unimportant_params_unchanged(self):
-        study = optuna.create_study(direction="maximize")
-        search_space = {
-            "depth": (2, 10),
-            "learning_rate": (0.01, 0.3, "log"),
-        }
-        for _ in range(5):
-            study.optimize(
-                lambda t: t.suggest_int("depth", 2, 10),
-                n_trials=1,
-            )
-        refined = suggest_refined_space(study, search_space)
-        assert "depth" in refined
-
-    def test_top_k_limits_refinement(self, study_with_trials):
-        study, original_space = study_with_trials
-        refined = suggest_refined_space(study, original_space, top_k=1)
-        assert len(refined) == len(original_space)
-
-    def test_empty_study_returns_original_space(self):
-        study = optuna.create_study(direction="maximize")
-        search_space = {"depth": (2, 10)}
-        refined = suggest_refined_space(study, search_space)
-        assert refined == search_space
-
-    def test_unknown_params_in_original_space_preserved(self, study_with_trials):
-        study, original_space = study_with_trials
-        original_space["unknown_param"] = (0, 1)
-        refined = suggest_refined_space(study, original_space)
-        assert "unknown_param" in refined

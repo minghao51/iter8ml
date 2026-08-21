@@ -1,7 +1,5 @@
 """Data quality audit using Cleanlab for label noise detection."""
 
-import json
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -14,7 +12,6 @@ def audit_data_quality(
     df: pl.DataFrame,
     target_col: str,
     *,
-    output_path: str | Path | None = None,
     enabled: bool = True,
 ) -> dict[str, Any]:
     """
@@ -55,11 +52,6 @@ def audit_data_quality(
         "mean_quality_score": round(float(np.mean(scores)), 4),
     }
 
-    if output_path:
-        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-        with open(output_path, "w") as f:
-            json.dump(report, f, indent=2)
-
     return report
 
 
@@ -89,10 +81,6 @@ def clean_noise(
     if isinstance(quality_scores, list) and len(quality_scores) == len(df):
         score_array = np.asarray(quality_scores, dtype=float)
         drop_mask = score_array < quality_threshold
-    else:
-        flagged_indices = report.get("flagged_indices", [])
-        if flagged_indices:
-            drop_mask = np.isin(np.arange(len(df)), flagged_indices)
 
     if drop_mask is None:
         return df, {"n_before": len(df), "n_after": len(df), "n_dropped": 0}

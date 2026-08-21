@@ -197,9 +197,7 @@ def run_benchmark_for_dataset(
         start = time.perf_counter()
         try:
             kwargs = _model_kwargs(model_name, model_overrides)
-            cv_scores, cv_std = evaluator.evaluate_with_std(
-                model_cls, X, y, task=task, **kwargs
-            )
+            cv_scores, cv_std = evaluator.evaluate_with_std(model_cls, X, y, task=task, **kwargs)
             duration = round(time.perf_counter() - start, 3)
         except Exception as e:
             results.append(

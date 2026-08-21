@@ -1,9 +1,6 @@
 """Tests for cleanlab-based data quality audit."""
 
 import importlib.util
-import json
-import tempfile
-from pathlib import Path
 
 import numpy as np
 import polars as pl
@@ -59,19 +56,6 @@ def test_audit_data_quality_single_class():
 
 
 @pytest.mark.skipif(not CLEANLAB_AVAILABLE, reason="cleanlab not installed")
-def test_audit_data_quality_output_path():
-    df = _make_classification_df()
-    with tempfile.TemporaryDirectory() as tmpdir:
-        output_path = Path(tmpdir) / "quality_report.json"
-        report = audit_data_quality(df, "target", output_path=str(output_path), enabled=True)
-        assert output_path.exists()
-        with open(output_path) as f:
-            saved = json.load(f)
-        assert saved["enabled"] is True
-        assert saved["n_rows"] == report["n_rows"]
-
-
-@pytest.mark.skipif(not CLEANLAB_AVAILABLE, reason="cleanlab not installed")
 def test_audit_data_quality_with_noisy_labels():
     df = _make_classification_df()
     # Introduce label noise by flipping some labels
@@ -89,8 +73,11 @@ def test_audit_data_quality_with_noisy_labels():
 
 def test_clean_noise_drops_flagged_rows():
     df = pl.DataFrame({"a": range(10), "target": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1]})
-    report = {"enabled": True, "flagged_indices": [1, 3, 5]}
-    cleaned, summary = clean_noise(df, report, "target")
+    report = {
+        "enabled": True,
+        "quality_scores": [0.9, 0.1, 0.9, 0.1, 0.9, 0.1, 0.9, 0.9, 0.9, 0.9],
+    }
+    cleaned, summary = clean_noise(df, report, "target", quality_threshold=0.5)
     assert len(cleaned) == 7
     assert summary["n_dropped"] == 3
     assert summary["n_before"] == 10

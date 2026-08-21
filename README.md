@@ -225,42 +225,40 @@ Or with uvx (no local clone needed):
 
 ```
 src/iter8ml/
-├── cli.py                # CLI entry points
-├── config.py             # ExperimentConfig, HardwareProfile
-├── constants.py          # Enums (TaskType, CVStrategy, ModelName, TrackerType)
-├── data/                 # Polars-native data layer
-│   ├── loaders.py        #   CSV, Parquet, SQLite ingestion
-│   ├── adapter.py        #   Format conversion (numpy, tensor, HF Dataset)
-│   ├── quality.py        #   Cleanlab label noise detection
-│   ├── leakage.py        #   Permutation-based leakage audit
-│   └── feature_engine.py #   Target transforms, interaction discovery, pruning
-├── models/               # Model wrappers + selection
-│   ├── baselines.py      #   Naive (mean/mode) + Linear (Logistic/Ridge)
-│   ├── conventional/     #   CatBoost, LightGBM, XGBoost
-│   ├── deep/             #   FT-Transformer, TabNet, DeBERTa text encoder
-│   ├── tabular_foundation/  # TabPFN v2
-│   ├── selector.py       #   Hardware-aware model routing
-│   └── factory.py        #   Lazy-import model registry
-├── engine/               # Orchestration & evaluation
-│   ├── trainer.py        #   Top-level experiment orchestrator
-│   ├── evaluator.py      #   K-fold CV + metrics registry
-│   ├── model_trainer.py  #   Sequential/concurrent training loop
-│   ├── hpo.py            #   Optuna study factory + optimization loop
-│   ├── calibration.py    #   Platt scaling + isotonic regression
-│   └── tracker.py        #   JSONL, W&B, MLflow trackers
-├── pipelines/            # Hamilton DAG orchestration
-│   ├── executor.py       #   PipelineExecutor (5 modes)
-│   ├── nodes/            #   8 node modules (preprocessing, data_prep, etc.)
-│   └── hooks/            #   TrackingHook (lifecycle events)
-├── monitoring/           # Drift detection & explainability
-│   ├── drift.py          #   KS-test + Chi-squared
-│   ├── psi_drift.py      #   Population Stability Index
+├── cli/                 # CLI entry points (analyze, export, medallion, optimize, run)
+├── config.py            # ExperimentConfig, HardwareProfile
+├── constants.py         # Enums (TaskType, CVStrategy, EmbeddingMethod, TrackerType)
+├── data/                # Polars-native data layer
+│   ├── loader.py        #   CSV, Parquet, SQLite ingestion
+│   ├── adapter.py       #   Format conversion (numpy, tensor, HF Dataset)
+│   ├── quality.py       #   Cleanlab label noise detection
+│   ├── leakage.py       #   Permutation-based leakage audit
+│   ├── embedding.py     #   High-cardinality embedding engine
+│   └── features.py      #   Target transforms, interaction discovery, pruning
+├── engine/              # Orchestration & evaluation
+│   ├── trainer.py       #   Top-level experiment orchestrator
+│   ├── evaluator.py     #   K-fold CV + metrics registry
+│   ├── hpo.py           #   Optuna study factory + optimization loop
+│   ├── calibration.py   #   Platt scaling + isotonic regression
+│   ├── tracker.py       #   JSONL, W&B, MLflow trackers
+│   ├── models/          #   Model wrappers + selection (conventional: CatBoost/LightGBM/XGBoost;
+│   │                    #     deep: FT-Transformer/TabNet/TabPFN; baselines, selector, factory)
+│   └── pipelines/       #   Hamilton DAG orchestration (executor, nodes, hooks)
+├── analysis/            # Drift detection & explainability
+│   ├── drift.py         #   KS-test + Chi-squared
+│   ├── psi.py           #   Population Stability Index
 │   ├── domain_classifier.py  # Multivariate drift via classifier AUC
-│   └── explainability.py #   SHAP TreeExplainer + KernelExplainer
-└── services/             # Reporting, registry, export
-    ├── registry_service.py   # Thread-safe model registry
-    ├── report_service.py     # Leaderboard + markdown reports
-    └── export_service.py     # Portable champion model packaging
+│   └── explainability.py #   SHAP explainers
+├── dataflows/           # Medallion (bronze/silver/gold/platinum) product materialization
+├── orchestration/       # Medallion execution service + local orchestrator
+├── runtime/             # RunPlan compilation (runtime.plan)
+├── storage/             # Local artifact store + catalog
+├── verification/        # Split validation + product verification
+├── services/            # Reporting, registry, export, retention, docs export
+├── domain/              # Events, hashing, ids, manifests
+├── session.py           # High-level ExperimentSession facade
+├── workspace.py         # Workspace + registry I/O
+└── utils/               # io (safe pickle), parallel
 ```
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the detailed design document.

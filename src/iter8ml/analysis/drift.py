@@ -1,5 +1,7 @@
 """Drift detection using statistical tests."""
 
+import math
+
 import polars as pl
 from pydantic import BaseModel
 from scipy import stats
@@ -41,7 +43,7 @@ class DriftDetector:
         common_cols = set(self.reference_df.columns) & set(new_df.columns)
         column_results = []
 
-        for col in common_cols:
+        for col in sorted(common_cols):
             dtype = self.reference_df[col].dtype
             if dtype.is_numeric():
                 p_value = self._ks_test(col, new_df)
@@ -80,7 +82,12 @@ class DriftDetector:
         if len(ref_series) == 0 or len(new_series) == 0:
             return 1.0
 
-        _, p_value = stats.ks_2samp(ref_series.to_numpy(), new_series.to_numpy())
+        try:
+            _, p_value = stats.ks_2samp(ref_series.to_numpy(), new_series.to_numpy())
+        except (ValueError, RuntimeError):
+            return 1.0
+        if p_value is None or math.isnan(p_value):
+            return 1.0
         return p_value  # type: ignore[no-any-return]
 
     def _chi2_test(self, col: str, new_df: pl.DataFrame) -> float:
@@ -97,5 +104,10 @@ class DriftDetector:
         if sum(ref_observed) == 0 or sum(new_observed) == 0:
             return 1.0
 
-        _, p_value, _, _ = stats.chi2_contingency([ref_observed, new_observed])
+        try:
+            _, p_value, _, _ = stats.chi2_contingency([ref_observed, new_observed])
+        except (ValueError, RuntimeError):
+            return 1.0
+        if p_value is None or math.isnan(p_value):
+            return 1.0
         return p_value  # type: ignore[no-any-return]

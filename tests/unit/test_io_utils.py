@@ -12,7 +12,6 @@ from iter8ml.utils.io import (
     safe_dump,
     safe_load,
     safe_load_file,
-    safe_loads,
 )
 
 # --- JSONL helpers ---
@@ -93,14 +92,6 @@ def test_safe_load_buffered_reader():
     payload = pickle.dumps(data)
     buf = io.BytesIO(payload)
     result = safe_load(buf)
-    assert result == data
-
-
-def test_safe_loads():
-    data = {"nested": [1, 2, 3]}
-    payload = pickle.dumps(data)
-    text = payload.decode("latin-1")
-    result = safe_loads(text)
     assert result == data
 
 

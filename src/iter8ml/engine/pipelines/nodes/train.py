@@ -213,7 +213,7 @@ def _train_one(
             lift_over_baselines=lift or None,
             params=_extract_params(model),
         )
-    except (ValueError, ImportError, OSError, RuntimeError) as e:
+    except Exception as e:
         return ModelResult(
             model_name=name,
             input_name=name,

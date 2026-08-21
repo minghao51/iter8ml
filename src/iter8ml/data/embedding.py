@@ -145,7 +145,6 @@ class EmbeddingEngine:
         feature_names: list[str],
         target_col: str,
         run_id: str = "",
-        data_hash: str = "",
     ) -> tuple[np.ndarray, list[str]]:
         if not isinstance(df, pl.DataFrame):
             return X, feature_names
@@ -200,6 +199,7 @@ class EmbeddingEngine:
         import torch.utils.data as torch_data
 
         torch.set_num_threads(1)
+        torch.manual_seed(self._random_seed)
 
         from iter8ml.engine.models.sparse_embedder import EntityEmbedding
 
@@ -263,6 +263,7 @@ class EmbeddingEngine:
         import torch.utils.data as torch_data
 
         torch.set_num_threads(1)
+        torch.manual_seed(self._random_seed)
 
         from iter8ml.engine.models.sparse_embedder import TabularDAE
 

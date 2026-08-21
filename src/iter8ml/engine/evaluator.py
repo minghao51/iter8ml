@@ -148,20 +148,6 @@ class Evaluator:
         fold_scores = self._run_cv(model_cls, X, y, task or self.task, **model_kwargs)
         return {m: float(np.mean(scores)) for m, scores in fold_scores.items()}
 
-    def evaluate_with_std(
-        self,
-        model_cls: Any,
-        X: np.ndarray,
-        y: np.ndarray,
-        task: str | None = None,
-        **model_kwargs: Any,
-    ) -> tuple[dict[str, float], dict[str, float]]:
-        """Like :meth:`evaluate`, but also return per-metric std across folds."""
-        fold_scores = self._run_cv(model_cls, X, y, task or self.task, **model_kwargs)
-        means = {m: float(np.mean(scores)) for m, scores in fold_scores.items()}
-        stds = {m: float(np.std(scores)) for m, scores in fold_scores.items()}
-        return means, stds
-
     @staticmethod
     def compute_lift(
         model_scores: dict[str, float],

@@ -15,7 +15,7 @@ from iter8ml.config import (
     PipelineStep,
     StepName,
 )
-from iter8ml.constants import CVStrategy, EmbeddingMethod, FeatureStrategy, TaskType, TrackerType
+from iter8ml.constants import CVStrategy, EmbeddingMethod, TaskType, TrackerType
 from iter8ml.data.loader import load_data
 from iter8ml.engine.evaluator import Evaluator
 from iter8ml.engine.models.factory import available_model_names, get_model_class
@@ -48,7 +48,6 @@ __all__ = [
     "ExperimentConfig",
     "ExperimentSession",
     "ExportService",
-    "FeatureStrategy",
     "HamiltonUnavailableError",
     "HardwareProfile",
     "Iter8MLError",

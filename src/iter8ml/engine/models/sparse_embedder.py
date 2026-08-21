@@ -94,13 +94,6 @@ class EntityEmbedding(nn.Module, _OOVEmbeddingMixin):  # type: ignore[misc]
         emb_list = [self.embeddings[col](cat_codes[col]) for col in self._column_order]
         return torch.cat(emb_list, dim=1)
 
-    def get_oov_embeddings(
-        self, column: str, batch_size: int, device: torch.device | None = None
-    ) -> torch.Tensor:
-        buf = getattr(self, f"_oov_mean_{column}")
-        mean = buf.to(device) if device is not None else buf
-        return mean.unsqueeze(0).expand(batch_size, -1)
-
 
 class TabularDAE(nn.Module, _OOVEmbeddingMixin):  # type: ignore[misc]
     """Denoising autoencoder for sparse high-cardinality categorical features.

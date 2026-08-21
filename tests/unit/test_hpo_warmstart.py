@@ -12,7 +12,6 @@ from iter8ml.engine.hpo_warmstart import (
     _infer_distribution,
     _parse_model_completed_events,
     create_warmstarted_study,
-    inject_trials_from_previous_runs,
 )
 
 
@@ -243,17 +242,3 @@ class TestCreateWarmstartedStudy:
             log_path=str(sample_jsonl),
         )
         assert isinstance(study.pruner, optuna.pruners.MedianPruner)
-
-
-class TestInjectTrialsIntoExistingStudy:
-    def test_injects_into_existing_study(self, sample_jsonl):
-        study = optuna.create_study(direction="maximize")
-        n_injected = inject_trials_from_previous_runs(study, "catboost", str(sample_jsonl))
-        assert n_injected == 2
-        completed_trials = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
-        assert len(completed_trials) == 2
-
-    def test_returns_zero_when_no_matching_events(self, sample_jsonl):
-        study = optuna.create_study(direction="maximize")
-        n_injected = inject_trials_from_previous_runs(study, "nonexistent", str(sample_jsonl))
-        assert n_injected == 0

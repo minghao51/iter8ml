@@ -4,13 +4,17 @@
 
 Tabular Blueprint is a single-node tabular ML framework with a CLI-first workflow.
 Core code lives under `src/iter8ml` and follows a thin orchestration model:
-- `cli.py` handles user entrypoints.
+- `cli/` handles user entrypoints.
 - `engine/` coordinates run orchestration, evaluation, HPO, tracking, and state generation.
-- `data/` loads and prepares datasets (adapter, leakage, quality checks, feature engineering).
-- `models/` contains model wrappers and selection logic.
-- `monitoring/` provides drift and explainability primitives.
+- `engine/models/` contains model wrappers and selection logic.
+- `data/` loads and prepares datasets (adapter, leakage, quality checks, feature engineering, embeddings).
+- `analysis/` provides drift (PSI, KS, domain classifier) and explainability primitives.
+- `engine/pipelines/` defines Hamilton DAG nodes, hooks, and the multi-mode executor.
+- `dataflows/` materializes medallion (bronze/silver/gold/platinum) data products.
+- `orchestration/` (MedallionExecutionService) and `runtime/` (RunPlan) drive medallion runs.
+- `storage/` and `verification/` provide artifact/catalog storage and split/product verification.
 - `services/` manages reporting, registry, and export packaging.
-- `pipelines/` defines Hamilton DAG nodes, hooks, and the multi-mode executor.
+- `domain/` holds events, hashing, ids, and manifests shared across layers.
 
 ## Hamilton DAG Orchestration
 
@@ -75,4 +79,4 @@ drivers from node modules.
 
 - Safe deserialization uses a restricted unpickler allowlist.
 - HPO warmstart uses historical completion events with additive `params` fields.
-- Metric directionality and registry promotion logic are centralized in `services/report_service.py`.
+- Metric directionality and registry promotion logic are centralized in `services/reporting.py`.

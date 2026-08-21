@@ -3,14 +3,6 @@
 from enum import Enum
 
 
-class FeatureStrategy(Enum):
-    """Feature engineering strategy."""
-
-    NONE = "none"
-    AFE = "afe"
-    EMBEDDING = "embedding"
-
-
 class TaskType(Enum):
     """Supported machine learning task types."""
 

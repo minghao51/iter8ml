@@ -381,16 +381,6 @@ def test_registry_show_with_data(isolated_cwd):
     assert "exp_1" in result.stdout
 
 
-def test_registry_unknown_action(isolated_cwd):
-    tmpdir = isolated_cwd
-    runner.invoke(app, ["init"])
-    ws_path = Path(tmpdir) / "workspace"
-    registry_path = ws_path / "registry.json"
-    registry_path.write_text('{"best": {"model": "CatBoost", "run_id": "exp_1", "score": 0.85}}')
-    result = runner.invoke(app, ["registry", "invalid_action"])
-    assert "Unknown action" in result.stdout
-
-
 def test_export_missing_key(isolated_cwd):
     runner.invoke(app, ["init"])
     result = runner.invoke(app, ["export", "nonexistent:key"])

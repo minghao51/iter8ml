@@ -115,10 +115,6 @@ def safe_load(data: bytes | io.BufferedIOBase) -> Any:
     return RestrictedUnpickler(data).load()
 
 
-def safe_loads(data: str) -> Any:
-    return RestrictedUnpickler(io.BytesIO(data.encode("latin-1"))).load()
-
-
 def safe_load_file(path: str) -> Any:
     with open(path, "rb") as f:
         raw = f.read()

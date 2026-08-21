@@ -222,6 +222,10 @@ def discover_interactions(
     n_jobs: int = 1,
     max_candidate_pairs: int = 200,
 ) -> tuple[np.ndarray, InteractionDiscoveryResult]:
+    # Coerce to plain ints: some callers (and older notebooks) pass numpy
+    # scalars/floats, which break numpy indexing below (IndexError on X[:, j]
+    # with a non-integer index). No-op for already-int inputs.
+    top_k_indices = [int(idx) for idx in top_k_indices]
     start = time.perf_counter()
     n_features = X.shape[1]
     if feature_names is None:

@@ -97,9 +97,7 @@ def main() -> None:
         ax.grid(axis="y", alpha=0.3)
         ax.legend(frameon=False, fontsize=9)
 
-    fig.suptitle(
-        "iter8ml benchmark — 5-fold CV, default hyperparameters, CPU", y=1.02, fontsize=11
-    )
+    fig.suptitle("iter8ml benchmark — 5-fold CV, default hyperparameters, CPU", y=1.02, fontsize=11)
     fig.tight_layout()
     OUT_IMG.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUT_IMG, dpi=150, bbox_inches="tight")

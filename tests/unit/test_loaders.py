@@ -5,26 +5,7 @@ import tempfile
 import polars as pl
 import pytest
 
-from iter8ml.data.loader import get_data_hash, load_csv, load_parquet, load_sqlite
-
-
-def test_get_data_hash_consistency():
-    df = pl.DataFrame({"a": [1, 2, 3], "b": ["x", "y", "z"]})
-    hash1 = get_data_hash(df)
-    hash2 = get_data_hash(df)
-    assert hash1 == hash2
-
-
-def test_get_data_hash_mutation():
-    df1 = pl.DataFrame({"a": [1, 2, 3]})
-    df2 = pl.DataFrame({"a": [1, 2, 4]})
-    assert get_data_hash(df1) != get_data_hash(df2)
-
-
-def test_get_data_hash_row_order_sensitive():
-    df1 = pl.DataFrame({"a": [1, 2, 3], "b": ["x", "y", "z"]})
-    df2 = pl.DataFrame({"a": [3, 2, 1], "b": ["z", "y", "x"]})
-    assert get_data_hash(df1) != get_data_hash(df2)
+from iter8ml.data.loader import load_csv, load_parquet, load_sqlite
 
 
 def test_load_csv():

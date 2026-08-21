@@ -50,5 +50,3 @@ def registry(action: str = typer.Argument("show", help="show or promote")) -> No
             typer.echo(f"  Score: {entry.get('score')}")
             typer.echo(f"  Registered: {entry.get('registered_at')}")
             typer.echo("")
-    else:
-        typer.echo(f"Unknown action: {action}")
