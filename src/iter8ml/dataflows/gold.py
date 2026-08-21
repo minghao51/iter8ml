@@ -14,7 +14,7 @@ from iter8ml.domain.hashing import digest
 from iter8ml.domain.ids import product_id
 from iter8ml.domain.manifests import LineageEdge, ProductManifest, SplitManifest, SplitSpec
 from iter8ml.storage.local import LocalArtifactStore
-from iter8ml.verification.leakage import validate_split_frame
+from iter8ml.verification.split_validation import validate_split
 
 
 def _row_ids(frame: pl.DataFrame) -> list[str]:
@@ -138,7 +138,7 @@ def materialize_gold(
         return committed, split_manifest
     row_id_values = _row_ids(frame)
     split_frame = _build_split_frame(frame, target_col, spec, row_id_values)
-    split_result = validate_split_frame(split_frame)
+    split_result = validate_split(split_frame)
     if not split_result["ok"]:
         raise ValueError(f"Gold split validation failed: {split_result['errors']}")
     temporal_checks_passed = _validate_temporal_order(frame, split_frame, spec, row_id_values)

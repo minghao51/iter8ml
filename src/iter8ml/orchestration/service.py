@@ -24,7 +24,7 @@ from iter8ml.exceptions import CancellationRequested
 from iter8ml.runtime.plan import compile_run_plan
 from iter8ml.storage.catalog import LocalCatalogStore
 from iter8ml.storage.local import LocalArtifactStore
-from iter8ml.verification.leakage import validate_split_frame
+from iter8ml.verification.split_validation import validate_split
 from iter8ml.workspace import Workspace
 
 
@@ -138,7 +138,7 @@ class MedallionExecutionService:
                 ),
             )
             split_frame = self._read_artifact(split.artifact.uri)
-            split_result = validate_split_frame(split_frame)
+            split_result = validate_split(split_frame)
             if not split_result["ok"]:
                 raise ValueError(f"Gold leakage gate failed: {split_result['errors']}")
             products.append(gold.product_id)

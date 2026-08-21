@@ -16,7 +16,6 @@ from iter8ml.services.docs_export import DocsExporter
 from iter8ml.services.retention import garbage_collect
 from iter8ml.storage.catalog import LocalCatalogStore
 from iter8ml.storage.local import LocalArtifactStore
-from iter8ml.verification.schema import verify_product
 from iter8ml.workspace import Workspace
 
 from .main import app
@@ -44,7 +43,7 @@ def plan(
 @app.command()
 def verify(product_id: str, deep: bool = typer.Option(False, "--deep")) -> None:
     """Verify a committed product and its artifact checksums."""
-    result = verify_product(LocalArtifactStore(Workspace().root), product_id, deep=deep)
+    result = LocalArtifactStore(Workspace().root).verify(product_id, deep=deep)
     typer.echo(json.dumps(result, indent=2, sort_keys=True, default=str))
     if not result.get("ok"):
         raise typer.Exit(1)

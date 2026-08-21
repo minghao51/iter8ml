@@ -18,7 +18,7 @@ from iter8ml.exceptions import ArtifactError
 from iter8ml.orchestration import LocalOrchestrator, MedallionExecutionService
 from iter8ml.runtime.plan import compile_run_plan
 from iter8ml.storage import LocalArtifactStore, LocalCatalogStore
-from iter8ml.verification.leakage import validate_split_frame
+from iter8ml.verification.split_validation import validate_split
 from iter8ml.workspace import Workspace
 
 
@@ -141,7 +141,7 @@ def test_unshuffled_kfold_ignores_random_seed():
         SplitSpec(strategy="kfold", folds=3, shuffle=False, random_seed=42),
     )
 
-    assert validate_split_frame(split)["ok"] is True
+    assert validate_split(split)["ok"] is True
 
 
 def test_purged_time_embargo_removes_nearest_training_rows():
