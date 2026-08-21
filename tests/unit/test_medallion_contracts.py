@@ -16,6 +16,7 @@ from iter8ml.domain.hashing import dataframe_digest
 from iter8ml.domain.manifests import SourceSpec, SplitSpec
 from iter8ml.exceptions import ArtifactError
 from iter8ml.orchestration import LocalOrchestrator, MedallionExecutionService
+from iter8ml.orchestration.protocol import RunHandle
 from iter8ml.runtime.plan import compile_run_plan
 from iter8ml.storage import LocalArtifactStore, LocalCatalogStore
 from iter8ml.verification.split_validation import validate_split
@@ -397,3 +398,51 @@ def test_plan_sanitizes_names_to_source_contract():
     plan = compile_run_plan(config)
 
     assert plan.source.name == "experiment_123"
+
+
+def _file_backed_plan(tmp_path, execute_training: bool):
+    csv = tmp_path / "data.csv"
+    pl.DataFrame({"f": list(range(12)), "target": [0, 1] * 6}).write_csv(csv)
+    config = ExperimentConfig(
+        name="orchestrator_run",
+        task=TaskType.CLASSIFICATION,
+        target_col="target",
+        data_path=str(csv),
+    )
+    plan = compile_run_plan(config)
+    return plan.model_copy(
+        update={"documentation": {**plan.documentation, "execute_training": execute_training}}
+    )
+
+
+def test_orchestrator_seam_submit_and_status(tmp_path):
+    service = MedallionExecutionService(Workspace(root=tmp_path))
+    handle = service.submit(_file_backed_plan(tmp_path, execute_training=False))
+
+    assert isinstance(handle, RunHandle)
+    status = service.status(handle.run_id)
+    assert status["status"] == "succeeded"
+    assert status["cancellation_requested"] is False
+
+
+def test_orchestrator_seam_cancel_is_honored(tmp_path, monkeypatch):
+    workspace = Workspace(root=tmp_path)
+    service = MedallionExecutionService(workspace)
+    original_materialize_bronze = materialize_bronze
+
+    def materialize_and_cancel(*args, **kwargs):
+        product = original_materialize_bronze(*args, **kwargs)
+        run_path = next(workspace.runs_dir.glob("*/run.json"))
+        service.cancel(run_path.parent.name)
+        return product
+
+    monkeypatch.setattr(
+        "iter8ml.orchestration.service.materialize_bronze", materialize_and_cancel
+    )
+
+    handle = service.submit(_file_backed_plan(tmp_path, execute_training=False))
+    manifest_path = workspace.runs_dir / handle.run_id / "run.json"
+    manifest = json.loads(manifest_path.read_text())
+
+    assert manifest["status"] == "cancelled"
+    assert (manifest_path.parent / "CANCEL_REQUESTED").exists()

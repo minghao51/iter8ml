@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -11,7 +12,9 @@ from typing import Any
 
 import polars as pl
 
-from iter8ml.config import ExperimentConfig
+from iter8ml.config import CVStrategy, ExperimentConfig
+from iter8ml.constants import TaskType
+from iter8ml.data.loader import load_data
 from iter8ml.dataflows.bronze import materialize_bronze
 from iter8ml.dataflows.gold import materialize_gold
 from iter8ml.dataflows.platinum_train import materialize_platinum
@@ -21,6 +24,7 @@ from iter8ml.domain.hashing import dataframe_digest, digest
 from iter8ml.domain.ids import run_id as make_run_id
 from iter8ml.domain.manifests import RunManifest, RunPlan, StageRecord
 from iter8ml.exceptions import CancellationRequested
+from iter8ml.orchestration.protocol import RunHandle
 from iter8ml.runtime.plan import compile_run_plan
 from iter8ml.storage.catalog import LocalCatalogStore
 from iter8ml.storage.local import LocalArtifactStore
@@ -196,6 +200,62 @@ class MedallionExecutionService:
         return ExecutionResult(
             run_id, manifest.status, self._manifest_path(run_id), tuple(products)
         )
+
+    # ── Orchestrator protocol (single orchestration seam) ──────────────────
+
+    @staticmethod
+    def _config_from_plan(plan: RunPlan) -> ExperimentConfig:
+        strategy_map = {
+            "stratified": CVStrategy.STRATIFIED,
+            "time": CVStrategy.TIMESERIES,
+            "purged_time": CVStrategy.TIMESERIES,
+        }
+        cv_strategy = strategy_map.get(plan.split.strategy, CVStrategy.KFOLD)
+        task_value = plan.target.get("task") or "classification"
+        target_value = plan.target.get("column") or "target"
+        return ExperimentConfig(
+            name=plan.source.name,
+            task=TaskType(str(task_value)),
+            target_col=str(target_value),
+            data_path=plan.source.uri,
+            cv_folds=plan.split.folds,
+            cv_strategy=cv_strategy,
+            models=plan.models,
+        )
+
+    def submit(self, plan: RunPlan) -> RunHandle:
+        """Run a compiled plan as the single orchestration entry point."""
+        if plan.source.source_type == "memory":
+            raise ValueError(
+                "submit requires a file-backed source; use run() for in-memory frames"
+            )
+        config = self._config_from_plan(plan)
+        frame = load_data(plan.source.uri)
+        execute_training = bool(plan.documentation.get("execute_training", True))
+        result = self.run(
+            config,
+            frame,
+            plan=plan,
+            execute_training=execute_training,
+        )
+        return RunHandle(run_id=result.run_id)
+
+    def status(self, run_id: str) -> dict[str, Any]:
+        path = self.workspace.runs_dir / run_id / "run.json"
+        if not path.exists():
+            return {"run_id": run_id, "status": "unknown"}
+        data = json.loads(path.read_text(encoding="utf-8"))
+        data["cancellation_requested"] = (path.parent / "CANCEL_REQUESTED").exists()
+        return data  # type: ignore[no-any-return]
+
+    def cancel(self, run_id: str) -> None:
+        path = self.workspace.runs_dir / run_id / "run.json"
+        if not path.exists():
+            raise FileNotFoundError(f"run not found: {run_id}")
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if data.get("status") in {"succeeded", "partial", "failed", "cancelled"}:
+            return
+        (path.parent / "CANCEL_REQUESTED").touch(exist_ok=True)
 
     def resume(self, run_id: str) -> ExecutionResult:
         """Return a verified completed run without trusting event history alone."""
