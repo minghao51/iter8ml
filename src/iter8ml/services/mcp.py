@@ -1,4 +1,9 @@
-"""MCP Server: exposes atomic tools for LLM agents."""
+"""MCP Server: exposes atomic tools for LLM agents.
+
+Tools delegate to :class:`iter8ml.session.ExperimentSession` (and the small set
+of services it does not yet wrap) rather than re-implementing run/state/export/
+drift/promote logic.
+"""
 
 import json
 from typing import Any
@@ -7,9 +12,8 @@ from iter8ml.config import ExperimentConfig
 from iter8ml.constants import TaskType
 from iter8ml.data.loader import load_data
 from iter8ml.engine.models.factory import get_model_class
-from iter8ml.engine.state_observer import StateObserver
-from iter8ml.engine.trainer import Trainer
 from iter8ml.services.registry import RegistryService
+from iter8ml.session import ExperimentSession
 from iter8ml.utils.io import load_events
 from iter8ml.workspace import Workspace
 
@@ -48,11 +52,14 @@ def _get_workspace() -> Workspace:
     return _WORKSPACE
 
 
+def _get_session() -> ExperimentSession:
+    return ExperimentSession(workspace=_get_workspace())
+
+
 @_tool
 def get_experiment_state() -> str:
     """Returns current_state.md content with leaderboard and resource status."""
-    observer = StateObserver(workspace=_get_workspace())
-    return observer.generate()
+    return _get_session().state()
 
 
 @_tool
@@ -83,8 +90,7 @@ def run_baseline(data_path: str, target_col: str, task: str = "classification") 
         models=["tabpfn", "catboost"],
     )
 
-    trainer = Trainer(config, workspace=_get_workspace())
-    results = trainer.run(df)
+    results = _get_session().run(config, df)
     return json.dumps(results, indent=2)
 
 
@@ -147,12 +153,7 @@ def registry_show() -> str:
 @_tool
 def registry_promote(run_id: str, key: str) -> str:
     """Promotes a run_id to champion in the registry."""
-    log_path = _get_workspace().experiments_path
-    if not log_path.exists():
-        return "No events found to locate run."
-
-    registry = RegistryService(workspace=_get_workspace())
-    result = registry.promote_run(run_id=run_id, key=key, log_path=log_path)
+    result = _get_session().promote(run_id, key)
     return result.model_dump_json(indent=2)
 
 
@@ -163,8 +164,6 @@ def detect_drift(reference_path: str, new_path: str, method: str = "ks") -> str:
     ``method`` is one of ``ks``, ``psi``, ``domain``, or ``both`` and is routed
     through the unified drift pipeline.
     """
-    from iter8ml.engine.pipelines.executor import PipelineExecutor
-
     ref_df = load_data(reference_path)
     new_df = load_data(new_path)
 
@@ -175,8 +174,7 @@ def detect_drift(reference_path: str, new_path: str, method: str = "ks") -> str:
         "both": "both",
     }.get(method, method)
 
-    executor = PipelineExecutor()
-    result = executor.run_drift(ref_df, new_df, drift_method=drift_method)
+    result = _get_session().drift_check(ref_df, new_df, method=drift_method)
     if result is None:
         return json.dumps({"error": "drift pipeline unavailable"}, indent=2)
 

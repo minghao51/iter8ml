@@ -70,7 +70,7 @@ class ExperimentSession:
         reference_df: pl.DataFrame,
         live_df: pl.DataFrame,
         method: str = "psi",
-    ) -> dict:
+    ) -> Any:
         from iter8ml.engine.pipelines.executor import PipelineExecutor, PipelineMode
 
         executor = PipelineExecutor(mode=PipelineMode.DRIFT)
