@@ -105,12 +105,16 @@ def leaderboard(
 
 
 @app.command()
-def state() -> None:
+def state(
+    llm: bool = typer.Option(
+        False, "--llm/--no-llm", help="Include LLM-generated commentary (requires LLM config)."
+    ),
+) -> None:
     """Generate and display current experiment state."""
     from iter8ml.engine.state_observer import StateObserver
 
     ws = Workspace()
-    observer = StateObserver(workspace=ws)
+    observer = StateObserver(workspace=ws, llm_enabled=llm)
     content = observer.generate()
     typer.echo(content)
 
