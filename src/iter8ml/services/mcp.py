@@ -105,26 +105,30 @@ def run_hpo(
     """Triggers Optuna study for a named model."""
     from iter8ml.engine.hpo import optimize_model, setup_hpo_components
 
-    X, y, evaluator, search_space = setup_hpo_components(data_path, target_col, task, model)
+    try:
+        X, y, evaluator, search_space = setup_hpo_components(data_path, target_col, task, model)
 
-    from iter8ml.engine.tracker import JSONLTracker
+        from iter8ml.engine.tracker import JSONLTracker
 
-    ws = _get_workspace()
-    tracker = JSONLTracker(log_path=str(ws.experiments_path))
+        ws = _get_workspace()
+        tracker = JSONLTracker(log_path=str(ws.experiments_path))
 
-    model_cls = get_model_class(model)
-    result = optimize_model(
-        model_cls,
-        X,
-        y,
-        evaluator,
-        model,
-        n_trials=trials,
-        search_space=search_space,
-        task=task,
-        log_path=str(ws.experiments_path),
-        tracker=tracker,
-    )
+        model_cls = get_model_class(model)
+        result = optimize_model(
+            model_cls,
+            X,
+            y,
+            evaluator,
+            model,
+            n_trials=trials,
+            search_space=search_space,
+            task=task,
+            log_path=str(ws.experiments_path),
+            tracker=tracker,
+            metrics=evaluator.metrics,
+        )
+    except ValueError as e:
+        return json.dumps({"status": "error", "message": str(e)})
 
     return json.dumps(result, indent=2)
 

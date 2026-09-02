@@ -27,7 +27,6 @@ def test_default_config():
     )
     assert config.cv_folds == 5
     assert config.cv_strategy == CVStrategy.STRATIFIED
-    assert config.run_hpo is False
     assert config.models == "auto"
     assert config.random_seed == 42
     assert config.afe_n_jobs == 1
@@ -182,42 +181,6 @@ def test_strict_thread_safety_default_true():
     assert config.strict_thread_safety is True
 
 
-def test_hpo_n_trials_must_be_positive():
-    with pytest.raises(ValidationError, match="hpo_n_trials"):
-        ExperimentConfig(
-            name="test",
-            task="classification",
-            target_col="target",
-            data_path="data.csv",
-            run_hpo=True,
-            hpo_n_trials=0,
-        )
-
-
-def test_hpo_n_trials_negative_rejected():
-    with pytest.raises(ValidationError, match="hpo_n_trials"):
-        ExperimentConfig(
-            name="test",
-            task="classification",
-            target_col="target",
-            data_path="data.csv",
-            run_hpo=True,
-            hpo_n_trials=-5,
-        )
-
-
-def test_hpo_n_trials_zero_ok_when_hpo_disabled():
-    config = ExperimentConfig(
-        name="test",
-        task="classification",
-        target_col="target",
-        data_path="data.csv",
-        run_hpo=False,
-        hpo_n_trials=0,
-    )
-    assert config.hpo_n_trials == 0
-
-
 def test_invalid_model_name_rejected():
     with pytest.raises(ValidationError, match="Unknown model names"):
         ExperimentConfig(
@@ -277,7 +240,6 @@ def test_section_comments_in_config():
     source = ExperimentConfig.__doc__
     assert source is not None
     assert "Core" in source
-    assert "HPO" in source
     assert "Embedding" in source
     assert "LLM" in source
     assert "Model Overrides" in source
@@ -289,14 +251,8 @@ def test_legacy_flat_keys_from_example_config() -> None:
     config_path = Path(__file__).resolve().parents[2] / "examples" / "credit_risk.yaml"
     config = ExperimentConfig.from_file(config_path)
 
-    # Flat delegate keys → nested sub-configs.
-    assert config.hpo.run is False
-    assert config.hpo.n_trials == 100
-
     # Legacy step-level keys → pipeline step enablement/params.
-    quality_step = next(
-        s for s in config.pipeline.steps if s.name == StepName.QUALITY_AUDIT
-    )
+    quality_step = next(s for s in config.pipeline.steps if s.name == StepName.QUALITY_AUDIT)
     assert quality_step.enabled is True
 
 
@@ -441,12 +397,76 @@ def test_nest_flat_config_fields():
         "task": "classification",
         "target_col": "target",
         "data_path": "data.csv",
-        "run_hpo": True,
-        "hpo_n_trials": 100,
+        "afe_top_k": 20,
+        "afe_lift_threshold": 0.05,
     }
     config = ExperimentConfig.model_validate(data)
-    assert config.hpo.run is True
-    assert config.hpo.n_trials == 100
+    assert config.afe.top_k == 20
+    assert config.afe.lift_threshold == 0.05
+
+
+def test_removed_flat_keys_raise_deprecation_error():
+    """Keys removed in favor of pipeline step params must fail loudly."""
+    removed = {
+        "run_hpo": True,
+        "hpo_n_trials": 10,
+        "run_audit": False,
+        "auto_clean_noise": True,
+        "noise_quality_threshold": 0.7,
+    }
+    for key, value in removed.items():
+        data = {
+            "name": "test",
+            "task": "classification",
+            "target_col": "target",
+            "data_path": "data.csv",
+            key: value,
+        }
+        with pytest.raises(ValidationError, match=f"'{key}' was removed"):
+            ExperimentConfig.model_validate(data)
+
+
+def test_removed_nested_hpo_keys_raise_deprecation_error():
+    data = {
+        "name": "test",
+        "task": "classification",
+        "target_col": "target",
+        "data_path": "data.csv",
+        "hpo": {"run": True, "n_trials": 10},
+    }
+    with pytest.raises(ValidationError, match=r"'hpo\.run' was removed"):
+        ExperimentConfig.model_validate(data)
+
+
+def test_removed_nested_quality_keys_raise_deprecation_error():
+    data = {
+        "name": "test",
+        "task": "classification",
+        "target_col": "target",
+        "data_path": "data.csv",
+        "quality": {
+            "run_audit": True,
+            "auto_clean_noise": True,
+            "noise_quality_threshold": 0.5,
+        },
+    }
+    with pytest.raises(ValidationError, match=r"'quality\.run_audit' was removed"):
+        ExperimentConfig.model_validate(data)
+
+
+def test_clean_config_unaffected_by_removed_key_guard():
+    config = ExperimentConfig.model_validate(
+        {
+            "name": "test",
+            "task": "classification",
+            "target_col": "target",
+            "data_path": "data.csv",
+            "quality": {"leakage_n_jobs": 2},
+            "afe_top_k": 20,
+        }
+    )
+    assert config.quality.leakage_n_jobs == 2
+    assert config.afe.top_k == 20
 
 
 def test_legacy_pipeline_flat_keys_are_migrated():
@@ -456,8 +476,6 @@ def test_legacy_pipeline_flat_keys_are_migrated():
         "target_col": "target",
         "data_path": "data.csv",
         "run_quality_audit": False,
-        "auto_clean_noise": True,
-        "noise_quality_threshold": 0.7,
         "run_leakage_audit": False,
         "target_transform": "log1p",
         "target_skewness_threshold": 2.0,
@@ -467,10 +485,7 @@ def test_legacy_pipeline_flat_keys_are_migrated():
     config = ExperimentConfig.model_validate(data)
 
     assert config.pipeline.is_enabled(StepName.QUALITY_AUDIT) is False
-    assert config.pipeline.step_params(StepName.QUALITY_AUDIT) == {
-        "auto_clean_noise": True,
-        "noise_quality_threshold": 0.7,
-    }
+    assert config.pipeline.step_params(StepName.QUALITY_AUDIT) == {}
     assert config.pipeline.is_enabled(StepName.LEAKAGE_AUDIT) is False
     assert config.pipeline.step_params(StepName.TARGET_TRANSFORM) == {
         "method": "log1p",
@@ -552,8 +567,6 @@ def test_legacy_flat_keys_match_explicit_pipeline_resolution():
             "target_col": "target",
             "data_path": "data.csv",
             "run_quality_audit": False,
-            "auto_clean_noise": True,
-            "noise_quality_threshold": 0.6,
             "run_leakage_audit": False,
             "target_transform": "auto",
             "target_skewness_threshold": 2.0,
@@ -569,11 +582,7 @@ def test_legacy_flat_keys_match_explicit_pipeline_resolution():
             "data_path": "data.csv",
             "pipeline": {
                 "steps": [
-                    {
-                        "name": "quality_audit",
-                        "enabled": False,
-                        "params": {"auto_clean_noise": True, "noise_quality_threshold": 0.6},
-                    },
+                    {"name": "quality_audit", "enabled": False},
                     {"name": "leakage_audit", "enabled": False},
                     {
                         "name": "target_transform",
@@ -691,3 +700,138 @@ def test_serialize_non_enum_value():
     )
     result = config.serialize_enum(42)
     assert result == "42"
+
+
+# --- WS1/WS2 guardrails: task consistency, primary_metric, strict schema ---
+
+
+def test_unknown_metric_rejected_at_parse_time():
+    with pytest.raises(ValidationError, match="Unknown metrics for task 'classification'"):
+        ExperimentConfig(
+            name="test",
+            task="classification",
+            target_col="target",
+            data_path="data.csv",
+            metrics=["roc_auc", "rmse"],
+        )
+
+
+def test_wrong_task_metric_rejected():
+    with pytest.raises(ValidationError, match="Unknown metrics for task 'regression'"):
+        ExperimentConfig(
+            name="test",
+            task="regression",
+            target_col="target",
+            data_path="data.csv",
+            metrics=["roc_auc"],
+        )
+
+
+def test_stratified_cv_rejected_for_regression():
+    with pytest.raises(ValidationError, match="stratified"):
+        ExperimentConfig(
+            name="test",
+            task="regression",
+            target_col="target",
+            data_path="data.csv",
+            cv_strategy="stratified",
+        )
+
+
+def test_primary_metric_defaults_to_first_metric():
+    config = ExperimentConfig(
+        name="test",
+        task="regression",
+        target_col="target",
+        data_path="data.csv",
+    )
+    assert config.primary_metric == "rmse"
+
+
+def test_primary_metric_must_be_in_metrics():
+    with pytest.raises(ValidationError, match="primary_metric"):
+        ExperimentConfig(
+            name="test",
+            task="classification",
+            target_col="target",
+            data_path="data.csv",
+            metrics=["roc_auc"],
+            primary_metric="r2",
+        )
+
+
+def test_unknown_top_level_keys_rejected():
+    with pytest.raises(ValidationError, match=r"cv_fold"):
+        ExperimentConfig(
+            name="test",
+            task="classification",
+            target_col="target",
+            data_path="data.csv",
+            cv_fold=10,  # typo: silent no-op before extra="forbid"
+        )
+
+
+def test_removed_shap_and_drift_keys_raise_loudly():
+    with pytest.raises(ValidationError, match=r"shap_enabled.*removed"):
+        ExperimentConfig(
+            name="test",
+            task="classification",
+            target_col="target",
+            data_path="data.csv",
+            shap_enabled=True,
+        )
+    with pytest.raises(ValidationError, match=r"drift_detection.*removed"):
+        ExperimentConfig(
+            name="test",
+            task="classification",
+            target_col="target",
+            data_path="data.csv",
+            drift_detection="psi",
+        )
+
+
+def test_ignore_cols_field_exists():
+    config = ExperimentConfig(
+        name="test",
+        task="classification",
+        target_col="target",
+        data_path="data.csv",
+        ignore_cols=["customer_id"],
+    )
+    assert config.ignore_cols == ["customer_id"]
+
+
+def test_legacy_pipeline_key_modifies_default_pipeline_instead_of_replacing():
+    """A legacy key (e.g. run_quality_audit) must not reduce the 8-step default
+    pipeline to a fragment — that dropped FEATURE_ENGINEERING and crashed the
+    training DAG (no ``training_features`` input)."""
+    config = ExperimentConfig(
+        name="test",
+        task="classification",
+        target_col="target",
+        data_path="data.csv",
+        run_quality_audit=True,
+    )
+    step_names = [s.name.value for s in config.pipeline.steps]
+    assert step_names == [
+        "data_prep",
+        "quality_audit",
+        "leakage_audit",
+        "target_transform",
+        "feature_engineering",
+        "model_training",
+        "calibration",
+        "evaluation",
+    ]
+    assert config.pipeline.is_enabled("feature_engineering")
+
+
+def test_explicit_user_pipeline_steps_are_respected():
+    config = ExperimentConfig(
+        name="test",
+        task="classification",
+        target_col="target",
+        data_path="data.csv",
+        pipeline={"steps": [{"name": "data_prep"}]},
+    )
+    assert [s.name.value for s in config.pipeline.steps] == ["data_prep"]

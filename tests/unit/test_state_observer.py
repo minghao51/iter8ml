@@ -44,6 +44,40 @@ def test_generate_with_events(tmp_path):
     assert ws.leaderboard_path.exists()
 
 
+def test_leaderboard_heading_notes_mixed_tasks(tmp_path):
+    ws = Workspace(root=tmp_path)
+    log_path = ws.experiments_path
+
+    def _event(run_id, model, task, scores, timestamp):
+        return {
+            "event": "model_completed",
+            "run_id": run_id,
+            "model": model,
+            "task": task,
+            "dataset": "d",
+            "n_rows": 100,
+            "n_features": 5,
+            "cv_scores": scores,
+            "duration_seconds": 1.0,
+            "hardware": {"device": "cpu", "vram_used_gb": 0.0},
+            "timestamp": timestamp,
+        }
+
+    events = [
+        _event("c1", "ModelC", "classification", {"roc_auc": 0.9}, "2026-04-04T00:00:00Z"),
+        _event("r1", "ModelR", "regression", {"r2": 0.8}, "2026-04-03T00:00:00Z"),
+    ]
+    log_path.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+
+    content = StateObserver(workspace=ws).generate()
+
+    assert "mixed tasks" in content
+    assert "classification" in content
+    assert "regression" in content
+    # Task isolation: the classification entry must appear before regression.
+    assert content.index("ModelC") < content.index("ModelR")
+
+
 def test_generate_uses_most_recent_completed_event_for_current_state(tmp_path):
     ws = Workspace(root=tmp_path)
     log_path = ws.experiments_path

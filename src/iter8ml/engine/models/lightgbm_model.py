@@ -27,6 +27,8 @@ class LightGBMModel(BaseGBDTModel):
         }
         if objective == "multiclass":
             base["num_class"] = n_cls
+        # Pin threads to the OMP cap before user overrides can take effect.
+        base.setdefault("num_threads", self._default_thread_count())
         base.update(self.params)
         return base
 

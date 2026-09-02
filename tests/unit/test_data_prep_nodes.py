@@ -178,3 +178,113 @@ class TestDataPrepResult:
         prep = result["data_prep_result"]
         assert prep.target_transform_applied is True
         assert prep.target_transformer is not None
+
+
+class TestTargetOrientation:
+    """positive_class maps the positive class to 1 (explicit roc_auc orientation)."""
+
+    def test_none_passthrough(self):
+        from iter8ml.engine.pipelines.nodes.prep import target_oriented_df
+
+        df = pl.DataFrame({"t": ["bad", "good"]})
+        assert target_oriented_df(df, "t").equals(df)
+
+    def test_positive_class_maps_to_one(self):
+        from iter8ml.engine.pipelines.nodes.prep import target_oriented_df
+
+        df = pl.DataFrame({"t": ["bad", "good", "bad"]})
+        out = target_oriented_df(df, "t", positive_class="bad")
+        assert out["t"].to_list() == [1, 0, 1]
+
+    def test_orientation_is_value_based_not_order_based(self):
+        """Mapping keys off the VALUE, not appearance order (which is arbitrary
+        and subject to Polars' global string cache — don't assert its codes)."""
+        from iter8ml.engine.pipelines.nodes.prep import target_oriented_df
+
+        df = pl.DataFrame({"t": ["b_first", "a_second", "b_first"]})
+        oriented = target_oriented_df(df, "t", positive_class="a_second")["t"].to_list()
+        assert oriented == [0, 1, 0]
+
+    def test_numeric_positive_class(self):
+        from iter8ml.engine.pipelines.nodes.prep import target_oriented_df
+
+        df = pl.DataFrame({"t": [0, 1, 1]})
+        out = target_oriented_df(df, "t", positive_class=1)
+        assert out["t"].to_list() == [0, 1, 1]
+
+    def test_unknown_positive_class_raises_with_observed_values(self):
+        from iter8ml.engine.pipelines.nodes.prep import target_oriented_df
+
+        df = pl.DataFrame({"t": ["bad", "good"]})
+        with pytest.raises(ValueError, match=r"not found in target column 't'.*Observed"):
+            target_oriented_df(df, "t", positive_class="excellent")
+
+    def test_multiclass_target_raises(self):
+        from iter8ml.engine.pipelines.nodes.prep import target_oriented_df
+
+        df = pl.DataFrame({"t": ["a", "b", "c"]})
+        with pytest.raises(ValueError, match="binary target"):
+            target_oriented_df(df, "t", positive_class="a")
+
+
+class TestPositiveClassDagWiring:
+    """BLOCKER regression: end-to-end prep with positive_class on a string target."""
+
+    def test_string_target_with_positive_class_survives_prep(self):
+        from iter8ml.config import ExperimentConfig
+        from iter8ml.constants import TaskType
+        from iter8ml.engine.pipelines.executor import (
+            PipelineExecutor,
+            PipelineMode,
+            _resolve_hamilton_config,
+        )
+
+        df = pl.DataFrame(
+            {
+                "num": [float(i) for i in range(20)],
+                "target": ["bad", "good"] * 10,
+            }
+        )
+        cfg = ExperimentConfig(
+            name="t",
+            task=TaskType.CLASSIFICATION,
+            target_col="target",
+            data_path="unused.csv",
+            positive_class="good",
+            metrics=["roc_auc"],
+        )
+        executor = PipelineExecutor(mode=PipelineMode.HPO, config=_resolve_hamilton_config(cfg))
+        out = executor.run_prep(cfg, df)
+        # Oriented target: "good" (positive) → 1, "bad" → 0; and the integer
+        # target did NOT re-enter the categorical cast (which used to raise).
+        assert out["target"].to_list() == [0, 1] * 10
+
+    def test_without_positive_class_legacy_codes_unchanged(self):
+        from iter8ml.config import ExperimentConfig
+        from iter8ml.constants import TaskType
+        from iter8ml.engine.pipelines.executor import (
+            PipelineExecutor,
+            PipelineMode,
+            _resolve_hamilton_config,
+        )
+
+        df = pl.DataFrame(
+            {
+                "num": [float(i) for i in range(20)],
+                "target": ["bad", "good"] * 10,
+            }
+        )
+        cfg = ExperimentConfig(
+            name="t",
+            task=TaskType.CLASSIFICATION,
+            target_col="target",
+            data_path="unused.csv",
+            metrics=["roc_auc"],
+        )
+        executor = PipelineExecutor(mode=PipelineMode.HPO, config=_resolve_hamilton_config(cfg))
+        out = executor.run_prep(cfg, df)
+        codes = out["target"].unique().to_list()
+        # Appearance-order physical codes (values may be offset by Polars'
+        # global string cache when the suite runs together) — still two classes.
+        assert len(codes) == 2
+        assert all(isinstance(c, int) for c in codes)

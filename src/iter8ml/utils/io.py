@@ -11,46 +11,82 @@ import hashlib
 import hmac
 import io
 import json
+import logging
 import pickle
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
+
+logger = logging.getLogger(__name__)
 
 _INTEGRITY_KEY = b"iter8ml_safe_dump_v1"
 
-
-def load_events(path: str | Path) -> list[dict[str, Any]]:
-    """Load events from a JSONL file."""
-    events = []
-    path = Path(path)
-    if not path.exists():
-        return []
-
-    with open(path, encoding="utf-8") as f:
-        for line_num, line in enumerate(f, start=1):
-            stripped = line.strip()
-            if stripped:
-                try:
-                    events.append(json.loads(stripped))
-                except json.JSONDecodeError as e:
-                    raise ValueError(f"Invalid JSON at line {line_num} in {path}: {e}") from e
-    return events
+ErrorPolicy = Literal["raise", "skip", "skip_trailing"]
 
 
-def iter_events(path: str | Path) -> Iterator[dict[str, Any]]:
-    """Stream events from a JSONL file, one dict at a time."""
+def load_events(path: str | Path, on_error: ErrorPolicy = "raise") -> list[dict[str, Any]]:
+    """Load all events from a JSONL file (see iter_events for on_error)."""
+    return list(iter_events(path, on_error=on_error))
+
+
+def iter_events(path: str | Path, on_error: ErrorPolicy = "raise") -> Iterator[dict[str, Any]]:
+    """Stream events from a JSONL file, one dict at a time.
+
+    Malformed-line handling via on_error:
+      - "raise": fail on the first malformed line (default; strict contract).
+      - "skip": drop any malformed line, warning with the line number.
+      - "skip_trailing": drop malformed lines only when they form a torn
+        trailing tail (crash mid-write); a malformed line followed by a valid
+        line is mid-file corruption and still raises.
+
+    Note: skip/skip_trailing warnings (and the mid-file raise) materialize as
+    the generator is consumed — drain it fully (see load_events) to surface
+    them.
+    """
+    if on_error not in ("raise", "skip", "skip_trailing"):
+        raise ValueError(f"Unknown on_error policy: {on_error!r}")
     path = Path(path)
     if not path.exists():
         return
 
+    torn_tail: list[tuple[int, str]] = []
+    valid_count = 0
     with open(path, encoding="utf-8") as f:
         for line_num, line in enumerate(f, start=1):
             stripped = line.strip()
-            if stripped:
-                try:
-                    yield json.loads(stripped)
-                except json.JSONDecodeError as e:
+            if not stripped:
+                continue
+            try:
+                event = json.loads(stripped)
+            except json.JSONDecodeError as e:
+                if on_error == "raise":
                     raise ValueError(f"Invalid JSON at line {line_num} in {path}: {e}") from e
+                if on_error == "skip":
+                    logger.warning("Skipping malformed line %d in %s: %s", line_num, path, e)
+                    continue
+                torn_tail.append((line_num, str(e)))
+                continue
+            if torn_tail:
+                # A valid line follows malformed ones: mid-file corruption,
+                # not a torn tail.
+                first_num, first_err = torn_tail[0]
+                raise ValueError(f"Invalid JSON at line {first_num} in {path}: {first_err}")
+            valid_count += 1
+            yield event
+
+    if on_error != "raise" and valid_count == 0 and len(torn_tail) > 1:
+        logger.warning(
+            "No valid JSON lines in %s: all %d line(s) malformed — data loss likely",
+            path,
+            len(torn_tail),
+        )
+    for line_num, err in torn_tail:
+        logger.warning(
+            "Skipping malformed trailing line %d in %s (torn final write?): %s",
+            line_num,
+            path,
+            err,
+        )
 
 
 WHITELISTED_PREFIXES: tuple[str, ...] = (

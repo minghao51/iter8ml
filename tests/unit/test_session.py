@@ -130,8 +130,25 @@ class TestSessionDelegation:
 
             result = session.leaderboard(metric="f1", limit=5)
 
-            mock_service.build_report.assert_called_once_with(metric="f1", limit=5)
+            mock_service.build_report.assert_called_once_with(metric="f1", limit=5, task=None)
             assert isinstance(result, pl.DataFrame)
+
+    def test_leaderboard_passes_task_filter(self, tmp_path):
+        ws = MagicMock()
+        session = ExperimentSession(workspace=ws)
+
+        with patch("iter8ml.session.ReportService") as MockReportService:
+            mock_report = MagicMock()
+            mock_report.leaderboard = []
+            mock_service = MagicMock()
+            mock_service.build_report.return_value = mock_report
+            MockReportService.return_value = mock_service
+
+            session.leaderboard(task="regression")
+
+            mock_service.build_report.assert_called_once_with(
+                metric=None, limit=None, task="regression"
+            )
 
     def test_leaderboard_empty(self, tmp_path):
         ws = MagicMock()
@@ -159,7 +176,25 @@ class TestSessionDelegation:
             result = session.export("test:classifier", output_dir="/out")
 
             MockExportService.assert_called_once_with(workspace=ws)
-            mock_service.export.assert_called_once_with("test:classifier", output_dir="/out")
+            mock_service.export.assert_called_once_with(
+                "test:classifier", output_dir="/out", target_col=None, positive_class=None
+            )
+            assert result == Path("/out/export.zip")
+
+    def test_export_delegates_target_col(self, tmp_path):
+        ws = MagicMock()
+        session = ExperimentSession(workspace=ws)
+
+        with patch("iter8ml.session.ExportService") as MockExportService:
+            mock_service = MagicMock()
+            mock_service.export.return_value = Path("/out/export.zip")
+            MockExportService.return_value = mock_service
+
+            result = session.export("test:classifier", output_dir="/out", target_col="y")
+
+            mock_service.export.assert_called_once_with(
+                "test:classifier", output_dir="/out", target_col="y", positive_class=None
+            )
             assert result == Path("/out/export.zip")
 
     def test_promote_delegates(self, tmp_path):

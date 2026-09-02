@@ -197,6 +197,7 @@ def test_run_hpo_forwards_task(sample_csv, monkeypatch):
 
     def fake_optimize_model(model_cls, X, y, evaluator, model_name, **kwargs):
         captured["task"] = kwargs.get("task")
+        captured["metrics"] = kwargs.get("metrics")
         return {"best_params": {}, "best_value": 0.0, "n_trials": 1}
 
     monkeypatch.setattr("iter8ml.engine.hpo.optimize_model", fake_optimize_model)
@@ -206,6 +207,7 @@ def test_run_hpo_forwards_task(sample_csv, monkeypatch):
     data = json.loads(result)
     assert data["n_trials"] == 1
     assert captured["task"] == "regression"
+    assert captured["metrics"] == ["rmse", "r2"]
 
 
 def test_run_hpo_uses_shared_model_factory(sample_csv, monkeypatch):

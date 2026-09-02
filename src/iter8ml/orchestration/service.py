@@ -226,9 +226,7 @@ class MedallionExecutionService:
     def submit(self, plan: RunPlan) -> RunHandle:
         """Run a compiled plan as the single orchestration entry point."""
         if plan.source.source_type == "memory":
-            raise ValueError(
-                "submit requires a file-backed source; use run() for in-memory frames"
-            )
+            raise ValueError("submit requires a file-backed source; use run() for in-memory frames")
         config = self._config_from_plan(plan)
         frame = load_data(plan.source.uri)
         execute_training = bool(plan.documentation.get("execute_training", True))

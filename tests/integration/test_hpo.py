@@ -74,6 +74,7 @@ def test_hpo_returns_best_params(hpo_classification_data, tmp_path):
         search_space=None,
         task="classification",
         log_path=str(tmp_path / "experiments.jsonl"),
+        metrics=["roc_auc"],
     )
 
     assert "best_params" in result
@@ -111,6 +112,7 @@ def test_hpo_regression_returns_params(hpo_regression_data, tmp_path):
         search_space=None,
         task="regression",
         log_path=str(tmp_path / "experiments.jsonl"),
+        metrics=["rmse"],
     )
 
     assert "best_params" in result
@@ -160,6 +162,7 @@ def test_hpo_with_warmstart(hpo_classification_data, tmp_path):
         search_space=None,
         task="classification",
         log_path=str(log_path),
+        metrics=["roc_auc"],
     )
 
     warmstart_summary = result.get("warmstart_summary")
@@ -196,6 +199,136 @@ def test_hpo_lightgbm_returns_params(hpo_classification_data, tmp_path):
         search_space=None,
         task="classification",
         log_path=str(tmp_path / "experiments.jsonl"),
+        metrics=["roc_auc"],
     )
 
     assert "best_params" in result
+
+
+def test_hpo_regression_minimizes_rmse(tmp_path):
+    """Regression HPO must minimize RMSE via the central direction registry."""
+    import json
+
+    from iter8ml.engine.evaluator import Evaluator
+
+    X, y = make_regression(n_samples=80, n_features=5, random_state=42)
+    df = pl.DataFrame({f"feat_{i}": X[:, i] for i in range(X.shape[1])})
+    df = df.with_columns(target=pl.Series(y))
+
+    config = ExperimentConfig(
+        name="hpo_rmse_test",
+        task="regression",
+        target_col="target",
+        data_path="",
+        cv_folds=3,
+        metrics=["rmse", "r2"],
+    )
+    evaluator = Evaluator(config)
+    X = df.drop("target").to_numpy()
+    y = df["target"].to_numpy()
+
+    model_cls = get_model_class("lightgbm")
+    log_path = tmp_path / "experiments.jsonl"
+    result = optimize_model(
+        model_cls,
+        X,
+        y,
+        evaluator,
+        "lightgbm",
+        n_trials=2,
+        search_space=None,
+        task="regression",
+        log_path=str(log_path),
+        metrics=["rmse", "r2"],
+    )
+
+    assert result["direction"] == "minimize"
+    assert result["primary_metric"] == "rmse"
+
+    rmses = [
+        event["cv_scores"]["rmse"]
+        for event in (json.loads(line) for line in log_path.read_text().splitlines())
+        if event.get("event") == "hpo_trial_completed"
+    ]
+    assert len(rmses) == 2
+    assert result["best_value"] == min(rmses)
+
+
+def test_setup_hpo_components_routes_string_categorical(tmp_path):
+    """String categoricals are prep-encoded before DataAdapter (GBDT-safe)."""
+    from iter8ml.engine.hpo import setup_hpo_components
+
+    n = 60
+    df = pl.DataFrame(
+        {
+            "num": [float(i) for i in range(n)],
+            "cat": ["red" if i % 2 else "blue" for i in range(n)],
+            "target": [0, 1] * (n // 2),
+        }
+    )
+    csv = tmp_path / "cat.csv"
+    df.write_csv(csv)
+
+    X, y, evaluator, search_space = setup_hpo_components(
+        str(csv), "target", "classification", "lightgbm", cv_folds=2
+    )
+
+    # Encoded numeric codes reached the adapter, not raw strings.
+    import numpy as np
+
+    assert X.dtype.kind == "f"
+    assert set(np.asarray(y).tolist()) == {0, 1}
+
+    model_cls = get_model_class("lightgbm")
+    result = optimize_model(
+        model_cls,
+        X,
+        y,
+        evaluator,
+        "lightgbm",
+        n_trials=3,
+        search_space=search_space,
+        task="classification",
+        metrics=["roc_auc"],
+    )
+    assert result["best_value"] is not None
+
+
+def test_hpo_config_flag_reuses_experiment_config(tmp_path):
+    """--config drives HPO: task/target/data/folds/metrics/seed from the file."""
+    from typer.testing import CliRunner
+
+    from iter8ml.cli.main import app
+
+    n = 40
+    df = pl.DataFrame(
+        {
+            "num": [float(i) for i in range(n)],
+            "cat": ["a" if i % 2 else "b" for i in range(n)],
+            "target": [0, 1] * (n // 2),
+        }
+    )
+    csv = tmp_path / "data.csv"
+    df.write_csv(csv)
+    cfg = tmp_path / "exp.yaml"
+    cfg.write_text(
+        "name: hpo_cli\n"
+        "task: classification\n"
+        "target_col: target\n"
+        f"data_path: {csv}\n"
+        "models: [lightgbm]\n"
+        "cv_folds: 2\n"
+        "metrics: [roc_auc]\n"
+        "random_seed: 7\n"
+        "model_overrides: {lightgbm: {scale_pos_weight: 1.0}}\n"
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        ["hpo", "--config", str(cfg), "--trials", "3", "--log", str(tmp_path / "exp.jsonl")],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "HPO config:" in result.output
+    assert "Best params" in result.output

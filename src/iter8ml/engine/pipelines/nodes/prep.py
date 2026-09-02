@@ -41,33 +41,59 @@ def raw_dataframe(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
+def filtered_dataframe(
+    raw_dataframe: pl.DataFrame,
+    target_col: str | None = None,
+    ignore_cols: list[str] | None = None,
+) -> pl.DataFrame:
+    """Drop user-excluded columns (IDs, leaky features) before feature engineering.
+
+    Applied *after* ``row_ids`` is computed on the raw frame so row digests stay
+    aligned with any medallion-layer split assignment. Unknown columns or a
+    target listed in ``ignore_cols`` fail loudly here instead of mid-run.
+    """
+    cols = ignore_cols or []
+    if not cols:
+        return raw_dataframe
+    unknown = [c for c in cols if c not in raw_dataframe.columns]
+    if unknown:
+        raise ValueError(
+            f"ignore_cols not found in DataFrame: {unknown}. "
+            f"Available columns: {raw_dataframe.columns}"
+        )
+    if target_col is not None and target_col in cols:
+        raise ValueError(f"target_col '{target_col}' cannot also be listed in ignore_cols")
+    return raw_dataframe.drop(cols)
+
+
 def row_ids(raw_dataframe: pl.DataFrame) -> list[str]:
     """Stable per-row content digests, aligned to the engine's feature matrix.
 
-    Computed from the raw frame so the training path can align its engineered
-    rows to a split assigned on the same frame by the medallion layer.
+    Computed from the raw frame (before ``ignore_cols`` filtering) so the
+    training path can align its engineered rows to a split assigned on the same
+    frame by the medallion layer.
     """
     return frame_row_ids(raw_dataframe)
 
 
-def numeric_columns(raw_dataframe: pl.DataFrame) -> list[str]:
-    return raw_dataframe.select(cs.numeric()).columns
+def numeric_columns(filtered_dataframe: pl.DataFrame) -> list[str]:
+    return filtered_dataframe.select(cs.numeric()).columns
 
 
-def categorical_columns(raw_dataframe: pl.DataFrame) -> list[str]:
-    return raw_dataframe.select(cs.categorical() | cs.string()).columns
+def categorical_columns(filtered_dataframe: pl.DataFrame) -> list[str]:
+    return filtered_dataframe.select(cs.categorical() | cs.string()).columns
 
 
-def date_columns(raw_dataframe: pl.DataFrame) -> list[str]:
-    return [c for c, dtype in raw_dataframe.schema.items() if dtype in (pl.Datetime, pl.Date)]
+def date_columns(filtered_dataframe: pl.DataFrame) -> list[str]:
+    return [c for c, dtype in filtered_dataframe.schema.items() if dtype in (pl.Datetime, pl.Date)]
 
 
 def fill_nulls_numeric(
-    raw_dataframe: pl.DataFrame,
+    filtered_dataframe: pl.DataFrame,
     numeric_columns: list[str],
 ) -> pl.DataFrame:
     exprs = [pl.col(c).fill_null(pl.col(c).median()) for c in numeric_columns]
-    return raw_dataframe.with_columns(exprs) if exprs else raw_dataframe
+    return filtered_dataframe.with_columns(exprs) if exprs else filtered_dataframe
 
 
 def fill_nulls_categorical(
@@ -119,15 +145,61 @@ def decomposed_dates_df(
     return result.drop(date_columns) if date_columns else result
 
 
-def encoded_df(
+def target_oriented_df(
     decomposed_dates_df: pl.DataFrame,
+    target_col: str | None = None,
+    positive_class: str | float | bool | None = None,
+) -> pl.DataFrame:
+    """Orient a binary target so ``positive_class`` encodes to 1.
+
+    Without ``positive_class`` a categorical/string target is encoded by
+    Polars physical codes — appearance order, which is arbitrary w.r.t.
+    semantics — so ``roc_auc`` orientation can amount to a coin flip for
+    labels like "good"/"bad". With ``positive_class``, the positive class
+    deterministically maps to 1 and the other class to 0, keeping
+    ``predict_proba()[:, 1]`` aligned with the intended positive class.
+
+    ``target_col`` defaults to None so modes executing the prep module with
+    only ``df`` (no config inputs) keep working; orientation is a no-op
+    unless both ``target_col`` and ``positive_class`` are supplied.
+    """
+    if positive_class is None:
+        return decomposed_dates_df
+    if target_col is None:
+        raise ValueError("positive_class requires target_col to be provided")
+    values = decomposed_dates_df[target_col].unique().to_list()
+    observed = sorted(str(v) for v in values)
+    if positive_class not in values:
+        raise ValueError(
+            f"positive_class {positive_class!r} not found in target column "
+            f"'{target_col}'. Observed values: {observed}"
+        )
+    if len(values) != 2:
+        raise ValueError(
+            f"positive_class requires a binary target; '{target_col}' has "
+            f"{len(values)} distinct values: {observed}"
+        )
+    return decomposed_dates_df.with_columns(
+        pl.when(pl.col(target_col) == positive_class).then(1).otherwise(0).alias(target_col)
+    )
+
+
+def encoded_df(
+    target_oriented_df: pl.DataFrame,
     categorical_columns: list[str],
 ) -> pl.DataFrame:
-    cat_cols = [c for c in categorical_columns if c in decomposed_dates_df.columns]
+    cat_cols = [
+        c
+        for c in categorical_columns
+        if c in target_oriented_df.columns
+        # String/categorical columns only: an already-oriented integer target
+        # (positive_class set) must not re-enter the categorical cast.
+        and target_oriented_df.schema[c] in (pl.String, pl.Categorical)
+    ]
     if not cat_cols:
-        return decomposed_dates_df
+        return target_oriented_df
     exprs = [pl.col(col).cast(pl.Categorical).to_physical().alias(col) for col in cat_cols]
-    return decomposed_dates_df.with_columns(exprs)
+    return target_oriented_df.with_columns(exprs)
 
 
 def processed_dataframe(encoded_df: pl.DataFrame) -> pl.DataFrame:

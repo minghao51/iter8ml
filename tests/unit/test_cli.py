@@ -1,5 +1,6 @@
 """Tests for CLI commands using typer CliRunner."""
 
+import json
 import os
 from pathlib import Path
 
@@ -388,6 +389,35 @@ def test_export_missing_key(isolated_cwd):
     assert "Error" in result.stdout
 
 
+def test_export_command_passes_target_to_metadata(isolated_cwd):
+    tmpdir = isolated_cwd
+    runner.invoke(app, ["init"])
+    ws_path = Path(tmpdir) / "workspace"
+    artifact = ws_path / "artifacts" / "catboost_exp_1"
+    artifact.write_text("fake_model_bytes")
+    (ws_path / "registry.json").write_text(
+        json.dumps(
+            {
+                "best:classification": {
+                    "model": "CatBoost",
+                    "run_id": "exp_1",
+                    "score": 0.85,
+                    "artifact_path": str(artifact),
+                    "registered_at": "2026-01-01T00:00:00Z",
+                }
+            }
+        )
+    )
+
+    result = runner.invoke(app, ["export", "best:classification", "--target", "target"])
+    assert result.exit_code == 0, result.stdout
+
+    metadata = json.loads(
+        (ws_path / "exports" / "best_classification" / "metadata.json").read_text()
+    )
+    assert metadata["target_col"] == "target"
+
+
 def test_state_with_events(isolated_cwd):
     tmpdir = isolated_cwd
     result = runner.invoke(app, ["init"])
@@ -443,3 +473,122 @@ def test_diff_missing_run(isolated_cwd):
     result = runner.invoke(app, ["diff", "nonexistent", "other"])
     assert result.exit_code == 1
     assert "Run ID not found" in result.stdout
+
+
+def test_registry_promote_performs_real_promotion(isolated_cwd):
+    tmpdir = isolated_cwd
+    runner.invoke(app, ["init"])
+    ws_path = Path(tmpdir) / "workspace"
+    log_path = ws_path / "experiments.jsonl"
+    event = {
+        "event": "model_completed",
+        "run_id": "run_42",
+        "model": "CatBoost",
+        "cv_scores": {"roc_auc": 0.93},
+        "artifact_path": "/tmp/model_artifact",
+        "timestamp": "2026-01-01T00:00:00+00:00",
+    }
+    log_path.write_text(json.dumps(event) + "\n")
+
+    result = runner.invoke(app, ["registry", "promote", "run_42", "experiment:classification"])
+
+    assert result.exit_code == 0
+    assert "Promoted" in result.stdout
+    registry = json.loads((ws_path / "registry.json").read_text())
+    entry = registry["experiment:classification"]
+    assert entry["run_id"] == "run_42"
+    assert entry["artifact_path"] == "/tmp/model_artifact"
+    assert entry["metric_name"] == "roc_auc"
+    assert entry["score"] == 0.93
+
+
+def test_registry_promote_missing_run_exits_with_error(isolated_cwd):
+    runner.invoke(app, ["init"])
+    result = runner.invoke(app, ["registry", "promote", "nope", "key1"])
+    assert result.exit_code == 1
+    assert "not found" in result.stdout
+
+
+def test_registry_promote_requires_run_id_and_key(isolated_cwd):
+    runner.invoke(app, ["init"])
+    result = runner.invoke(app, ["registry", "promote"])
+    assert result.exit_code == 1
+    assert "Usage" in result.stdout
+
+
+def test_registry_unknown_action_exits_with_error(isolated_cwd):
+    runner.invoke(app, ["init"])
+    result = runner.invoke(app, ["registry", "frobnicate"])
+    assert result.exit_code == 1
+    assert "Unknown action" in result.stdout
+
+
+def test_init_force_reset_routes_through_registry_service(isolated_cwd, monkeypatch):
+    """The destructive reset must go through the locked RegistryService.reset()."""
+    import iter8ml.cli.main as cli_main
+
+    called = {}
+    monkeypatch.setattr(cli_main.RegistryService, "reset", lambda self: called.update(reset=True))
+
+    result = runner.invoke(app, ["init", "--force-reset-registry"])
+
+    assert result.exit_code == 0
+    assert called.get("reset") is True
+
+
+# --- WS1/WS4: preflight check mode and fail-fast guards ---
+
+
+def test_run_check_passes_on_clean_data(sample_csv):
+    result = runner.invoke(
+        app,
+        ["run", "--check", "--data", sample_csv, "--target", "target"],
+    )
+    assert result.exit_code == 0
+    assert "Pre-flight checks" in result.stdout
+    assert "All checks passed" in result.stdout
+
+
+def test_run_check_fails_on_missing_target(sample_csv):
+    result = runner.invoke(
+        app,
+        ["run", "--check", "--data", sample_csv, "--target", "not_a_column"],
+    )
+    assert result.exit_code == 1
+    assert "not found" in result.stdout
+
+
+def test_run_check_does_not_train(sample_csv, isolated_cwd):
+    result = runner.invoke(
+        app,
+        ["run", "--check", "--data", sample_csv, "--target", "target"],
+    )
+    assert result.exit_code == 0
+    assert "Results:" not in result.stdout
+    assert not Path(isolated_cwd, "workspace", "experiments.jsonl").exists()
+
+
+def test_run_unknown_model_name_fails_fast(sample_csv):
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "--data",
+            sample_csv,
+            "--target",
+            "target",
+            "--models",
+            "definitely_not_a_model",
+        ],
+    )
+    assert result.exit_code == 1
+    assert "definitely_not_a_model" in result.stdout
+
+
+def test_run_invalid_task_fails_fast(sample_csv):
+    result = runner.invoke(
+        app,
+        ["run", "--data", sample_csv, "--target", "target", "--task", "bogus"],
+    )
+    assert result.exit_code == 1
+    assert "unknown --task" in result.stdout.lower()

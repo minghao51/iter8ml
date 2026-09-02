@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import logging
 import os
 import tempfile
 from datetime import UTC, datetime
@@ -19,6 +20,8 @@ from iter8ml.utils.io import iter_events
 
 if TYPE_CHECKING:
     from iter8ml.workspace import Workspace
+
+_logger = logging.getLogger(__name__)
 
 
 class PromotionResult(BaseModel):
@@ -36,8 +39,8 @@ class RegistryService:
     """Thread-safe and process-safe model registry with file locking.
 
     Locking contract:
-    - Public methods (update_if_better, get, get_all, promote_run) acquire
-      the file lock internally via ``_acquire_lock()``.
+    - Public methods (update_if_better, get, get_all, promote_run, reset)
+      acquire the file lock internally via ``_acquire_lock()``.
     - ``_update_if_better_locked`` MUST only be called from within a lock
       context (i.e. by a method that has already called ``_acquire_lock``).
       It does NOT acquire the lock itself — the caller is responsible.
@@ -70,9 +73,18 @@ class RegistryService:
         artifact_path: str,
         metric_name: str | None = None,
     ) -> bool:
-        """Update registry only if new score beats existing champion."""
+        """Update registry only if new score beats existing champion.
+
+        Returns False (champion retained) when the incumbent is scored on a
+        different metric than the candidate, or when either side has no metric
+        identity (legacy entries with ``metric_name=None`` are compatible with
+        nothing).
+        """
         with self._acquire_lock():
-            return self._update_unlocked(key, model_name, run_id, score, artifact_path, metric_name)
+            return (
+                self._update_unlocked(key, model_name, run_id, score, artifact_path, metric_name)
+                == "promoted"
+            )
 
     def get(self, key: str) -> dict[str, Any] | None:
         """Get entry by key, returns None if not found."""
@@ -84,6 +96,12 @@ class RegistryService:
         """Get all registry entries."""
         with self._acquire_lock():
             return self.load()
+
+    @track_errors(RegistryError)
+    def reset(self) -> None:
+        """Reset the registry to an empty state (destructive), under the file lock."""
+        with self._acquire_lock():
+            self._save({})
 
     def promote_run(self, run_id: str, key: str, log_path: str | Path) -> PromotionResult:
         """Promote a completed run into the registry."""
@@ -102,7 +120,7 @@ class RegistryService:
         metric_name, score = resolve_primary_score(run_event.get("cv_scores", {}))
 
         with self._acquire_lock():
-            updated = self._update_unlocked(
+            status = self._update_unlocked(
                 key=key,
                 model_name=run_event.get("model", ""),
                 run_id=run_id,
@@ -112,35 +130,58 @@ class RegistryService:
             )
             entry = self.load().get(key)
 
-        if updated:
+        def _result(status: str, message: str) -> PromotionResult:
             return PromotionResult(
-                status="promoted",
-                message=f"Promoted {run_id} to champion for {key} using {metric_name}.",
+                status=status,
+                message=message,
                 entry=entry,
                 selected_model=run_event.get("model"),
                 selected_metric=metric_name,
                 selected_score=score,
             )
 
-        return PromotionResult(
-            status="rejected",
-            message=f"Existing champion for {key} has better score.",
-            entry=entry,
-            selected_model=run_event.get("model"),
-            selected_metric=metric_name,
-            selected_score=score,
-        )
+        if status == "promoted":
+            return _result(
+                "promoted", f"Promoted {run_id} to champion for {key} using {metric_name}."
+            )
+
+        if status == "metric_mismatch":
+            incumbent_metric = (entry or {}).get("metric_name")
+            return _result(
+                "metric_mismatch",
+                f"Metric mismatch for {key}: incumbent scored {incumbent_metric!r}, "
+                f"candidate scored {metric_name!r}; champion retained.",
+            )
+
+        return _result("rejected", f"Existing champion for {key} has better score.")
 
     def _select_best_run_event(self, events: list[dict[str, Any]]) -> dict[str, Any] | None:
+        """Pick the best event, comparing only same-metric events.
+
+        The comparison metric is anchored to the first event with a resolvable
+        metric; events resolved to a different metric are ignored because
+        cross-metric score comparisons are meaningless (e.g. accuracy vs
+        roc_auc magnitudes are not comparable). Events whose ``cv_scores``
+        contain no numeric value resolve to the ``"score"`` sentinel and are
+        skipped when choosing the anchor.
+        """
         if not events:
             return None
 
         best_event = events[0]
-        _, best_score = resolve_primary_score(best_event.get("cv_scores", {}))
+        best_metric, best_score = resolve_primary_score(best_event.get("cv_scores", {}))
+        if best_metric == "score":  # degenerate fallback: no numeric scores
+            for event in events[1:]:
+                metric_name, score = resolve_primary_score(event.get("cv_scores", {}))
+                if metric_name != "score":
+                    best_event, best_metric, best_score = event, metric_name, score
+                    break
         best_timestamp = self._parse_timestamp(best_event.get("timestamp"))
 
         for event in events[1:]:
             metric_name, score = resolve_primary_score(event.get("cv_scores", {}))
+            if metric_name != best_metric:
+                continue
             timestamp = self._parse_timestamp(event.get("timestamp"))
             if metric_value_is_better(metric_name, score, best_score) or (
                 score == best_score and timestamp > best_timestamp
@@ -164,14 +205,32 @@ class RegistryService:
         score: float,
         artifact_path: str,
         metric_name: str | None = None,
-    ) -> bool:
+    ) -> str:
         """Update registry if new score beats existing champion.
+
+        Returns "promoted", "rejected", or "metric_mismatch". A candidate can
+        only displace an incumbent when both are scored on the same metric;
+        entries without a metric name (legacy entries with
+        ``metric_name=None``) are compatible with nothing, so the incumbent is
+        retained.
 
         NOTE: Caller MUST already hold the file lock (acquired via
         ``_acquire_lock()``). This method does NOT acquire the lock itself.
         """
         registry = self.load()
-        existing_score = registry.get(key, {}).get("score")
+        existing = registry.get(key, {})
+        existing_score = existing.get("score")
+        existing_metric = existing.get("metric_name")
+
+        if existing and existing_score is not None and existing_metric != metric_name:
+            _logger.warning(
+                "Metric mismatch for %s: champion scored %r, candidate scored %r; "
+                "champion retained.",
+                key,
+                existing_metric,
+                metric_name,
+            )
+            return "metric_mismatch"
 
         if (
             key not in registry
@@ -187,8 +246,8 @@ class RegistryService:
                 "registered_at": datetime.now(UTC).isoformat(),
             }
             self._save(registry)
-            return True
-        return False
+            return "promoted"
+        return "rejected"
 
     def _save(self, registry: dict[str, Any]) -> None:
         """Save registry to disk atomically using temp file + rename."""

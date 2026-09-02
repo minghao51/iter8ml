@@ -96,6 +96,137 @@ def test_promote_run_multiple_models(ws, svc, tmp_path):
     assert svc.load()["key1"]["artifact_path"] == "/tmp/c"
 
 
+def test_update_if_better_cross_metric_candidate_retained(svc):
+    """A candidate scored on a different metric must not displace the champion."""
+    svc.update_if_better("key1", "model_a", "run1", 0.83, "/path/a", metric_name="roc_auc")
+    assert not svc.update_if_better(
+        "key1", "model_b", "run2", 0.99, "/path/b", metric_name="accuracy"
+    )
+    entry = svc.load()["key1"]
+    assert entry["model"] == "model_a"
+    assert entry["score"] == 0.83
+    assert entry["metric_name"] == "roc_auc"
+
+
+def test_update_if_better_same_metric_better_candidate_promotes(svc):
+    svc.update_if_better("key1", "model_a", "run1", 0.83, "/path/a", metric_name="roc_auc")
+    assert svc.update_if_better("key1", "model_b", "run2", 0.86, "/path/b", metric_name="roc_auc")
+    entry = svc.load()["key1"]
+    assert entry["model"] == "model_b"
+    assert entry["score"] == 0.86
+
+
+def test_update_if_better_legacy_incumbent_without_metric_retained(ws, svc):
+    """Legacy entries with metric_name=None are compatible with nothing."""
+    legacy = {
+        "key1": {
+            "model": "legacy_model",
+            "run_id": "run0",
+            "score": 0.83,
+            "metric_name": None,
+            "artifact_path": "/path/legacy",
+            "registered_at": "2025-01-01T00:00:00+00:00",
+        }
+    }
+    ws.registry_path.write_text(json.dumps(legacy))
+    assert not svc.update_if_better(
+        "key1", "model_b", "run2", 0.99, "/path/b", metric_name="accuracy"
+    )
+    assert svc.load()["key1"]["model"] == "legacy_model"
+
+
+def test_promote_run_metric_mismatch_retains_champion(ws, svc, tmp_path):
+    svc.update_if_better("key1", "model_a", "run1", 0.83, "/path/a", metric_name="roc_auc")
+    log_path = tmp_path / "experiments.jsonl"
+    event = {
+        "event": "model_completed",
+        "run_id": "run2",
+        "model": "ModelB",
+        "cv_scores": {"accuracy": 0.99},
+        "artifact_path": "/tmp/b",
+    }
+    log_path.write_text(json.dumps(event) + "\n")
+    result = svc.promote_run("run2", "key1", log_path)
+    assert result.status == "metric_mismatch"
+    assert "champion retained" in result.message
+    assert svc.load()["key1"]["model"] == "model_a"
+
+
+def test_promote_run_ignores_cross_metric_run_events(ws, svc, tmp_path):
+    """Run-event selection must compare only events scored on the same metric.
+
+    The accuracy event has a higher value than the roc_auc event, but they are
+    different metrics — the roc_auc anchor event must win.
+    """
+    log_path = tmp_path / "experiments.jsonl"
+    events = [
+        {
+            "event": "model_completed",
+            "run_id": "run1",
+            "model": "ModelA",
+            "cv_scores": {"roc_auc": 0.83},
+            "artifact_path": "/tmp/a",
+            "timestamp": "2026-01-01T00:00:00+00:00",
+        },
+        {
+            "event": "model_completed",
+            "run_id": "run1",
+            "model": "ModelB",
+            "cv_scores": {"accuracy": 0.99},
+            "artifact_path": "/tmp/b",
+            "timestamp": "2026-01-01T00:00:01+00:00",
+        },
+    ]
+    log_path.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    result = svc.promote_run("run1", "key1", log_path)
+    assert result.status == "promoted"
+    assert result.selected_model == "ModelA"
+    assert result.selected_metric == "roc_auc"
+    assert result.selected_score == 0.83
+
+
+def test_promote_run_anchored_on_first_event_with_real_metric(ws, svc, tmp_path):
+    """A leading score-less event must not poison the anchor metric.
+
+    The first event has empty cv_scores (resolves to the degenerate "score"
+    sentinel); the anchor must come from the first event with a real metric,
+    otherwise every real event would be skipped as a mismatch.
+    """
+    log_path = tmp_path / "experiments.jsonl"
+    events = [
+        {
+            "event": "model_completed",
+            "run_id": "run1",
+            "model": "ModelEmpty",
+            "cv_scores": {},
+            "artifact_path": "/tmp/empty",
+            "timestamp": "2026-01-01T00:00:00+00:00",
+        },
+        {
+            "event": "model_completed",
+            "run_id": "run1",
+            "model": "ModelA",
+            "cv_scores": {"roc_auc": 0.80},
+            "artifact_path": "/tmp/a",
+            "timestamp": "2026-01-01T00:00:01+00:00",
+        },
+        {
+            "event": "model_completed",
+            "run_id": "run1",
+            "model": "ModelB",
+            "cv_scores": {"roc_auc": 0.90},
+            "artifact_path": "/tmp/b",
+            "timestamp": "2026-01-01T00:00:02+00:00",
+        },
+    ]
+    log_path.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    result = svc.promote_run("run1", "key1", log_path)
+    assert result.status == "promoted"
+    assert result.selected_model == "ModelB"
+    assert result.selected_metric == "roc_auc"
+    assert result.selected_score == 0.90
+
+
 def test_concurrent_access(ws, svc):
     errors = []
     results = []

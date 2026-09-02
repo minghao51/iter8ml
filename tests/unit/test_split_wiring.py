@@ -113,5 +113,6 @@ def test_medallion_run_consumes_gold_split_for_training(monkeypatch, tmp_path):
     assert result.status == "succeeded"
     assert captured.get("split_frame") is not None
     _assert_folds_match_gold(
-        captured["split_frame"], captured["row_ids"]  # type: ignore[arg-type]
+        captured["split_frame"],
+        captured["row_ids"],  # type: ignore[arg-type]
     )

@@ -10,7 +10,14 @@ from typing import Any, Literal
 
 import psutil
 import yaml  # type: ignore[import-untyped]
-from pydantic import BaseModel, Field, field_serializer, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 
 from iter8ml.constants import CVStrategy, EmbeddingMethod, TaskType, TrackerType
 
@@ -63,19 +70,13 @@ class AFEConfig(BaseModel):
     max_candidate_pairs: int = 200
 
 
-class HPOConfig(BaseModel):
-    """Hyperparameter optimization configuration."""
-
-    run: bool = False
-    n_trials: int = 50
-
-
 class QualityConfig(BaseModel):
-    """Data quality audit configuration."""
+    """Data quality audit worker settings.
 
-    run_audit: bool = True
-    auto_clean_noise: bool = False
-    noise_quality_threshold: float = 0.5
+    Audit enablement and noise-cleaning behavior live in pipeline step params
+    (``quality_audit`` step); see ``docs/pipeline-architecture.md``.
+    """
+
     leakage_n_jobs: int = 1
 
 
@@ -88,7 +89,6 @@ class StepName(StrEnum):
     MODEL_TRAINING = "model_training"
     CALIBRATION = "calibration"
     EVALUATION = "evaluation"
-    HPO = "hpo"
 
 
 class PipelineStep(BaseModel):
@@ -131,6 +131,32 @@ class PipelineSpec(BaseModel):
 # ``ExperimentConfig.accept_legacy_flat_keys`` performs the nesting at parse time.
 # Do not add new flat keys elsewhere — extend this layer only.
 # ---------------------------------------------------------------------------
+# Config keys removed in favor of pipeline step params (PipelineSpec). A user
+# config containing any of these (flat or nested under ``hpo``/``quality``)
+# raises a clear error instead of being silently ignored — see
+# ``ExperimentConfig.accept_legacy_flat_keys`` and docs/pipeline-architecture.md.
+_REMOVED_CONFIG_KEYS: dict[str, str] = {
+    "run_hpo": "HPO is configured via pipeline step params",
+    "hpo_n_trials": "HPO is configured via pipeline step params",
+    "run_audit": "quality auditing is configured via pipeline step params",
+    "auto_clean_noise": "noise cleaning is configured via the quality_audit step",
+    "noise_quality_threshold": "noise cleaning is configured via the quality_audit step",
+    "shap_enabled": "SHAP explainability is not part of the training pipeline; "
+    "use model_overrides + external analysis instead",
+    "drift_detection": "run drift analysis explicitly with `iter8 drift "
+    "--reference <ref> --new <new> --method <ks|psi|domain|both>`",
+}
+
+# Same keys in their old nested positions (``hpo.run`` was a ``HPOConfig`` field;
+# the ``quality`` equivalents were ``QualityConfig`` fields).
+_REMOVED_NESTED_CONFIG_KEYS: dict[str, str] = {
+    "hpo.run": "HPO is configured via pipeline step params",
+    "hpo.n_trials": "HPO is configured via pipeline step params",
+    "quality.run_audit": "quality auditing is configured via pipeline step params",
+    "quality.auto_clean_noise": "noise cleaning is configured via the quality_audit step",
+    "quality.noise_quality_threshold": "noise cleaning is configured via the quality_audit step",
+}
+
 _FLAT_DELEGATES: dict[str, tuple[str, str]] = {
     "embedding_method": ("embedding", "method"),
     "embedding_dim": ("embedding", "dim"),
@@ -148,14 +174,10 @@ _FLAT_DELEGATES: dict[str, tuple[str, str]] = {
     "afe_n_jobs": ("afe", "n_jobs"),
     "afe_max_candidate_pairs": ("afe", "max_candidate_pairs"),
     "leakage_n_jobs": ("quality", "leakage_n_jobs"),
-    "run_hpo": ("hpo", "run"),
-    "hpo_n_trials": ("hpo", "n_trials"),
 }
 
 _LEGACY_PIPELINE_KEYS: tuple[str, ...] = (
     "run_quality_audit",
-    "auto_clean_noise",
-    "noise_quality_threshold",
     "run_leakage_audit",
     "target_transform",
     "target_skewness_threshold",
@@ -167,9 +189,15 @@ _LEGACY_PIPELINE_KEYS: tuple[str, ...] = (
 class ExperimentConfig(BaseModel):
     """Experiment configuration.
 
-    Sections: Core, HPO, Data Quality, Feature Engineering, Embedding,
+    Sections: Core, Data Quality, Feature Engineering, Embedding,
     Tracking & Output, Advanced, LLM, Model Overrides.
+
+    Unknown top-level keys are rejected (``extra="forbid"``) so config typos
+    fail at parse time instead of silently running with defaults. Legacy flat
+    keys are rewritten first by :meth:`accept_legacy_flat_keys`.
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     # --- Core ---
     name: str
@@ -180,10 +208,29 @@ class ExperimentConfig(BaseModel):
     cv_strategy: CVStrategy = CVStrategy.STRATIFIED
     models: list[str] | Literal["auto"] = "auto"
     random_seed: int = 42
+    positive_class: str | float | bool | None = Field(
+        default=None,
+        description=(
+            "Classification only: which target value is the positive class. "
+            "Encoded to 1 before training so roc_auc orientation is explicit "
+            "instead of depending on value ordering. Must be present in the "
+            "target's values; binary targets only."
+        ),
+    )
     metrics: list[str] = Field(default_factory=lambda: ["roc_auc", "f1_macro"])
+    primary_metric: str | None = Field(
+        default=None,
+        description=(
+            "Metric used for leaderboard ranking, best-model promotion, and lift. "
+            "Defaults to metrics[0]; must be a member of metrics."
+        ),
+    )
+    ignore_cols: list[str] = Field(
+        default_factory=list,
+        description="Columns to drop before feature engineering (e.g. IDs, leaky columns).",
+    )
 
     # --- Nested configs ---
-    hpo: HPOConfig = Field(default_factory=HPOConfig)
     quality: QualityConfig = Field(default_factory=QualityConfig)
     afe: AFEConfig = Field(default_factory=AFEConfig)
     embedding: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
@@ -191,6 +238,16 @@ class ExperimentConfig(BaseModel):
 
     # --- Tracking & Output ---
     tracker: TrackerType = TrackerType.JSONL
+    tracker_settings: dict[str, Any] | None = Field(
+        default=None,
+        description=(
+            "Constructor kwargs for the selected tracker backend, validated "
+            "against a per-backend allowlist (jsonl: max_file_size_mb, "
+            "backup_count; wandb: project/entity/mode/tags/name/notes/group/"
+            "job_type/dir; mlflow: tracking_uri/experiment_name). Unknown "
+            "keys fail loudly."
+        ),
+    )
 
     # --- Advanced ---
     max_workers: int = Field(
@@ -211,8 +268,6 @@ class ExperimentConfig(BaseModel):
     data_sample: float = Field(
         default=1.0, description="Fraction of data to use (0.0, 1.0]. 1.0 = full dataset"
     )
-    drift_detection: Literal["none", "ks", "psi", "domain_classifier", "both"] = "psi"
-    shap_enabled: bool = False
 
     # --- LLM ---
     llm_enabled: bool = False
@@ -254,6 +309,21 @@ class ExperimentConfig(BaseModel):
         if not isinstance(data, dict):
             return data
 
+        # Deprecation guard: removed keys must fail loudly, not silently no-op.
+        for key in _REMOVED_CONFIG_KEYS:
+            if key in data:
+                raise ValueError(
+                    f"'{key}' was removed; {_REMOVED_CONFIG_KEYS[key]} "
+                    "(see docs/pipeline-architecture.md)"
+                )
+        for full_key, reason in _REMOVED_NESTED_CONFIG_KEYS.items():
+            section, key = full_key.split(".", 1)
+            sub = data.get(section)
+            if isinstance(sub, dict) and key in sub:
+                raise ValueError(
+                    f"'{full_key}' was removed; {reason} (see docs/pipeline-architecture.md)"
+                )
+
         # Backward compatibility for legacy step-level flat keys.
         legacy: dict[str, Any] = {}
         for key in _LEGACY_PIPELINE_KEYS:
@@ -261,10 +331,18 @@ class ExperimentConfig(BaseModel):
                 legacy[key] = data.pop(key)
 
         if legacy:
+            user_provided_pipeline = "pipeline" in data
             pipeline = data.setdefault("pipeline", {})
             steps = pipeline.setdefault("steps", [])
             if not isinstance(steps, list):
                 raise ValueError("pipeline.steps must be a list")
+            if not user_provided_pipeline and not steps:
+                # Legacy keys must MODIFY the default 8-step pipeline, not
+                # replace it with a fragment: a steps list containing only the
+                # rewritten key would drop every other step (e.g. no
+                # FEATURE_ENGINEERING step => no ``training_features`` input
+                # => the training DAG cannot execute).
+                steps.extend({"name": step.value} for step in StepName)
 
             def _upsert(
                 step_name: str,
@@ -292,13 +370,6 @@ class ExperimentConfig(BaseModel):
 
             if "run_quality_audit" in legacy:
                 _upsert("quality_audit", enabled=bool(legacy["run_quality_audit"]))
-            quality_params: dict[str, Any] = {}
-            if "auto_clean_noise" in legacy:
-                quality_params["auto_clean_noise"] = bool(legacy["auto_clean_noise"])
-            if "noise_quality_threshold" in legacy:
-                quality_params["noise_quality_threshold"] = legacy["noise_quality_threshold"]
-            if quality_params:
-                _upsert("quality_audit", params=quality_params)
 
             if "run_leakage_audit" in legacy:
                 _upsert("leakage_audit", enabled=bool(legacy["run_leakage_audit"]))
@@ -360,8 +431,42 @@ class ExperimentConfig(BaseModel):
             self.cv_strategy = (
                 CVStrategy.STRATIFIED if self.task == TaskType.CLASSIFICATION else CVStrategy.KFOLD
             )
-        if self.run_hpo and self.hpo_n_trials <= 0:
-            raise ValueError("hpo_n_trials must be > 0 when run_hpo is True")
+        return self
+
+    @model_validator(mode="after")
+    def validate_task_consistency(self) -> "ExperimentConfig":
+        """Fail at parse time on task-incompatible metrics, CV strategy, or primary metric.
+
+        Without this, a wrong-task metric surfaces only as a per-model ``KeyError``
+        mid-run (previously swallowed into a green-but-empty result), and a
+        ``stratified`` split on a continuous regression target fails only when
+        folds are being drawn.
+        """
+        from iter8ml.engine.evaluator import available_metric_names
+
+        task = self.task.value
+        valid = set(available_metric_names(task))
+        unknown = [m for m in self.metrics if m not in valid]
+        if unknown:
+            raise ValueError(
+                f"Unknown metrics for task '{task}': {unknown}. Valid metrics: {sorted(valid)}"
+            )
+        if self.task == TaskType.REGRESSION and self.cv_strategy == CVStrategy.STRATIFIED:
+            raise ValueError(
+                "cv_strategy='stratified' requires class labels and is invalid for "
+                "regression tasks; use 'kfold' or 'timeseries'"
+            )
+        if self.task == TaskType.REGRESSION and self.positive_class is not None:
+            raise ValueError(
+                f"positive_class={self.positive_class!r} is only valid for classification "
+                "tasks; remove it from this regression config"
+            )
+        if self.primary_metric is None:
+            self.primary_metric = self.metrics[0] if self.metrics else None
+        elif self.primary_metric not in self.metrics:
+            raise ValueError(
+                f"primary_metric '{self.primary_metric}' must be one of metrics {self.metrics}"
+            )
         return self
 
     @classmethod
@@ -469,6 +574,12 @@ class HardwareProfile(BaseModel):
     @classmethod
     def configure_omp_threads(cls, threads: int | None = None) -> int:
         global _omp_configured
+        # Passive wait policy prevents libgomp active-spin live-locks on
+        # Intel hybrid CPUs (P+E cores, no SMT): spinning worker threads can
+        # starve on heterogeneous cores during GBDT training barriers.
+        # Must be set before the OpenMP runtime initializes (i.e. before any
+        # GBDT library loads libgomp) — same constraint as the thread cap.
+        os.environ.setdefault("OMP_WAIT_POLICY", "passive")
         if threads is None:
             if _omp_configured:
                 return int(os.environ.get("OMP_NUM_THREADS", str(cls._get_default_threads())))

@@ -238,6 +238,7 @@ class ExportService:
         key: str,
         output_dir: str | Path | None = None,
         target_col: str | None = None,
+        positive_class: str | float | bool | None = None,
     ) -> Path:
         """Export a champion model as a portable directory.
 
@@ -245,6 +246,9 @@ class ExportService:
             key: Registry key (e.g. "experiment_name:classification").
             output_dir: Output directory. Defaults to workspace/exports/<key>.
             target_col: Target column name for prediction script.
+            positive_class: Positive class used in training, recorded in
+                metadata.json so consumers can interpret predict_proba
+                column orientation.
 
         Returns:
             Path to the export directory.
@@ -255,6 +259,10 @@ class ExportService:
 
         model_name = entry["model"]
         artifact_path = entry["artifact_path"]
+
+        # Validate before any filesystem writes so failures never leave a
+        # half-populated export directory.
+        self._validate_entry(key, model_name)
 
         if output_dir is None:
             safe_key = key.replace(":", "_").replace("/", "_")
@@ -269,7 +277,14 @@ class ExportService:
 
         self._copy_preprocessing(export_path)
 
-        self._write_metadata(key, export_path, model_name, entry, target_col=target_col)
+        self._write_metadata(
+            key,
+            export_path,
+            model_name,
+            entry,
+            target_col=target_col,
+            positive_class=positive_class,
+        )
 
         self._write_predictor(export_path, model_name)
 
@@ -284,6 +299,27 @@ class ExportService:
         if not init_path.exists():
             init_path.write_text("")
 
+    def _validate_entry(self, key: str, model_name: str) -> None:
+        """Validate registry entry fields, raising before any export writes."""
+        from iter8ml.engine.models.factory import _MODEL_REGISTRY, available_model_names
+
+        normalized = model_name.lower().replace(" ", "_")
+        if normalized not in _MODEL_REGISTRY:
+            supported = ", ".join(available_model_names())
+            raise ValueError(
+                f"Unknown model '{model_name}' in registry entry for key '{key}'. "
+                f"Supported models: {supported}. "
+                "Re-register the champion with a supported model name."
+            )
+
+        if ":" not in key:
+            raise ValueError(
+                f"Registry key '{key}' is missing the task suffix. "
+                "Expected format '<name>:<task>' where task is 'classification' "
+                "or 'regression' (e.g. 'experiment:classification'). "
+                "Re-register the champion with a properly formatted key."
+            )
+
     def _write_metadata(
         self,
         key: str,
@@ -291,15 +327,13 @@ class ExportService:
         model_name: str,
         entry: dict[str, Any],
         target_col: str | None = None,
+        positive_class: str | float | bool | None = None,
     ) -> None:
         from iter8ml.engine.models.factory import _MODEL_REGISTRY
 
-        model_class_info = _MODEL_REGISTRY.get(
-            model_name.lower().replace(" ", "_"),
-            ("iter8ml.engine.models.catboost_model", "CatBoostModel"),
-        )
-
-        task = key.split(":", 1)[1] if ":" in key else "classification"
+        normalized = model_name.lower().replace(" ", "_")
+        model_class_info = _MODEL_REGISTRY[normalized]
+        task = key.split(":", 1)[1]
 
         metadata = {
             "model_name": model_name,
@@ -310,6 +344,10 @@ class ExportService:
             "score": entry.get("score"),
             "run_id": entry.get("run_id"),
             "target_col": target_col or "",
+            # Consumers need this to interpret predict_proba column order: the
+            # positive class was encoded to 1 during training (positive_class),
+            # else encoding was appearance-order.
+            "positive_class": positive_class if positive_class is not None else "",
             "registered_at": entry.get("registered_at"),
         }
         with open(export_path / "metadata.json", "w") as f:

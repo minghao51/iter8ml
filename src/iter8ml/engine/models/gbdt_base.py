@@ -6,6 +6,7 @@ from typing import Any
 
 import numpy as np
 
+from iter8ml.config import HardwareProfile
 from iter8ml.exceptions import ModelNotFittedError
 
 
@@ -37,6 +38,17 @@ class BaseGBDTModel:
     def apply_overrides(self, overrides: dict[str, Any]) -> None:
         """Merge per-model hyperparameter overrides into self.params."""
         self.params.update(overrides)
+
+    @staticmethod
+    def _default_thread_count() -> int:
+        """Default per-library thread count, aligned with the OMP cap (ADR-0004/0006).
+
+        GBDT libraries fall back to their own core detection when their thread
+        parameter is unset; pinning it to the same cap as ``OMP_NUM_THREADS``
+        keeps training deterministic and hybrid-CPU safe even when the
+        environment seam is bypassed.
+        """
+        return HardwareProfile.configure_omp_threads()
 
     def _ensure_fitted(self) -> None:
         if not self._fitted or self._model is None:

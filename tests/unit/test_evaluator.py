@@ -178,6 +178,54 @@ def test_compute_lift_lower_is_better():
     assert lift == 0.5
 
 
-def test_compute_lift_zero_baseline():
+def test_compute_lift_zero_baseline_returns_none():
+    """Lift over a 0 baseline is undefined — None, not a fabricated 0.0."""
     lift = Evaluator.compute_lift({"acc": 0.9}, {"acc": 0.0}, "acc")
-    assert lift == 0.0
+    assert lift is None
+
+
+def test_compute_lift_missing_metric_returns_none():
+    assert Evaluator.compute_lift({"roc_auc": 0.9}, {"f1": 0.8}, "roc_auc") is None
+    assert Evaluator.compute_lift({"f1": 0.9}, {"roc_auc": 0.8}, "roc_auc") is None
+    assert Evaluator.compute_lift({}, {"roc_auc": 0.8}, "roc_auc") is None
+
+
+def test_compute_lift_happy_path_unchanged():
+    assert Evaluator.compute_lift({"roc_auc": 0.9}, {"roc_auc": 0.8}, "roc_auc") == pytest.approx(
+        0.125, rel=1e-3
+    )
+
+
+def test_get_cv_split_seed_changes_fold_assignment():
+    import numpy as np
+
+    X = np.arange(60).reshape(30, 2).astype(float)
+    y = np.array([0, 1] * 15)
+    folds_a = list(get_cv_split(CVStrategy.STRATIFIED, n_splits=3, random_seed=1).split(X, y))
+    folds_b = list(get_cv_split(CVStrategy.STRATIFIED, n_splits=3, random_seed=2).split(X, y))
+    assert [tuple(a[1]) for a in folds_a] != [tuple(b[1]) for b in folds_b]
+
+
+def test_evaluate_with_std_returns_mean_and_fold_std():
+    import numpy as np
+
+    from iter8ml.config import ExperimentConfig
+    from iter8ml.constants import TaskType
+    from iter8ml.engine.models.baselines import NaiveBaseline
+
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(60, 3))
+    y = (X[:, 0] + rng.normal(scale=0.1, size=60) > 0).astype(float)
+    config = ExperimentConfig(
+        name="t",
+        task=TaskType.CLASSIFICATION,
+        target_col="y",
+        data_path="",
+        cv_folds=4,
+        metrics=["accuracy"],
+    )
+    means, stds = Evaluator(config).evaluate_with_std(NaiveBaseline, X, y)
+    assert set(means) == {"accuracy"}
+    assert set(stds) == {"accuracy"}
+    assert all(np.isfinite(v) for v in means.values())
+    assert all(v >= 0 for v in stds.values())

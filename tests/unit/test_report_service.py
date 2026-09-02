@@ -1,6 +1,7 @@
 """Tests for structured experiment reporting."""
 
 import json
+import logging
 
 from iter8ml.services.reporting import (
     ReportService,
@@ -50,6 +51,178 @@ def test_build_report_classification_orders_by_primary_score(tmp_path):
 
     assert [entry.model for entry in report.leaderboard] == ["ModelHigh", "ModelLow"]
     assert report.latest_run.model == "ModelHigh"
+
+
+def test_build_report_includes_rotated_backups(tmp_path):
+    ws = Workspace(root=tmp_path)
+    log_path = ws.experiments_path
+    backup = log_path.parent / (log_path.name + ".1")
+    backup.write_text(
+        json.dumps(
+            {
+                "event": "model_completed",
+                "run_id": "run_rotated",
+                "model": "ModelRotated",
+                "task": "classification",
+                "cv_scores": {"roc_auc": 0.70},
+                "timestamp": "2026-04-01T00:00:00Z",
+            }
+        )
+        + "\n"
+    )
+    log_path.write_text(
+        json.dumps(
+            {
+                "event": "model_completed",
+                "run_id": "run_live",
+                "model": "ModelLive",
+                "task": "classification",
+                "cv_scores": {"roc_auc": 0.90},
+                "timestamp": "2026-04-02T00:00:00Z",
+            }
+        )
+        + "\n"
+    )
+
+    report = ReportService(workspace=ws).build_report()
+
+    assert {entry.model for entry in report.leaderboard} == {"ModelLive", "ModelRotated"}
+
+
+def test_build_report_dedupe_keeps_newest_timestamp(tmp_path):
+    ws = Workspace(root=tmp_path)
+    log_path = ws.experiments_path
+    backup = log_path.parent / (log_path.name + ".1")
+    stale = {
+        "event": "model_completed",
+        "run_id": "run_x",
+        "model": "ModelX",
+        "task": "classification",
+        "cv_scores": {"roc_auc": 0.70},
+        "artifact_path": "model.pkl",
+        "timestamp": "2026-04-01T00:00:00Z",
+    }
+    backup.write_text(json.dumps(stale) + "\n")
+    newest = dict(stale, cv_scores={"roc_auc": 0.95}, timestamp="2026-04-03T00:00:00Z")
+    log_path.write_text(json.dumps(newest) + "\n")
+
+    report = ReportService(workspace=ws).build_report()
+
+    assert len(report.leaderboard) == 1
+    assert report.leaderboard[0].primary_score == 0.95
+
+
+def test_build_report_torn_trailing_line_does_not_brick_report(tmp_path, caplog):
+    ws = Workspace(root=tmp_path)
+    log_path = ws.experiments_path
+    log_path.write_text(
+        json.dumps(
+            {
+                "event": "model_completed",
+                "run_id": "run_a",
+                "model": "ModelA",
+                "task": "classification",
+                "cv_scores": {"roc_auc": 0.88},
+                "timestamp": "2026-04-02T00:00:00Z",
+            }
+        )
+        + '\n{"event": "trun'
+    )
+
+    with caplog.at_level(logging.WARNING):
+        report = ReportService(workspace=ws).build_report()
+
+    assert [entry.model for entry in report.leaderboard] == ["ModelA"]
+    assert any("trailing" in record.getMessage() for record in caplog.records)
+
+
+def _make_event(run_id: str, model: str, task: str, cv_scores: dict, timestamp: str) -> dict:
+    return {
+        "event": "model_completed",
+        "run_id": run_id,
+        "model": model,
+        "task": task,
+        "cv_scores": cv_scores,
+        "timestamp": timestamp,
+    }
+
+
+def test_build_report_task_groups_never_interleave(tmp_path):
+    ws = Workspace(root=tmp_path)
+    events = [
+        _make_event("r1", "RegSlow", "regression", {"rmse": 3.0}, "2026-04-03T00:00:00Z"),
+        _make_event("c1", "ModelLow", "classification", {"roc_auc": 0.81}, "2026-04-04T00:00:00Z"),
+        _make_event("r2", "RegGood", "regression", {"rmse": 1.0}, "2026-04-01T00:00:00Z"),
+        _make_event("c2", "ModelHigh", "classification", {"roc_auc": 0.92}, "2026-04-02T00:00:00Z"),
+    ]
+    ws.experiments_path.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+
+    report = ReportService(workspace=ws).build_report()
+
+    ordered = [(entry.task, entry.model) for entry in report.leaderboard]
+    assert ordered == [
+        ("classification", "ModelHigh"),
+        ("classification", "ModelLow"),
+        ("regression", "RegGood"),
+        ("regression", "RegSlow"),
+    ]
+
+
+def test_build_report_task_filter(tmp_path):
+    ws = Workspace(root=tmp_path)
+    events = [
+        _make_event("c1", "ModelC", "classification", {"roc_auc": 0.92}, "2026-04-05T00:00:00Z"),
+        _make_event("r1", "ModelR", "regression", {"rmse": 1.0}, "2026-04-01T00:00:00Z"),
+    ]
+    ws.experiments_path.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+
+    report = ReportService(workspace=ws).build_report(task="regression")
+
+    assert [entry.model for entry in report.leaderboard] == ["ModelR"]
+    assert report.latest_run is not None
+    assert report.latest_run.model == "ModelR"
+
+
+def test_build_report_latest_run_by_timestamp_under_shuffled_insertion(tmp_path):
+    ws = Workspace(root=tmp_path)
+    backup = ws.experiments_path.parent / (ws.experiments_path.name + ".1")
+    events_live = [  # newest line FIRST — file order ≠ time order
+        _make_event(
+            "c_new", "ModelNewest", "classification", {"roc_auc": 0.90}, "2026-04-05T00:00:00Z"
+        ),
+        _make_event(
+            "c_mid", "ModelMid", "classification", {"roc_auc": 0.85}, "2026-04-04T00:00:00Z"
+        ),
+    ]
+    ws.experiments_path.write_text("\n".join(json.dumps(e) for e in events_live) + "\n")
+    backup.write_text(
+        json.dumps(
+            _make_event(
+                "c_old", "ModelOld", "classification", {"roc_auc": 0.80}, "2026-04-01T00:00:00Z"
+            )
+        )
+        + "\n"
+    )
+
+    report = ReportService(workspace=ws).build_report()
+
+    assert report.latest_run is not None
+    assert report.latest_run.model == "ModelNewest"
+
+
+def test_build_report_unscored_entries_rank_last(tmp_path):
+    ws = Workspace(root=tmp_path)
+    events = [
+        _make_event("r_empty", "NoScores", "classification", {}, "2026-04-06T00:00:00Z"),
+        _make_event("c1", "RealHigh", "classification", {"roc_auc": 0.80}, "2026-04-02T00:00:00Z"),
+        _make_event("r2", "RealLow", "regression", {"rmse": 5.0}, "2026-04-03T00:00:00Z"),
+    ]
+    ws.experiments_path.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+
+    report = ReportService(workspace=ws).build_report()
+
+    # The unscored sentinel (metric "score") must rank after every real result.
+    assert [entry.model for entry in report.leaderboard] == ["RealHigh", "RealLow", "NoScores"]
 
 
 def test_build_report_regression_uses_r2_by_default(tmp_path):

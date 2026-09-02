@@ -22,10 +22,12 @@ class CalibratedModel:
         base_model: Any,
         method: Literal["platt", "isotonic", "none"] = "none",
         cv_folds: int = 3,
+        random_seed: int = 42,
     ):
         self.base_model = base_model
         self.method = method
         self.cv_folds = cv_folds
+        self.random_seed = random_seed
         self._calibrated: Any = None
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> CalibrationResult:
@@ -46,7 +48,7 @@ class CalibratedModel:
             )
 
         sk_method = "sigmoid" if self.method == "platt" else "isotonic"
-        cv = StratifiedKFold(n_splits=self.cv_folds, shuffle=True, random_state=42)
+        cv = StratifiedKFold(n_splits=self.cv_folds, shuffle=True, random_state=self.random_seed)
 
         self._calibrated = CalibratedClassifierCV(
             estimator=self.base_model,

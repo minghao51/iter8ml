@@ -115,8 +115,7 @@ if _hamilton_config is not None:
         domain_drift_report: Any,
     ) -> DriftNodeResult:
         return DriftNodeResult(
-            drift_detected=psi_drift_report.drift_detected
-            or domain_drift_report.drift_detected,
+            drift_detected=psi_drift_report.drift_detected or domain_drift_report.drift_detected,
             psi_report=psi_drift_report,
             domain_report=domain_drift_report,
         )

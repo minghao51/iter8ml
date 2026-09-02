@@ -12,6 +12,7 @@ from sklearn.datasets import make_classification
 
 from iter8ml.engine.models.catboost_model import CatBoostModel
 from iter8ml.services.export import ExportService
+from iter8ml.session import ExperimentSession
 from iter8ml.workspace import Workspace
 
 
@@ -73,6 +74,55 @@ def test_exported_package_predictor_runs_end_to_end(tmp_path: Path):
 
     assert isinstance(preds, np.ndarray)
     assert len(preds) == len(input_df)
+
+
+def test_exported_predictor_drops_target_column_roundtrip(tmp_path: Path):
+    """Export with target_col set, then run the predictor on a CSV that
+    INCLUDES the label column: predictions must match the run without it
+    (the label column must be dropped, not shifted into the features)."""
+    pytest.importorskip("hamilton")
+    ws = Workspace(root=tmp_path / "workspace")
+    ws.root.mkdir(parents=True)
+    ws.artifacts_dir.mkdir(parents=True)
+
+    X, y = make_classification(n_samples=80, n_features=4, random_state=42)
+    model = CatBoostModel(task="classification")
+    model.fit(X, y)
+    artifact_path = ws.artifacts_dir / "catboost_roundtrip"
+    model.save(str(artifact_path))
+
+    registry = {
+        "roundtrip_test:classification": {
+            "model": "CatBoost",
+            "run_id": "exp_rt_001",
+            "score": 0.9,
+            "metric_name": "roc_auc",
+            "artifact_path": str(artifact_path),
+            "registered_at": "2026-04-27T00:00:00Z",
+        }
+    }
+    ws.registry_path.write_text(json.dumps(registry), encoding="utf-8")
+
+    session = ExperimentSession(workspace=ws)
+    export_path = session.export("roundtrip_test:classification", target_col="target")
+
+    metadata = json.loads((export_path / "metadata.json").read_text())
+    assert metadata["target_col"] == "target"
+
+    features = {f"feat_{i}": X[:, i] for i in range(X.shape[1])}
+    df_with_label = pl.DataFrame({**features, "target": y})
+    with_label_path = tmp_path / "with_label.csv"
+    without_label_path = tmp_path / "without_label.csv"
+    df_with_label.write_csv(with_label_path)
+    df_with_label.drop("target").write_csv(without_label_path)
+
+    predictor = _load_predictor(export_path)
+    preds_with_label = predictor.predict(str(with_label_path))
+    preds_without_label = predictor.predict(str(without_label_path))
+
+    assert isinstance(preds_with_label, np.ndarray)
+    assert len(preds_with_label) == df_with_label.height
+    np.testing.assert_array_equal(preds_with_label, preds_without_label)
 
 
 def test_exported_predictor_uses_hamilton_preprocessing(tmp_path: Path):

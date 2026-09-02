@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import polars as pl
 
@@ -16,6 +16,9 @@ _DIRECT_FIELDS: tuple[str, ...] = (
     "target_col",
     "cv_folds",
     "metrics",
+    "primary_metric",
+    "ignore_cols",
+    "positive_class",
     "afe_top_k",
     "afe_lift_threshold",
     "afe_pruning",
@@ -190,6 +193,28 @@ class PipelineExecutor:
 
         targets = final_vars or _MODE_FINAL_VARS.get(self._mode, ["processed_dataframe"])
         return self._dr.execute(targets, inputs=inputs, overrides=overrides)  # type: ignore[no-any-return]
+
+    def run_prep(
+        self,
+        config: ExperimentConfig,
+        df: pl.DataFrame,
+        run_id: str = "hpo",
+    ) -> pl.DataFrame:
+        """Run the shared prep chain over a frame; return it with the target.
+
+        ignore_cols filter → null fill → date decomposition → categorical
+        encoding → target validation: exactly the preprocessing the training
+        DAG applies, for non-training surfaces (HPO) that hand the frame to
+        DataAdapter themselves. String categoricals leave as numeric codes,
+        so GBDT constructors never see raw strings.
+        """
+        result = self.execute(
+            inputs=_config_to_inputs(config, df, run_id=run_id, vram_gb=0.0),
+            # validate_target is pulled alongside processed_dataframe purely
+            # for its target-presence check; the returned frame is the same.
+            final_vars=["processed_dataframe", "validate_target"],
+        )
+        return cast(pl.DataFrame, result["validate_target"])
 
     def describe_pipeline(self, spec: PipelineSpec) -> list[dict[str, Any]]:
         return [

@@ -90,6 +90,9 @@ class FTTransformerModel:
                 setattr(self.config, key, value)
             else:
                 setattr(self, key, value)
+        # __init__ copies config fields onto self; keep random_seed in sync
+        # after a config override so fit() seeds torch with the intended value.
+        self.random_seed = self.config.random_seed
 
     def fit(self, X: np.ndarray, y: np.ndarray, **kwargs: Any) -> None:
         from accelerate import Accelerator  # type: ignore[import-untyped, import-not-found]

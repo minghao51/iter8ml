@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -8,11 +9,13 @@ from typing import Any
 import numpy as np
 import polars as pl
 
+from iter8ml.exceptions import ModelFitError
 from iter8ml.services.registry import RegistryService
 from iter8ml.services.reporting import metric_sort_value, metric_value_is_better
 from iter8ml.workspace import Workspace
 
 _GBDT_MODEL_NAMES = frozenset({"catboost", "lightgbm", "xgboost"})
+logger = logging.getLogger(__name__)
 
 
 def _fold_indices_from_split(
@@ -54,6 +57,8 @@ class ModelResult:
     cv_scores: dict[str, float]
     artifact_path: str
     duration_seconds: float
+    cv_std: dict[str, float] | None = None
+    calibration_method: str | None = None
     lift_over_baselines: dict[str, float] | None = None
     params: dict | None = None
     error: str | None = None
@@ -116,6 +121,7 @@ def baseline_scores(
     cv_strategy: str,
     metrics: list[str],
     split_frame: pl.DataFrame | None = None,
+    random_seed: int = 42,
 ) -> dict[str, dict[str, float]]:
     from iter8ml.config import CVStrategy, ExperimentConfig
     from iter8ml.constants import TaskType
@@ -129,6 +135,7 @@ def baseline_scores(
         cv_folds=cv_folds,
         cv_strategy=CVStrategy(cv_strategy),
         metrics=metrics,
+        random_seed=random_seed,
     )
     evaluator = Evaluator(config)
     fold_indices = None
@@ -145,7 +152,8 @@ def baseline_scores(
                 scores[name] = evaluator.evaluate(
                     cls, data_prep_result.X, data_prep_result.y, task=task
                 )
-        except (ValueError, RuntimeError):
+        except (ValueError, RuntimeError) as e:
+            logger.warning("baseline %s skipped: %s", name, e)
             continue
     return scores
 
@@ -162,7 +170,9 @@ def _evaluate_model(
     cv_strategy: str,
     metrics: list[str],
     fold_indices: list[tuple[np.ndarray, np.ndarray]] | None = None,
-) -> dict[str, float]:
+    random_seed: int = 42,
+    model_ctor_kwargs: dict[str, Any] | None = None,
+) -> tuple[dict[str, float], dict[str, float]]:
     from iter8ml.config import CVStrategy, ExperimentConfig
     from iter8ml.constants import TaskType
     from iter8ml.engine.evaluator import Evaluator
@@ -175,11 +185,15 @@ def _evaluate_model(
         cv_folds=cv_folds,
         cv_strategy=CVStrategy(cv_strategy),
         metrics=metrics,
+        random_seed=random_seed,
     )
     evaluator = Evaluator(config)
+    ctor_kwargs = model_ctor_kwargs or {}
     if fold_indices is not None:
-        return evaluator.evaluate_with_folds(model_cls, X, y, fold_indices, task=task)
-    return evaluator.evaluate(model_cls, X, y, task=task)
+        return evaluator.evaluate_with_folds_and_std(
+            model_cls, X, y, fold_indices, task=task, **ctor_kwargs
+        )
+    return evaluator.evaluate_with_std(model_cls, X, y, task=task, **ctor_kwargs)
 
 
 def _extract_params(model: object) -> dict:
@@ -210,55 +224,85 @@ def _train_one(
     baseline_scores: dict[str, dict[str, float]],
     model_overrides: dict[str, dict[str, Any]] | None = None,
     fold_indices: list[tuple[np.ndarray, np.ndarray]] | None = None,
+    random_seed: int = 42,
+    primary_metric: str | None = None,
 ) -> ModelResult:
     start = time.time()
     n_features = X.shape[1]
     overrides = (model_overrides or {}).get(name)
+    # User-provided overrides win over the config seed.
+    effective_overrides = {"random_seed": random_seed, **(overrides or {})}
+    # FT-Transformer's ctor takes an explicit signature (no **kwargs); its seed
+    # flows through apply_overrides onto the full-data fit instead. Every other
+    # model accepts **kwargs and reads random_seed from self.params.
+    model_ctor_kwargs: dict[str, Any] = (
+        {} if name == "ft_transformer" else {"random_seed": random_seed}
+    )
 
     try:
         from iter8ml.engine.models.factory import get_model_class
 
         model_cls = get_model_class(name)
-        cv_scores = _evaluate_model(
-            model_cls, X, y, task, cv_folds, cv_strategy, metrics, fold_indices=fold_indices
+        cv_scores, cv_std = _evaluate_model(
+            model_cls,
+            X,
+            y,
+            task,
+            cv_folds,
+            cv_strategy,
+            metrics,
+            fold_indices=fold_indices,
+            random_seed=random_seed,
+            model_ctor_kwargs=model_ctor_kwargs,
         )
 
         if name == "ft_transformer":
             n_classes = len(np.unique(y)) if task == "classification" else 1
             model = model_cls(task=task, n_features=n_features, n_classes=n_classes)
         else:
-            model = model_cls(task=task)
+            model = model_cls(task=task, random_seed=random_seed)
 
-        if overrides and hasattr(model, "apply_overrides"):
-            model.apply_overrides(overrides)
+        if hasattr(model, "apply_overrides"):
+            model.apply_overrides(effective_overrides)
 
+        calibration_method: str | None = None
         if calibration != "none" and task == "classification":
             from iter8ml.engine.calibration import CalibratedModel
 
-            model = CalibratedModel(model, method=calibration)  # type: ignore[arg-type]
-        model.fit(X, y)
+            model = CalibratedModel(model, method=calibration, random_seed=random_seed)  # type: ignore[arg-type]
+        fit_result = model.fit(X, y)
+        if calibration != "none" and task == "classification":
+            if fit_result is not None and getattr(fit_result, "applied", False):
+                calibration_method = fit_result.method
+            else:
+                logger.warning(
+                    "Calibration method '%s' was requested but not applied for '%s' "
+                    "(model may lack predict_proba); scores and artifact are uncalibrated.",
+                    calibration,
+                    name,
+                )
+        duration = time.time() - start
 
         artifact_path = str(workspace.artifacts_dir / f"{name}_{run_id}")
         model.save(artifact_path)
-        duration = time.time() - start
 
         lift: dict[str, float] = {}
-        primary_metric = metrics[0] if metrics else None
-        if baseline_scores and primary_metric:
+        primary = primary_metric or (metrics[0] if metrics else None)
+        if baseline_scores and primary:
             from iter8ml.engine.evaluator import Evaluator
 
-            lift = {
-                f"lift_over_{bl_name}": round(
-                    Evaluator.compute_lift(cv_scores, bl_scores, primary_metric), 4
-                )
-                for bl_name, bl_scores in baseline_scores.items()
-            }
+            for bl_name, bl_scores in baseline_scores.items():
+                value = Evaluator.compute_lift(cv_scores, bl_scores, primary)
+                if value is not None:
+                    lift[f"lift_over_{bl_name}"] = round(value, 4)
         return ModelResult(
             model_name=model.model_name,
             input_name=name,
             cv_scores=cv_scores,
             artifact_path=artifact_path,
             duration_seconds=round(duration, 2),
+            cv_std=cv_std,
+            calibration_method=calibration_method,
             lift_over_baselines=lift or None,
             params=_extract_params(model),
         )
@@ -289,6 +333,8 @@ def training_results(
     max_workers: int = 1,
     strict_thread_safety: bool = True,
     split_frame: pl.DataFrame | None = None,
+    random_seed: int = 42,
+    primary_metric: str | None = None,
 ) -> list[ModelResult]:
     X, _ = training_features
     y = data_prep_result.y
@@ -323,6 +369,8 @@ def training_results(
                     baseline_scores,
                     model_overrides=model_overrides,
                     fold_indices=fold_indices,
+                    random_seed=random_seed,
+                    primary_metric=primary_metric,
                 )
             )
         return results
@@ -345,6 +393,8 @@ def training_results(
                 baseline_scores,
                 model_overrides=model_overrides,
                 fold_indices=fold_indices,
+                random_seed=random_seed,
+                primary_metric=primary_metric,
             ): name
             for name in non_baseline
         }
@@ -378,12 +428,16 @@ def training_state(
     experiment_name: str,
     task: str,
     workspace: Workspace,
+    models_to_run: list[str] | None = None,
+    primary_metric: str | None = None,
 ) -> TrainingState:
     results: dict[str, Any] = {}
     leaderboard: list[dict[str, Any]] = []
     best_model: str | None = None
     best_score: float | None = None
-    primary_metric = metrics[0] if metrics else None
+    # Single ranking metric shared by lift, leaderboard, and registry promotion
+    # (config.primary_metric, defaulted to metrics[0] at parse time).
+    primary = primary_metric or (metrics[0] if metrics else None)
 
     for r in training_results:
         key = r.input_name
@@ -394,6 +448,8 @@ def training_state(
         entry = {
             "model_name": r.model_name,
             "cv_scores": r.cv_scores,
+            "cv_std": r.cv_std or {},
+            "calibration": r.calibration_method,
             "artifact_path": r.artifact_path,
             "duration_seconds": r.duration_seconds,
             "lift_over_baselines": r.lift_over_baselines,
@@ -403,20 +459,35 @@ def training_state(
         leaderboard.append(
             {
                 "model": r.model_name,
-                "score": r.cv_scores.get(primary_metric, 0) if primary_metric else 0,
-                "metric": primary_metric,
+                "score": r.cv_scores.get(primary, 0) if primary else 0,
+                "std": (r.cv_std or {}).get(primary) if primary else None,
+                "metric": primary,
+                "calibration": r.calibration_method,
             }
         )
-        if primary_metric:
-            score = r.cv_scores.get(primary_metric, 0)
-            if best_score is None or metric_value_is_better(primary_metric, score, best_score):
+        if primary:
+            score = r.cv_scores.get(primary, 0)
+            if best_score is None or metric_value_is_better(primary, score, best_score):
                 best_score = score
                 best_model = key
 
     for bl_name, bl_scores in baseline_scores.items():
         results[bl_name] = {"cv_scores": bl_scores, "is_baseline": True}
 
-    if best_model and primary_metric:
+    # Fail the run when every requested model failed: an empty leaderboard that
+    # still exits 0 is the worst failure mode a reporting harness can have.
+    requested = [m for m in (models_to_run or []) if m not in ("naive_baseline", "linear_baseline")]
+    if requested:
+        succeeded = [r for r in training_results if r.error is None]
+        if not succeeded:
+            first_error = next((r.error for r in training_results if r.error), "unknown error")
+            raise ModelFitError(
+                f"All {len(requested)} requested models failed to train. "
+                f"First error: {first_error}",
+                context={"run_id": run_id, "requested_models": requested},
+            )
+
+    if best_model and primary:
         registry = RegistryService(workspace)
         artifact = results.get(best_model, {}).get("artifact_path", "")
         registry.update_if_better(
@@ -425,14 +496,12 @@ def training_state(
             run_id,
             best_score if best_score is not None else 0.0,
             artifact,
-            metric_name=primary_metric,
+            metric_name=primary,
         )
 
     leaderboard.sort(
         key=lambda x: (
-            metric_sort_value(primary_metric, x.get("score", 0))
-            if primary_metric
-            else x.get("score", 0)
+            metric_sort_value(primary, x.get("score", 0)) if primary else x.get("score", 0)
         ),
         reverse=True,
     )
@@ -441,5 +510,5 @@ def training_state(
         leaderboard=leaderboard,
         best_model=best_model,
         best_score=best_score,
-        best_metric=primary_metric,
+        best_metric=primary,
     )

@@ -41,6 +41,8 @@ class CatBoostModel(BaseGBDTModel):
             kwargs.setdefault("classes_count", self._n_classes)
         kwargs["verbose"] = False
         kwargs["random_seed"] = seed
+        # Pin threads to the OMP cap; user-supplied thread_count wins.
+        kwargs.setdefault("thread_count", self._default_thread_count())
         return kwargs
 
     def _create_model(self, params: dict[str, Any]) -> CatBoostClassifier | CatBoostRegressor:

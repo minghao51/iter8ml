@@ -28,6 +28,8 @@ class XGBoostModel(BaseGBDTModel):
         }
         if objective == "multi:softprob":
             base["num_class"] = n_cls
+        # Pin threads to the OMP cap before user overrides can take effect.
+        base.setdefault("nthread", self._default_thread_count())
         base.update(self.params)
         return base
 

@@ -5,6 +5,7 @@ from pathlib import Path
 import typer
 
 from iter8ml.config import HardwareProfile
+from iter8ml.services.registry import RegistryService
 from iter8ml.workspace import Workspace
 
 app = typer.Typer(name="iter8", help="A high-velocity iteration framework for tabular ML")
@@ -28,7 +29,7 @@ def init(
     workspace = Workspace()
     workspace.init()
     if force_reset_registry:
-        workspace.registry_path.write_text("{}")
+        RegistryService(workspace=workspace).reset()
     typer.echo("Workspace initialized.")
     if demo:
         demo_path = workspace.seed_demo_data()

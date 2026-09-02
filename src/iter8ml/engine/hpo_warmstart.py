@@ -22,6 +22,7 @@ class WarmstartInjection(BaseModel):
     n_skipped_missing_scores: int = 0
     n_skipped_missing_params: int = 0
     n_skipped_invalid_trials: int = 0
+    n_skipped_metric_mismatch: int = 0
     model_name: str
     source_log: str
 
@@ -93,6 +94,7 @@ def create_warmstarted_study(
     log_path: str = "workspace/experiments.jsonl",
     n_trials: int = 50,
     pruner: str = "median",
+    primary_metric: str | None = None,
 ) -> tuple[optuna.Study, WarmstartInjection]:
     """Create an Optuna study pre-warmed with trials from historical experiment logs.
 
@@ -102,6 +104,14 @@ def create_warmstarted_study(
         log_path: Path to experiments JSONL log
         n_trials: Total trials for the study (used for pruner sizing)
         pruner: Pruner type ("median", "hyperband", "nop")
+        primary_metric: The current study's primary metric. Direction safety:
+            a trial's value is injected ONLY when the historical event verifiably
+            scored that same metric (the metric appears among the event's
+            ``cv_scores`` keys). Events scored on other metrics — or when the
+            primary metric is unknown (None) — are skipped (counted in
+            ``n_skipped_metric_mismatch``) because injecting a value for a
+            different metric could orient the study's ``best_value`` the wrong
+            way (e.g. a maximize score into a minimize study).
 
     Returns:
         Tuple of (Optuna study, WarmstartInjection metadata)
@@ -123,13 +133,18 @@ def create_warmstarted_study(
     skipped_missing_scores = 0
     skipped_missing_params = 0
     skipped_invalid_trials = 0
+    skipped_metric_mismatch = 0
     for event in matching_events:
         cv_scores = event.get("cv_scores", {})
         if not cv_scores:
             skipped_missing_scores += 1
             continue
 
-        primary_score = next(iter(cv_scores.values()), None)
+        if primary_metric is None or primary_metric not in cv_scores:
+            skipped_metric_mismatch += 1
+            continue
+
+        primary_score = cv_scores.get(primary_metric)
         if primary_score is None:
             skipped_missing_scores += 1
             continue
@@ -159,6 +174,7 @@ def create_warmstarted_study(
         n_skipped_missing_scores=skipped_missing_scores,
         n_skipped_missing_params=skipped_missing_params,
         n_skipped_invalid_trials=skipped_invalid_trials,
+        n_skipped_metric_mismatch=skipped_metric_mismatch,
         model_name=model_name,
         source_log=str(log_path),
     )

@@ -71,6 +71,44 @@ def test_export_raises_for_missing_key(export_workspace):
         service.export("nonexistent:key")
 
 
+def test_export_metadata_records_target_col(export_workspace):
+    service = ExportService(workspace=export_workspace)
+    export_path = service.export("credit_risk:classification", target_col="default")
+
+    metadata = json.loads((export_path / "metadata.json").read_text())
+    assert metadata["target_col"] == "default"
+
+
+def test_export_target_col_defaults_to_empty(export_workspace):
+    service = ExportService(workspace=export_workspace)
+    export_path = service.export("credit_risk:classification")
+
+    metadata = json.loads((export_path / "metadata.json").read_text())
+    assert metadata["target_col"] == ""
+
+
+def test_export_raises_for_unknown_model(export_workspace):
+    registry = json.loads(export_workspace.registry_path.read_text())
+    registry["credit_risk:classification"]["model"] = "DefinitelyNotAModel"
+    export_workspace.registry_path.write_text(json.dumps(registry))
+
+    service = ExportService(workspace=export_workspace)
+    with pytest.raises(ValueError, match="Unknown model 'DefinitelyNotAModel'") as excinfo:
+        service.export("credit_risk:classification")
+    assert "catboost" in str(excinfo.value)  # supported set is named
+
+
+def test_export_raises_for_missing_task_suffix(export_workspace):
+    registry = json.loads(export_workspace.registry_path.read_text())
+    entry = registry.pop("credit_risk:classification")
+    registry["credit_risk"] = entry
+    export_workspace.registry_path.write_text(json.dumps(registry))
+
+    service = ExportService(workspace=export_workspace)
+    with pytest.raises(ValueError, match="missing the task suffix"):
+        service.export("credit_risk")
+
+
 def test_export_raises_for_missing_artifact(tmp_path: Path):
     ws = Workspace(root=tmp_path / "workspace")
     ws.root.mkdir(parents=True)

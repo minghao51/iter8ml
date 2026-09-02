@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from iter8ml.config import ExperimentConfig
@@ -105,14 +105,15 @@ class TestPropertyEvaluatorLift:
     )
     def test_lift_zero_for_identical(self, model_val):
         baseline_val = model_val
+        assume(model_val != 0.0)  # 0 baseline → lift undefined (None), covered separately
         lift = Evaluator.compute_lift({"roc_auc": model_val}, {"roc_auc": baseline_val}, "roc_auc")
         assert lift == 0.0
 
     @settings(max_examples=50)
     @given(
         model_val=st.floats(0.0, 1.0, allow_nan=False, allow_infinity=False),
-        baseline_val=st.floats(0.0, 1.0, allow_nan=False, allow_infinity=False),
     )
-    def test_lift_zero_for_zero_baseline(self, model_val, baseline_val):
-        lift = Evaluator.compute_lift({"roc_auc": model_val}, {"rmse": 0.0}, "rmse")
-        assert lift == 0.0
+    def test_lift_none_for_zero_baseline(self, model_val):
+        """Baseline exactly 0 with the metric present: lift undefined — None."""
+        lift = Evaluator.compute_lift({"roc_auc": model_val}, {"roc_auc": 0.0}, "roc_auc")
+        assert lift is None

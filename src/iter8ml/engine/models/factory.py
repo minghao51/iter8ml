@@ -2,6 +2,8 @@
 
 import importlib
 
+from iter8ml.config import HardwareProfile
+
 _BUILT_IN_REGISTRY: dict[str, tuple[str, str]] = {
     "catboost": ("iter8ml.engine.models.catboost_model", "CatBoostModel"),
     "lightgbm": ("iter8ml.engine.models.lightgbm_model", "LightGBMModel"),
@@ -50,6 +52,12 @@ def validate_model_name(model_name: str) -> str:
 
 def get_model_class(model_name: str) -> type:
     """Resolve a model class by name with lazy imports."""
+    # Cap OpenMP threads before any GBDT module import can load libgomp
+    # (ADR-0004/0006): the factory is the single seam every model import
+    # passes through — Trainer, DAG nodes, HPO, MCP — so the cap is safe by
+    # default here. Idempotent/re-entrant; Trainer.__init__ re-applies it.
+    HardwareProfile.configure_omp_threads()
+
     validate_model_name(model_name)
 
     if model_name in _MODEL_CLASS_CACHE:

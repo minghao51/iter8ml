@@ -168,6 +168,7 @@ class TestCreateWarmstartedStudy:
             model_name="catboost",
             direction="maximize",
             log_path=str(sample_jsonl),
+            primary_metric="roc_auc",
         )
         assert injection.n_trials_injected == 2
         completed_trials = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
@@ -178,6 +179,7 @@ class TestCreateWarmstartedStudy:
             model_name="catboost",
             direction="maximize",
             log_path=str(sample_jsonl),
+            primary_metric="roc_auc",
         )
         assert injection.n_trials_injected == 2
         assert injection.n_skipped_missing_scores == 1
@@ -196,6 +198,7 @@ class TestCreateWarmstartedStudy:
             model_name="catboost",
             direction="maximize",
             log_path=str(path),
+            primary_metric="roc_auc",
         )
         assert injection.n_trials_injected == 0
         assert injection.n_skipped_missing_params == 1
@@ -214,6 +217,7 @@ class TestCreateWarmstartedStudy:
             model_name="catboost",
             direction="maximize",
             log_path=str(path),
+            primary_metric="roc_auc",
         )
         assert injection.n_trials_injected == 0
         assert injection.n_skipped_invalid_trials == 1
@@ -242,3 +246,110 @@ class TestCreateWarmstartedStudy:
             log_path=str(sample_jsonl),
         )
         assert isinstance(study.pruner, optuna.pruners.MedianPruner)
+
+
+class TestMetricCompatibility:
+    """Direction safety: inject only values scored on the current primary metric."""
+
+    @staticmethod
+    def _write_log(tmp_path: Path, events: list[dict]) -> Path:
+        path = tmp_path / "events.jsonl"
+        path.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+        return path
+
+    def test_injects_primary_metric_value_not_first_metric(self, tmp_path: Path):
+        """Event scored [r2, rmse] with primary rmse: the rmse value is injected."""
+        path = self._write_log(
+            tmp_path,
+            [
+                {
+                    "event": "model_completed",
+                    "run_id": "r1",
+                    "model": "catboost",
+                    "cv_scores": {"r2": 0.9, "rmse": 2.0},
+                    "params": {"depth": 6},
+                }
+            ],
+        )
+        study, injection = create_warmstarted_study(
+            model_name="catboost",
+            direction="minimize",
+            log_path=str(path),
+            primary_metric="rmse",
+        )
+        assert injection.n_trials_injected == 1
+        assert injection.n_skipped_metric_mismatch == 0
+        # The maximize-oriented r2 score (0.9) must NOT be injected into the
+        # minimize study — the injected value is the rmse score.
+        assert study.trials[0].value == 2.0
+        assert study.direction == optuna.study.StudyDirection.MINIMIZE
+
+    def test_skips_events_not_scored_on_primary_metric(self, tmp_path: Path):
+        """Event lacks the current primary metric entirely: skip and count it."""
+        path = self._write_log(
+            tmp_path,
+            [
+                {
+                    "event": "model_completed",
+                    "run_id": "r1",
+                    "model": "catboost",
+                    "cv_scores": {"r2": 0.9, "mae": 1.0},
+                    "params": {"depth": 6},
+                }
+            ],
+        )
+        study, injection = create_warmstarted_study(
+            model_name="catboost",
+            direction="minimize",
+            log_path=str(path),
+            primary_metric="rmse",
+        )
+        assert injection.n_trials_injected == 0
+        assert injection.n_skipped_metric_mismatch == 1
+        assert len(study.trials) == 0
+        assert study.direction == optuna.study.StudyDirection.MINIMIZE
+
+    def test_unknown_primary_metric_skips_all_injection(self, tmp_path: Path):
+        """Without a known primary metric, event metric identity is unverifiable."""
+        path = self._write_log(
+            tmp_path,
+            [
+                {
+                    "event": "model_completed",
+                    "run_id": "r1",
+                    "model": "catboost",
+                    "cv_scores": {"roc_auc": 0.85},
+                    "params": {"depth": 6},
+                }
+            ],
+        )
+        _study, injection = create_warmstarted_study(
+            model_name="catboost",
+            direction="maximize",
+            log_path=str(path),
+            primary_metric=None,
+        )
+        assert injection.n_trials_injected == 0
+        assert injection.n_skipped_metric_mismatch == 1
+
+    def test_compatible_metric_still_warms(self, tmp_path: Path):
+        path = self._write_log(
+            tmp_path,
+            [
+                {
+                    "event": "model_completed",
+                    "run_id": "r1",
+                    "model": "catboost",
+                    "cv_scores": {"rmse": 2.0},
+                    "params": {"depth": 6},
+                }
+            ],
+        )
+        study, injection = create_warmstarted_study(
+            model_name="catboost",
+            direction="minimize",
+            log_path=str(path),
+            primary_metric="rmse",
+        )
+        assert injection.n_trials_injected == 1
+        assert study.trials[0].value == 2.0

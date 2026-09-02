@@ -101,7 +101,9 @@ def test_promote_run_regression_uses_r2(temp_registry, tmp_path):
 
 
 def test_promote_run_rejects_when_existing_champion_is_better(temp_registry, tmp_path):
-    temp_registry.registry_path.write_text(json.dumps({"key1": {"score": 0.95}}))
+    temp_registry.registry_path.write_text(
+        json.dumps({"key1": {"score": 0.95, "metric_name": "roc_auc"}})
+    )
     log_path = tmp_path / "experiments.jsonl"
     event = {
         "event": "model_completed",

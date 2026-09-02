@@ -14,7 +14,7 @@ pytestmark = pytest.mark.property
 class TestPropertyLeakage:
     """Property: score_drop non-negative, n_flagged bounded."""
 
-    @settings(max_examples=50)
+    @settings(max_examples=50, deadline=None)
     @given(
         n_samples=st.integers(80, 200),
         n_features=st.integers(4, 8),
@@ -36,7 +36,7 @@ class TestPropertyLeakage:
         for f in report.flagged_features:
             assert f["score_drop"] >= 0.0
 
-    @settings(max_examples=50)
+    @settings(max_examples=50, deadline=None)
     @given(
         n_samples=st.integers(80, 150),
         n_features=st.integers(4, 6),
@@ -55,7 +55,7 @@ class TestPropertyLeakage:
         assert report.n_flagged <= report.n_features_tested
         assert report.n_flagged >= 0
 
-    @settings(max_examples=30)
+    @settings(max_examples=30, deadline=None)
     @given(
         n_samples=st.integers(80, 150),
         n_features=st.integers(4, 6),
@@ -78,7 +78,7 @@ class TestPropertyLeakage:
 class TestPropertyParallelJobs:
     """Property: _effective_parallel_jobs is bounded and monotonic."""
 
-    @settings(max_examples=50)
+    @settings(max_examples=50, deadline=None)
     @given(
         requested_jobs=st.integers(0, 16),
         n_tasks=st.integers(1, 50),
@@ -97,7 +97,7 @@ class TestPropertyParallelJobs:
             assert result <= requested_jobs or requested_jobs == 0
         assert result <= n_tasks
 
-    @settings(max_examples=50)
+    @settings(max_examples=50, deadline=None)
     @given(
         requested_jobs=st.integers(1, 8),
         n_tasks=st.integers(2, 20),

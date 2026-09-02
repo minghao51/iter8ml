@@ -179,16 +179,17 @@ class TestStateGeneration:
 
 
 class _OverrideAwareModel:
-    def __init__(self, task="classification"):
+    def __init__(self, task="classification", **kwargs):
+        # Real models accept **kwargs (random_seed flows through); mirror that.
         self.task = task
-        self.params = {}
+        self.params = dict(kwargs)
 
     @property
     def model_name(self):
         return "OverrideAwareModel"
 
     def apply_overrides(self, overrides):
-        allowed = {"depth", "learning_rate"}
+        allowed = {"depth", "learning_rate", "random_seed"}
         unknown = set(overrides) - allowed
         if unknown:
             raise ValueError(f"Unsupported override keys: {sorted(unknown)}")
@@ -209,7 +210,7 @@ class TestModelOverrides:
         monkeypatch.setattr(
             train,
             "_evaluate_model",
-            lambda *args, **kwargs: {"roc_auc": 0.9},
+            lambda *args, **kwargs: ({"roc_auc": 0.9}, {"roc_auc": 0.01}),
         )
 
     @pytest.fixture(autouse=True)
@@ -235,7 +236,9 @@ class TestModelOverrides:
             model_overrides={"catboost": {"depth": 8}},
         )
         assert result.error is None
-        assert result.params == {"depth": 8}
+        # random_seed is injected into params alongside overrides so the
+        # recorded run parameters are reproducibility-complete.
+        assert result.params == {"random_seed": 42, "depth": 8}
 
     def test_training_returns_explicit_error_on_invalid_override(self, tmp_path):
         result = _train_one(
@@ -255,6 +258,43 @@ class TestModelOverrides:
         assert result.error is not None
         assert "Unsupported override keys" in result.error
 
+    def test_lift_keeps_evaluable_baseline_pair(self, tmp_path):
+        result = _train_one(
+            name="catboost",
+            X=np.random.rand(20, 4),
+            y=np.random.randint(0, 2, 20),
+            task="classification",
+            cv_folds=3,
+            cv_strategy="stratified",
+            metrics=["roc_auc"],
+            calibration="none",
+            workspace=Workspace(root=tmp_path),
+            run_id="lift_ok",
+            baseline_scores={"naive_baseline": {"roc_auc": 0.5}},
+        )
+        assert result.error is None
+        # (0.9 - 0.5) / 0.5
+        assert result.lift_over_baselines == {"lift_over_naive_baseline": 0.8}
+
+    def test_lift_omits_baseline_pairs_missing_primary_metric(self, tmp_path):
+        result = _train_one(
+            name="catboost",
+            X=np.random.rand(20, 4),
+            y=np.random.randint(0, 2, 20),
+            task="classification",
+            cv_folds=3,
+            cv_strategy="stratified",
+            metrics=["roc_auc"],
+            calibration="none",
+            workspace=Workspace(root=tmp_path),
+            run_id="lift_missing_metric",
+            baseline_scores={"naive_baseline": {"f1_macro": 0.7}},
+        )
+        assert result.error is None
+        # compute_lift returns None (missing metric) — the pair is omitted,
+        # never fabricated as 0.0.
+        assert result.lift_over_baselines is None
+
 
 class TestWorkerSizing:
     def test_caps_parallelism_for_gbdt_models(self):
@@ -272,3 +312,35 @@ class TestWorkerSizing:
             strict_thread_safety=False,
         )
         assert workers == 2
+
+
+class TestBaselineScoresSkip:
+    def test_failing_baseline_warns_and_is_omitted(self, monkeypatch, caplog):
+        """A baseline that cannot be evaluated is skipped loudly, not silently."""
+        import logging
+
+        from iter8ml.engine.evaluator import Evaluator
+        from iter8ml.engine.pipelines.nodes.train import baseline_scores
+
+        def _boom(self, model_cls, X, y, task=None, **kwargs):
+            raise ValueError("synthetic baseline failure")
+
+        monkeypatch.setattr(Evaluator, "evaluate", _boom)
+        monkeypatch.setattr(Evaluator, "evaluate_with_folds", _boom)
+
+        with caplog.at_level(logging.WARNING):
+            scores = baseline_scores(
+                data_prep_result=MockDataPrepResult(40),
+                baseline_models={"naive_baseline": object},
+                task="classification",
+                cv_folds=3,
+                cv_strategy="stratified",
+                metrics=["roc_auc"],
+            )
+
+        assert scores == {}
+        assert any(
+            "naive_baseline" in record.getMessage()
+            and "synthetic baseline failure" in record.getMessage()
+            for record in caplog.records
+        )

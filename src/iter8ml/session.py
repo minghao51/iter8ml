@@ -76,8 +76,15 @@ class ExperimentSession:
         executor = PipelineExecutor(mode=PipelineMode.DRIFT)
         return executor.run_drift(reference_df, live_df, drift_method=method)
 
-    def leaderboard(self, metric: str | None = None, limit: int | None = None) -> pl.DataFrame:
-        report = ReportService(workspace=self.workspace).build_report(metric=metric, limit=limit)
+    def leaderboard(
+        self,
+        metric: str | None = None,
+        limit: int | None = None,
+        task: str | None = None,
+    ) -> pl.DataFrame:
+        report = ReportService(workspace=self.workspace).build_report(
+            metric=metric, limit=limit, task=task
+        )
         rows: list[dict[str, Any]] = []
         for entry in report.leaderboard:
             rows.append(
@@ -93,9 +100,32 @@ class ExperimentSession:
             )
         return pl.DataFrame(rows)
 
-    def export(self, key: str, output_dir: str | Path | None = None) -> Path:
+    def export(
+        self,
+        key: str,
+        output_dir: str | Path | None = None,
+        target_col: str | None = None,
+        positive_class: str | float | bool | None = None,
+    ) -> Path:
+        """Export a champion model as a portable prediction package.
+
+        Args:
+            key: Registry key (e.g. "experiment:classification").
+            output_dir: Output directory. Defaults to workspace/exports/<key>.
+            target_col: Target column name recorded in the export metadata so
+                the generated predictor drops it before inference. None keeps
+                positional behavior (no column dropped).
+            positive_class: Positive class used in training, recorded in
+                metadata.json so consumers can interpret predict_proba
+                column orientation.
+        """
         service = ExportService(workspace=self.workspace)
-        return service.export(key, output_dir=output_dir)
+        return service.export(
+            key,
+            output_dir=output_dir,
+            target_col=target_col,
+            positive_class=positive_class,
+        )
 
     def promote(self, run_id: str, key: str) -> Any:
         service = RegistryService(workspace=self.workspace)

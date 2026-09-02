@@ -1,6 +1,7 @@
 """Tests for IO utilities: JSONL loading + safe pickle."""
 
 import io
+import logging
 import pickle
 from pathlib import Path
 
@@ -75,6 +76,47 @@ def test_iter_events_malformed(tmp_path):
     path.write_text('{"event": "a"}\nbad\n')
     with pytest.raises(ValueError, match="Invalid JSON at line 2"):
         list(iter_events(path))
+
+
+# --- Malformed-line policies (torn-tail recovery) ---
+
+
+def test_iter_events_torn_trailing_line_skipped(tmp_path, caplog):
+    path = tmp_path / "events.jsonl"
+    path.write_text('{"event": "a"}\n{"event": "b"}\n{"event": "trun')
+    with caplog.at_level(logging.WARNING):
+        events = list(iter_events(path, on_error="skip_trailing"))
+    assert [e["event"] for e in events] == ["a", "b"]
+    assert any("line 3" in record.getMessage() for record in caplog.records)
+
+
+def test_iter_events_mid_file_corruption_still_raises_under_skip_trailing(tmp_path):
+    path = tmp_path / "events.jsonl"
+    path.write_text('{"event": "a"}\nbad\n{"event": "c"}\n')
+    with pytest.raises(ValueError, match="Invalid JSON at line 2"):
+        list(iter_events(path, on_error="skip_trailing"))
+
+
+def test_iter_events_skip_mode_drops_any_malformed_with_warning(tmp_path, caplog):
+    path = tmp_path / "events.jsonl"
+    path.write_text('{"event": "a"}\nbad\n{"event": "c"}\n')
+    with caplog.at_level(logging.WARNING):
+        events = list(iter_events(path, on_error="skip"))
+    assert [e["event"] for e in events] == ["a", "c"]
+    assert any("line 2" in record.getMessage() for record in caplog.records)
+
+
+def test_load_events_on_error_passthrough(tmp_path):
+    path = tmp_path / "events.jsonl"
+    path.write_text('{"event": "a"}\n{"event": "trun')
+    assert [e["event"] for e in load_events(path, on_error="skip_trailing")] == ["a"]
+    with pytest.raises(ValueError, match="Invalid JSON at line 2"):
+        load_events(path)  # default stays strict
+
+
+def test_iter_events_rejects_unknown_on_error(tmp_path):
+    with pytest.raises(ValueError, match="Unknown on_error policy"):
+        list(iter_events(tmp_path / "events.jsonl", on_error="yolo"))  # type: ignore[arg-type]
 
 
 # --- Safe pickle ---

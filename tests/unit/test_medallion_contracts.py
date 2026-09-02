@@ -436,9 +436,7 @@ def test_orchestrator_seam_cancel_is_honored(tmp_path, monkeypatch):
         service.cancel(run_path.parent.name)
         return product
 
-    monkeypatch.setattr(
-        "iter8ml.orchestration.service.materialize_bronze", materialize_and_cancel
-    )
+    monkeypatch.setattr("iter8ml.orchestration.service.materialize_bronze", materialize_and_cancel)
 
     handle = service.submit(_file_backed_plan(tmp_path, execute_training=False))
     manifest_path = workspace.runs_dir / handle.run_id / "run.json"

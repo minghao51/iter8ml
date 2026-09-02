@@ -94,15 +94,33 @@ class StateObserver:
         return "\n".join(lines) + "\n"
 
     def _render_leaderboard_section(self, report: ExperimentReport) -> list[str]:
+        from iter8ml.services.reporting import _calibration_marker, _fmt_score
+
+        # Flat leaderboard, but tasks are sorted into contiguous blocks —
+        # say so when mixed, so cross-task rows are not read as one ranking.
+        tasks = sorted({entry.task for entry in report.leaderboard})
+        heading = "## Leaderboard"
+        if len(tasks) > 1:
+            heading += f" (mixed tasks, ranked within task: {', '.join(tasks)})"
         lines = [
-            "## Leaderboard\n",
+            heading + "\n",
             "| Rank | Model | Run ID | Primary Metric | Score | Duration |",
             "|---|---|---|---|---|---|",
         ]
+        calibrated_present = False
         for index, entry in enumerate(report.leaderboard, start=1):
+            calibrated_present = calibrated_present or entry.calibration is not None
             lines.append(
-                f"| {index} | {entry.model} | {entry.run_id} | {entry.primary_metric} "
-                f"| {entry.primary_score:.4f} | {entry.duration_seconds}s |"
+                f"| {index} | {entry.model}{_calibration_marker(entry)} | {entry.run_id} "
+                f"| {entry.primary_metric} "
+                f"| {_fmt_score(entry.primary_score, entry.cv_std.get(entry.primary_metric))} "
+                f"| {entry.duration_seconds}s |"
+            )
+        if calibrated_present:
+            lines.append("")
+            lines.append(
+                "*: scores are pre-calibration CV metrics; the saved artifact is the "
+                "calibrated model."
             )
         return lines
 
@@ -280,4 +298,6 @@ class StateObserver:
     def _load_all_events(self) -> list[dict[str, Any]]:
         from iter8ml.utils.io import load_events
 
-        return load_events(self.log_path)
+        # A torn trailing write from a crashed previous run must not brick
+        # every subsequent run's state publish (ADR-0005 required adapter).
+        return load_events(self.log_path, on_error="skip_trailing")
