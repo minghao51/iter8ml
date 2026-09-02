@@ -85,3 +85,26 @@ jobs:
         with:
           name: pip-audit-report
           path: pip-audit.json
+
+  validation-gate:
+    # Mirrors the AGENTS.md local validation block end-to-end: the exact sync
+    # flags (--all-extras keeps optuna/xgboost/lightgbm installed), the full
+    # pytest suite in one run, plain ruff commands, mypy with the local
+    # build/ exclude, the legacy-namespace check, and mkdocs build (docs.yml
+    # only builds on main — this enforces docs on PRs too).
+    runs-on: ubuntu-24.04
+    env:
+      TABPFN_TOKEN: ${{ secrets.TABPFN_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.11"
+      - run: uv sync --all-groups --all-extras
+      - run: uv run pytest
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy . --exclude 'build/'
+      - run: make check-legacy-namespace
+      - run: uv run mkdocs build
