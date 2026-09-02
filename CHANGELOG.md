@@ -7,7 +7,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Nothing yet._
+Behavior-breaking config surface changes (2026-09-01 pipeline/config audit fix
+pass + W6 report-trust workstream). Read **Changed/Removed** before upgrading
+existing configs.
+
+### Added
+- `iter8 run --check`: side-effect-free config↔data preflight
+  (`verification/preflight.py`) — target presence/nulls/constancy, task
+  misdeclaration warnings, CV feasibility, timeseries-without-dates, unknown
+  `ignore_cols`, ID-like leakage hints. Exit 1 on blocking issues.
+- `ignore_cols` config field: drop ID/leaky columns before feature engineering
+  (unknown columns fail loudly; applied after `row_id` computation so medallion
+  split alignment is preserved).
+- `positive_class` config field (classification, binary): explicitly orients
+  the target so the positive class encodes to 1 — `roc_auc` no longer depends
+  on value appearance order. Unknown values fail in preflight and prep; the
+  export bundle records it in `metadata.json` (`iter8 export --positive-class`).
+- `iter8ml.metrics` entry-point group for custom metrics (`module:func`,
+  optional `func.task` scoping and `func.lower_is_better`).
+- `primary_metric` config field: one ranking rule for lift, leaderboard, and
+  registry promotion (default `metrics[0]`; must be a member of `metrics`).
+- `iter8 hpo --config <file>`: drive HPO from an ExperimentConfig (task,
+  target, data, folds, metrics, seed, `ignore_cols`, `positive_class`,
+  per-model `model_overrides` as fixed params); explicit flags override.
+- Fold-level reporting: `cv_std` captured end-to-end (`mean ±std` in
+  events/state/CLI); `experiment_started` records `data_digest`,
+  `library_versions`, row counts on the flat path.
+- Regression example config (`examples/house_prices_regression.yaml`).
+
+### Changed
+- **Unknown config keys now fail at parse time** (`extra="forbid"`): typos
+  like `cv_fold: 10` exit 1 instead of being silently ignored.
+- **Metrics, `cv_strategy`, and `primary_metric` are validated at parse time**
+  against the task's registry; `stratified` CV is rejected for regression.
+- `config.random_seed` now reaches CV splitters, model constructors,
+  calibration, and data sampling (previously only the medallion split).
+- `--quick`'s `data_sample` is now actually applied (was validated-but-inert).
+- `tracker` config field selects the tracking backend (JSONL/W&B/MLflow).
+- Event log (`experiments.jsonl`) reading is torn-write tolerant and includes
+  rotated backups with deduplication; a truncated final line no longer bricks
+  `current_state.md` generation or resume.
+- Leaderboards sort task-isolated (classification and regression never
+  interleave) and `latest_run` is the max-timestamp entry, not file order.
+- `compute_lift` returns `None` for missing metrics or a 0 baseline instead of
+  fabricating a 0.0 lift; unevaluable baselines are skipped with a warning.
+- All-models-fail now fails the run (`ModelFitError` → exit 1) instead of
+  exiting 0 with an empty leaderboard.
+- HPO routes the raw frame through the same preprocessing chain as training
+  (string categoricals no longer crash LightGBM/XGBoost) and raises when fewer
+  than `min(n_trials, max(3, n_trials // 10))` trials complete.
+
+### Removed
+- `shap_enabled` and `drift_detection` config keys (loud deprecation errors;
+  use `iter8 drift` / `iter8 hpo` respectively).
+
+### Fixed
+- Legacy flat-key configs silently replaced the default 8-step pipeline with a
+  fragment (no FEATURE_ENGINEERING step → DAG crash); legacy keys now seed the
+  full default step list.
+- Calibration: requested-but-unapplied calibration logs a warning instead of
+  silently downgrading; pre-calibration CV scores are marked with an asterisk
+  legend in events/state/leaderboards.
+- `--models` CLI values are validated before overwriting config models.
 
 ## [0.1.0] - 2026-08-06
 

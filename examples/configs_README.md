@@ -14,8 +14,6 @@ config = ExperimentConfig(
     target_col="default",
     data_path="data/credit_risk.csv",
     models="auto",                     # Auto-selects models based on data size/hardware
-    run_hpo=False,                     # Disable HPO for quick baseline
-    hpo_n_trials=50,                   # Used only when run_hpo=True
     cv_folds=5,
     cv_strategy=CVStrategy.STRATIFIED,
     metrics=["roc_auc", "f1_macro"],
@@ -38,8 +36,6 @@ config = ExperimentConfig(
     target_col="price",
     data_path="data/housing.csv",
     models=["catboost", "lightgbm"],   # Explicit model list
-    run_hpo=True,
-    hpo_n_trials=100,
     cv_folds=3,
     metrics=["rmse", "mae", "r2"],
     random_seed=123,
@@ -47,7 +43,7 @@ config = ExperimentConfig(
 )
 ```
 
-## With HPO and Multiple Models
+## Multiple Models with Parallel Training
 
 ```python
 from iter8ml.config import ExperimentConfig
@@ -59,8 +55,6 @@ config = ExperimentConfig(
     target_col="target",
     data_path="data/medium_dataset.csv",   # ~50k rows
     models="auto",                         # ModelSelector decides: CatBoost/LightGBM/XGBoost
-    run_hpo=True,
-    hpo_n_trials=100,
     cv_folds=5,
     metrics=["roc_auc"],
     random_seed=42,
@@ -70,11 +64,29 @@ config = ExperimentConfig(
 
 ## Notes on Key Fields
 
-- `models="auto"`: Uses `ModelSelector` to choose based on `n_rows`, `vram_gb`, `has_text_cols`
-- `run_hpo=True`: Triggers Optuna study with per-model default search spaces
-- `tracker=TrackerType.JSONL`: Always writes `workspace/experiments.jsonl` (W&B/MLflow are additive mirrors)
+- `models="auto"`: Uses `ModelSelector` to choose based on `n_rows`, `task`, `vram_gb`
+- `primary_metric`: Ranking/promotion metric; defaults to `metrics[0]`, must be a member of `metrics`
+- `ignore_cols`: List of columns (IDs, leaky features) to drop before feature engineering
+- `tracker=TrackerType.JSONL`: Default backend writing `workspace/experiments.jsonl`; `wandb`/`mlflow` backends are selected via this field (extras required)
 - `run_quality_audit=True`: Runs Cleanlab label-noise audit (skip only for very large datasets >500k)
 - `max_workers`: Limits concurrent model training; set to 1 for single GPU with low VRAM
+- `data_sample`: Fraction of data to train on, in `(0.0, 1.0]`; honored by `iter8 run` (skipped for medallion split runs)
+
+### HPO
+
+HPO is not a config field and cannot be driven from YAML/TOML
+(`run_hpo`/`hpo_n_trials` were removed — setting them now raises a deprecation
+error, and no pipeline step params control it either). It runs as a standalone
+CLI command with its own options:
+
+```bash
+uv run iter8 hpo --data <data.parquet> --target <col> \
+    --model catboost --task classification --trials 50
+```
+
+Search spaces live in `engine/models/model_configs.py`; folds and metrics come
+from HPO's internal defaults, not your experiment config. See
+`docs/pipeline-architecture.md` for pipeline step params.
 
 ## Advanced Configuration
 

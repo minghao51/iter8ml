@@ -128,3 +128,98 @@ where `isotonic()` is a piecewise-constant monotonically increasing function fit
 ### Behavior
 - If `method="none"` or the base model lacks `predict_proba()`, calibration is skipped and the base model is used as-is.
 - Calibration uses `StratifiedKFold` internally to avoid overfitting the calibration map.
+
+---
+
+## Validate Before You Train
+
+Trust starts before the first fit. These guardrails catch the common
+failure modes — at parse time or in a side-effect-free preflight — instead of
+mid-run or, worse, in a leaderboard that looks fine and isn't.
+
+### 1. Preflight the config against the data: `iter8 run --check`
+
+Validates the resolved config against the actual data without training:
+target presence/nulls/constancy, regression-target dtype, misdeclared-task
+warnings, CV feasibility (folds vs row count / rarest class), timeseries
+without date columns, unknown `ignore_cols`, ID-like leakage hints, and
+`positive_class` presence/binary checks.
+
+```bash
+iter8 run --config examples/credit_risk.yaml --check
+```
+
+Exit codes: `0` = clean (warnings allowed), `1` = blocking issue. The
+preflight is opt-in — plain `iter8 run` goes straight to training — so make
+`--check` a habit for every new dataset.
+
+### 2. Pick the ranking metric explicitly: `primary_metric`
+
+One metric ranks lift, the leaderboard, and registry promotion:
+
+```yaml
+metrics: [roc_auc, f1_macro]
+primary_metric: roc_auc   # must be a member of metrics; defaults to metrics[0]
+```
+
+Lower-is-better metrics (`rmse`, `mae`, …) sort correctly everywhere —
+unscored entries never outrank real results.
+
+### 3. Drop leaky / ID columns: `ignore_cols`
+
+```yaml
+ignore_cols: [customer_id, application_date]
+```
+
+Unknown columns fail loudly at parse time; the target may not be listed.
+Rows keep stable IDs, so medallion split alignment is unaffected.
+
+### 4. Orient binary classification: `positive_class`
+
+String targets are encoded by value appearance order — arbitrary w.r.t.
+semantics. Name the positive class so `predict_proba()[:, 1]` means
+P(positive):
+
+```yaml
+positive_class: bad   # e.g. credit risk: "bad" is the event of interest
+```
+
+Unknown values fail in `--check` and in prep; targets must be binary.
+
+### 5. Custom metrics without forking
+
+Implement a function, expose it via the `iter8ml.metrics` entry-point group:
+
+```python
+# my_pkg/metrics.py
+def pr_auc(y_true, y_proba):          # binary; receives (y, proba[:, 1])
+    from sklearn.metrics import average_precision_score
+    return float(average_precision_score(y_true, y_proba))
+
+pr_auc.task = "classification"        # optional: restrict to a task
+pr_auc.lower_is_better = False        # optional: direction hint
+```
+
+```toml
+# pyproject.toml
+[project.entry-points."iter8ml.metrics"]
+pr_auc = "my_pkg.metrics:pr_auc"
+```
+
+Then list `metrics: [pr_auc, roc_auc]` in the experiment config.
+
+### 6. What fails fast now
+
+- Unknown config keys (`extra="forbid"`), unknown metrics for the task,
+  `stratified` CV on regression, `primary_metric` outside `metrics`,
+  regression + `positive_class` — all at **parse time**.
+- All models failing to fit — the run exits 1 (`ModelFitError`), no
+green-but-empty leaderboard.
+- `ignore_cols` misses, legacy removed keys (`shap_enabled`,
+  `drift_detection`) — loud errors, not silent ignores.
+- HPO studies with fewer than `min(n_trials, max(3, n_trials // 10))`
+  completed trials raise with the first underlying error.
+
+See [Pipeline Architecture](pipeline-architecture.md) for the full config
+table and the [changelog](https://github.com/minghao51/iter8ml/blob/main/CHANGELOG.md)
+for the breaking-changes list.

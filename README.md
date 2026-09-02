@@ -8,7 +8,7 @@ A high-velocity iteration framework for tabular machine learning. Built for sing
 - **Low boilerplate** – common operations (splits, encoding, scaling, evaluation) are one-liners or config-driven.
 - **Reproducibility** – every run is tracked (code, data hash, hyperparameters, metrics).
 - **Config over code** – hyperparameters, feature lists, model types, and even pipeline steps are defined in YAML/TOML.
-- **Extensible** – easy to drop in custom transformers, metrics, or models.
+- **Extensible** – custom models and metrics plug in via entry points; transformers are in-tree.
 
 ## Benchmark Results
 
@@ -30,7 +30,7 @@ CatBoost / LightGBM / XGBoost, 5-fold cross-validation, **default hyperparameter
 
 _5-fold CV (mean ± std) · default hyperparameters · CPU · roc_auc (binary) / f1_macro (multiclass) / R² (regression) · best per row in bold._
 
-> **Notes:** Multiclass datasets (`shuttle`, `iris`) report `f1_macro` — OVR-AUC is unstable on imbalanced folds. `shuttle` is extremely class-imbalanced (3 of 7 classes have <15 samples), so default LightGBM underfits the rare classes (f1 0.35 ± 0.05); the framework's class-weighting and HPO steps are designed to close that gap. `quake` is a known noisy regression set (negative R² is expected for all models).
+> **Notes:** Multiclass datasets (`shuttle`, `iris`) report `f1_macro` — OVR-AUC is unstable on imbalanced folds. `shuttle` is extremely class-imbalanced (3 of 7 classes have <15 samples), so default LightGBM underfits the rare classes (f1 0.35 ± 0.05); the framework has **no automatic class-weighting** — manage imbalance explicitly via `model_overrides` (binary: LightGBM `scale_pos_weight`; multiclass: `class_weight` or `is_unbalance`) and the `iter8 run --check` rare-class warning. `quake` is a known noisy regression set (negative R² is expected for all models).
 
 > 📖 **Deep dive — [German Credit case study](https://minghao51.github.io/iter8ml/notebooks/case-study-german-credit/):** takes the `credit-g` row above from benchmark to production. HPO edges ROC-AUC 0.791 → ≈0.796, SHAP ranks `checking_status` / `credit_history` as the top risk drivers, and a drift monitor + portable export bundle come from the same `ExperimentSession` API.
 
@@ -106,6 +106,7 @@ uv run iter8 leaderboard --top 5 --metric roc_auc
 
 # Manage model registry
 uv run iter8 registry show
+uv run iter8 registry promote <run_id> <key>   # promote a run to champion
 
 # Hyperparameter optimization (with warm-start from history)
 uv run iter8 hpo --data data.csv --target label --model catboost --trials 100
@@ -276,7 +277,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the detailed design document.
 | [explainability.md](docs/explainability.md) | SHAP TreeExplainer/KernelExplainer, beeswarm + dependence plots |
 | [data-loading.md](docs/data-loading.md) | CSV/Parquet/SQLite loading, security measures, data hashing |
 | [pipeline-architecture.md](docs/pipeline-architecture.md) | Hamilton DAG composition, config variants, hooks, extension guide |
-| [design-decisions.md](docs/design-decisions.md) | The *why* behind the architecture — ADR-style notes (DAG, medallion contract, hardware routing, CPU-first) |
+| [docs/decisions/](docs/decisions/README.md) | The *why* behind the architecture — ADR records (DAG, medallion contract, hardware routing, CPU-first) |
 | [medallion.md](docs/medallion.md) | Local Bronze/Silver/Gold/Platinum products, atomic artifacts, catalog, and verification |
 
 ## Optional Integrations

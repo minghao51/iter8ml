@@ -1,5 +1,7 @@
 For agent behavior rules → @AGENTS.md
-For architecture & modules → @.planning/codebase/ARCHITECTURE.md
-For stack & dependencies → @.planning/codebase/STACK.md
-For coding conventions → @.planning/codebase/CONVENTIONS.md
-For external integrations → @.planning/codebase/INTEGRATIONS.md
+Documentation map → @docs/README.md
+For architecture & modules → @ARCHITECTURE.md
+For codebase reference (stack/structure/conventions/testing/integrations/concerns) → @.planning/codebase/
+For design decisions (ADRs) → @docs/decisions/README.md
+For conventions → @CONTRIBUTING.md and @.planning/STYLE.md
+For planning & current state → @docs/plan/ and @.planning/STATE.md

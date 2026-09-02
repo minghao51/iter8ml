@@ -1,0 +1,30 @@
+# Example: regression on a house-price-style dataset
+# Usage: uv run iter8 run --config examples/house_prices_regression.yaml --data data/house_prices.parquet
+# Pre-flight validate without training: append --check
+#
+# Regression defaults (applied automatically when omitted):
+#   metrics: [rmse, r2]   cv_strategy: kfold
+# Note: cv_strategy "stratified" is rejected for regression tasks.
+
+name: house_prices_regression
+task: regression
+target_col: sale_price
+data_path: data/house_prices.parquet
+
+cv_folds: 5
+cv_strategy: kfold
+
+models: auto
+metrics:
+  - rmse
+  - mae
+  - r2
+primary_metric: rmse # lower is better; defaults to metrics[0] if omitted
+# ignore_cols: [listing_id, agent_id] # drop IDs / leaky columns
+
+tracker: jsonl
+target_transform: auto # log/quantile-transform skewed targets (pipeline step param)
+
+# Note: HPO is NOT config-driven. Run it separately with its own CLI options:
+#   uv run iter8 hpo --data data/house_prices.parquet --target sale_price \
+#       --model lightgbm --task regression

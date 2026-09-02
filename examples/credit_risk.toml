@@ -1,5 +1,5 @@
 # Example: binary classification on a credit risk dataset
-# Usage: uv run tabblueprint run --config examples/credit_risk.toml --data data/credit_risk_v2.parquet
+# Usage: uv run iter8 run --config examples/credit_risk.toml --data data/credit_risk_v2.parquet
 
 name = "credit_risk_v2"
 task = "classification"
@@ -15,5 +15,5 @@ metrics = ["roc_auc", "f1_macro", "log_loss"]
 tracker = "jsonl"
 run_quality_audit = true
 
-run_hpo = false
-hpo_n_trials = 100
+# Note: HPO is NOT config-driven. Run it separately with its own CLI options:
+#   uv run iter8 hpo --data data/credit_risk_v2.parquet --target default --model catboost

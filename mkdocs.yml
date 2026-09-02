@@ -35,7 +35,13 @@ nav:
   - Home: index.md
   - Architecture:
     - Pipeline Architecture: pipeline-architecture.md
-    - Design Decisions: design-decisions.md
+    - Design Decisions: decisions/README.md
+    - "ADR-0001 — One Hamilton DAG for training": decisions/0001-single-hamilton-dag.md
+    - "ADR-0002 — Pipeline behavior is data": decisions/0002-pipeline-spec-config-when.md
+    - "ADR-0003 — Medallion artifact contract": decisions/0003-medallion-artifact-contract.md
+    - "ADR-0004 — Hardware-aware model routing": decisions/0004-hardware-aware-model-routing.md
+    - "ADR-0005 — Two reliability seams": decisions/0005-two-reliability-seams.md
+    - "ADR-0006 — CPU-first, GPU-ready": decisions/0006-cpu-first-gpu-ready.md
   - Medallion Runtime: medallion.md
   - Guides:
     - Data Loading: data-loading.md
@@ -46,6 +52,8 @@ nav:
     - HPO: hpo.md
     - Drift Detection: drift-detection.md
     - Explainability: explainability.md
+  - Planning:
+    - Deferred Research: plan/deferred-research.md
   - Notebooks:
     - Overview: notebooks/index.md
     - Live Demo — Telco Churn: notebooks/demo-telco-churn.md

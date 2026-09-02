@@ -6,7 +6,7 @@ Reference for Optuna-based hyperparameter optimization, warmstarting, and search
 
 ## Study Creation
 
-**Source:** `src/iter8ml/engine/hpo.py:15`
+**Source:** `src/iter8ml/engine/hpo.py:30`
 
 **Function:** `create_study(model_name, direction, n_trials, pruner)`
 
@@ -24,15 +24,34 @@ Reference for Optuna-based hyperparameter optimization, warmstarting, and search
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `direction` | `"maximize"` | Optimize for higher metric (ROC AUC, R²) |
+| `direction` | `"maximize"` | Fallback direction for direct `create_study` calls; `optimize_model` always derives it from the primary metric (below) |
 | `n_trials` | 50 | Number of HPO trials |
 | `pruner` | `"median"` | Pruner strategy |
+
+### Direction Resolution
+
+**Source:** `src/iter8ml/services/reporting.py:43`
+
+`optimize_model` resolves the study direction from the central direction
+registry in `services/reporting.py` (`metric_higher_is_better`), never by
+hardcoding it at call sites:
+
+1. Primary metric = first entry of the `metrics` argument; when omitted, the
+   evaluator's configured metric list is used (final fallback: the first
+   returned score at trial time).
+2. Lower-is-better metrics (`rmse`, `mae`, `mse`, `log_loss`, …) minimize;
+   everything else maximizes.
+3. The resolved direction is passed to both study creations (warmstarted and
+   plain) and reported back in the result dict as `direction` +
+   `primary_metric`.
+
+So `iter8 hpo --task regression` (metrics `rmse, r2`) minimizes RMSE.
 
 ---
 
 ## Search Space Sampling
 
-**Source:** `src/iter8ml/engine/hpo.py:178`
+**Source:** `src/iter8ml/engine/hpo.py` (`_parse_trial_params`)
 
 The `objective()` closure within `optimize_model()` samples parameters from the configured search space:
 
@@ -56,21 +75,38 @@ Each parameter in the search space dict is a tuple:
 
 ## Full Optimization Loop
 
-**Source:** `src/iter8ml/engine/hpo.py:87`
+**Source:** `src/iter8ml/engine/hpo.py` (`optimize_model`)
 
-**Function:** `optimize_model(model_cls, X, y, evaluator, model_name, n_trials, search_space, task, log_path)`
+**Function:** `optimize_model(model_cls, X, y, evaluator, model_name, n_trials, search_space, task, log_path, tracker, metrics)`
 
 ### Flow
 
-1. Create or load warmstarted study
-2. For each trial:
+1. Resolve the primary metric and study direction (see *Direction Resolution*)
+2. Create or load warmstarted study
+3. For each trial:
    - Sample hyperparameters from search space
    - Run cross-validation via `Evaluator.evaluate()`
-   - Return primary metric as trial value
+   - Return the primary metric as trial value (first score when the primary is absent)
    - On failure: prune the trial
-3. Log each trial to JSONL (if `log_path` provided)
-4. Compute parameter importance via PedAnova
-5. Return `best_params`, `best_value`, `n_trials`, `param_importances`
+4. Log each trial to JSONL (if `log_path` provided)
+5. Compute parameter importance via PedAnova
+6. Return `best_params`, `best_value`, `n_trials`, `direction`, `primary_metric`, `param_importances`
+
+### Thread Safety (OpenMP cap)
+
+Every model import flows through `get_model_class()`
+(`src/iter8ml/engine/models/factory.py`), which applies the OpenMP thread cap
+(`HardwareProfile.configure_omp_threads()`, ADR-0004/0006) **before** the GBDT
+module import can load libgomp. This makes HPO — and every other path that
+resolves models via the factory — safe by default at the model factory; the
+`Trainer.__init__` cap remains as a second layer.
+
+On Intel hybrid CPUs (P+E cores, no SMT), the cap alone is not enough: libgomp's
+default **active spin-wait** can live-lock GBDT training barriers across
+heterogeneous cores. `configure_omp_threads()` therefore also sets
+`OMP_WAIT_POLICY=passive`, and the GBDT wrappers pin their per-library thread
+counts (`num_threads` / `nthread` / `thread_count`) to the same cap — user
+overrides still win.
 
 ### HPO Trial Logging
 
@@ -190,15 +226,55 @@ new_high = min(original_high, Q75 + expansion_factor × span)
 
 ## Setup Helper
 
-**Source:** `src/iter8ml/engine/hpo.py:43`
+**Source:** `src/iter8ml/engine/hpo.py` (`setup_hpo_components`)
 
-**Function:** `setup_hpo_components(data_path, target_col, task, model)`
+**Function:** `setup_hpo_components(data_path, target_col, task, model, cv_folds=None, metrics=None, random_seed=None, ignore_cols=None, positive_class=None)`
 
 Shared setup for CLI and MCP HPO entry points:
 
 1. Loads data via `load_data()`
-2. Converts to numpy via `DataAdapter()`
-3. Creates an `Evaluator` with default config
-4. Resolves the model's HPO search space from `ModelConfigs`
+2. Routes the frame through the same prep chain as training
+   (`PipelineExecutor(mode=PipelineMode.HPO).run_prep(...)`): `ignore_cols`
+   filter → `positive_class` orientation → null fill → date decomposition →
+   categorical encoding → target validation. String categoricals reach
+   `DataAdapter` as numeric codes — raw strings would crash LightGBM/XGBoost
+   constructors. Pass `ignore_cols`/`positive_class` from the experiment
+   config so HPO scores the same feature set and class orientation as
+   `iter8 run` (quality-audit and feature-engineering steps remain
+   training-path-only).
+3. Converts to numpy via `DataAdapter()` (features **and** encoded target)
+4. Creates an `Evaluator` (defaults, or the `cv_folds`/`metrics`/`random_seed`
+   overrides passed by the CLI `--config` path, so HPO folds use the same
+   seed and fold count as `iter8 run`)
+5. Resolves the model's HPO search space from `ModelConfigs`
 
 Returns `(X, y, evaluator, search_space)`.
+
+## Failure Semantics
+
+Every trial evaluation exception is converted to `optuna.TrialPruned` (the
+study keeps going — one bad hyperparameter region must not kill the search).
+A study that completes fewer than `min(n_trials, max(3, n_trials // 10))`
+trials raises `ValueError` surfacing the first trial's underlying exception
+instead of returning: an all-pruned study has no meaningful `best_value`, and
+crowning a winner over a tiny survivor set would mislead. The CLI reports
+this as `Error: ...` and exits 1. Note: warmstart-injected historical trials
+count toward the threshold — they are real prior evaluations, so a study can
+complete on injected evidence alone.
+
+## CLI
+
+`iter8 hpo` accepts either explicit flags or an experiment config:
+
+```bash
+# explicit flags (defaults for the rest)
+iter8 hpo --data train.csv --target y --model lightgbm --trials 50
+
+# config-driven: reuses task, target_col, data_path, cv_folds, metrics,
+# primary_metric (optimized first), random_seed, ignore_cols, positive_class
+# and per-model model_overrides (as fixed params) from the config file;
+# explicit CLI flags override the config values
+iter8 hpo --config config.yaml --trials 100
+```
+
+The resolved settings are echoed before the study starts.

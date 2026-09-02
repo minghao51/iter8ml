@@ -83,11 +83,11 @@ The blocklist check strips common SQL keywords (`SELECT`, `FROM`, `WHERE`, `JOIN
 
 ## Data Hashing
 
-**Source:** `loader.py:102`
+**Source:** `domain/hashing.py` (`dataframe_digest`)
 
-**Function:** `get_data_hash(df)`
+**Function:** `dataframe_digest(df)`
 
-**Library:** `polars`, `numpy`, `hashlib`
+**Library:** `polars`, `hashlib`
 
 Computes a deterministic SHA-256 hash for data fingerprinting:
 

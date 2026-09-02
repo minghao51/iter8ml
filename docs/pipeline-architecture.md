@@ -101,11 +101,10 @@ Each module contains Hamilton nodes that may use `@config.when()` variants, reso
 | Quality Audit | `QUALITY_AUDIT` | enabled | `auto_clean_noise: bool`, `noise_quality_threshold: float` |
 | Leakage Audit | `LEAKAGE_AUDIT` | enabled | — |
 | Target Transform | `TARGET_TRANSFORM` | enabled | `method: "none"\|"auto"\|"log1p"\|"yeo-johnson"\|"box-cox"`, `skewness_threshold: float` |
-| Feature Engineering | `FEATURE_ENGINEERING` | enabled | `strategy: "none"\|"default"\|...` |
+| Feature Engineering | `FEATURE_ENGINEERING` | enabled | `strategy: "none"\|"afe"\|"embedding"` |
 | Model Training | `MODEL_TRAINING` | enabled | — |
 | Calibration | `CALIBRATION` | enabled | `method: "none"\|"platt"\|"isotonic"` |
 | Evaluation | `EVALUATION` | enabled | — |
-| HPO | `HPO` | disabled | — |
 
 ### Full DAG Flow
 
@@ -222,8 +221,9 @@ The features module is only loaded when `PipelineSpec.is_enabled(StepName.FEATUR
 
 | Node | Config Condition | Behavior |
 |------|-----------------|----------|
-| `training_features__default` | `feature_strategy != "auto"` and not in `afe` variants | Pass-through: returns `(X, feature_names)` from `data_prep_result` |
-| `training_features__afe_enabled` | `afe_enabled == True` | Runs full AFE: top-K → interactions → pruning |
+| `training_features__none` | `feature_strategy == "none"` | Pass-through: returns `(X, feature_names)` from `data_prep_result` |
+| `training_features__afe` | `feature_strategy == "afe"` | Runs full AFE: top-K → interactions → pruning |
+| `training_features__embedding` | `feature_strategy == "embedding"` | Learned entity/autoencoder embeddings for high-cardinality categoricals |
 
 Config is set via `_resolve_hamilton_config()` which reads `feature_strategy` from `PipelineSpec.step_params(StepName.FEATURE_ENGINEERING)`.
 
@@ -312,16 +312,28 @@ dr = builder.build()
 | `cv_folds` | 5 | Cross-validation folds |
 | `cv_strategy` | auto (STRATIFIED for classification, KFOLD for regression) | CV splitting strategy |
 | `models` | `"auto"` | `"auto"` for hardware-aware selection, or list of model names |
-| `metrics` | auto (`["roc_auc", "f1_macro"]` or `["rmse", "r2"]`) | Evaluation metrics |
-| `afe_enabled` | `False` | Enable automated feature engineering |
+| `metrics` | auto (`["roc_auc", "f1_macro"]` or `["rmse", "r2"]`) | Evaluation metrics; validated against the task's registry at parse time |
+| `primary_metric` | `metrics[0]` | Ranking/promotion metric; must be a member of `metrics` |
+| `ignore_cols` | `[]` | Columns dropped before feature engineering (IDs, leaky features) |
+| `random_seed` | `42` | Seeds CV fold shuffling, model construction, calibration, and data sampling |
+| `data_sample` | `1.0` | Fraction of data to train on `(0.0, 1.0]`; honored by `iter8 run` (skipped when a medallion `split_frame` is supplied) |
 | `afe_top_k` | 10 | Top-K features for AFE |
 | `afe_lift_threshold` | 0.01 | Minimum lift to keep an interaction |
 | `afe_pruning` | `False` | Enable feature pruning after AFE |
-| `pipeline` | `PipelineSpec()` (all steps enabled except HPO) | Pipeline step configuration (see below) |
-| `drift_detection` | `"psi"` | Drift method: `"none"`, `"psi"`, `"domain_classifier"`, `"both"` |
-| `shap_enabled` | `False` | Enable SHAP explainability |
+| `pipeline` | `PipelineSpec()` (8 default steps) | Pipeline step configuration (see below) |
 | `max_workers` | 1 | Concurrent model training (auto-reduced to 1 for low-VRAM GPUs) |
 | `tracker` | `JSONL` | Tracker backend: `JSONL`, `WANDB`, `MLFLOW` |
+| `tracker_settings` | `null` | Constructor kwargs for the tracker backend, per-backend allowlisted (jsonl: `max_file_size_mb`, `backup_count`; wandb: `project`, `entity`, `mode`, `tags`, `name`, `notes`, `group`, `job_type`, `dir`; mlflow: `tracking_uri`, `experiment_name`). Unknown keys fail loudly. |
+
+Removed fields (setting them raises a deprecation error): `run_hpo`,
+`hpo_n_trials`, `run_audit`, `auto_clean_noise`, `noise_quality_threshold`,
+`shap_enabled`, `drift_detection` (drift is run explicitly via
+`iter8 drift --reference ... --new ...`; HPO via `iter8 hpo --data ... --target ...`).
+
+Unknown top-level config keys are rejected (`extra="forbid"`), so typos fail at
+parse time. Custom metrics plug in via the `iter8ml.metrics` entry-point group
+(value `"module:func"`; the callable may declare `func.task` to scope it to one
+task and `func.lower_is_better = True` for direction).
 
 ### `PipelineSpec` — Step Configuration
 

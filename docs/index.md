@@ -102,10 +102,11 @@ ws.leaderboard_path   # workspace/leaderboard.md
 - [Feature Engineering](feature-engineering.md)
 - [Models](models.md)
 - [Evaluation & Metrics](evaluation.md)
+- [Validate Before You Train](evaluation.md#validate-before-you-train)
 - [Hyperparameter Optimization](hpo.md)
 - [Drift Detection](drift-detection.md)
 - [Explainability](explainability.md)
-- [Design Decisions](design-decisions.md)
+- [Design Decisions](decisions/README.md)
 
 ## Notebooks
 
@@ -115,10 +116,12 @@ ws.leaderboard_path   # workspace/leaderboard.md
 
 ```
 iter8 init                  Initialize workspace
-iter8 run config.yaml       Run experiment
+iter8 run --config config.yaml --data <file>   Run experiment (append --check to validate only)
 iter8 leaderboard           Show leaderboard
-iter8 hpo config.yaml       Run HPO
-iter8 drift ref.csv live.csv  Drift detection
-iter8 export key            Export champion
+iter8 hpo --data <file> --target <col>   Run HPO (or --config <file> to reuse task/target/data/folds/metrics/seed)
+iter8 drift --reference ref.csv --new live.csv  Drift detection
+iter8 export key --target col  Export champion (--target dropped from predictor input)
+iter8 registry show         Show champion registry
+iter8 registry promote <run_id> <key>  Promote a run to champion
 iter8 state                 Show experiment state
 ```

@@ -335,6 +335,6 @@ Lazy-import registry mapping model names to `(module_path, class_name)`, with pl
 | `linear_baseline` | `engine.models.baselines` | `LinearBaseline` |
 
 **Key Functions:**
-- `get_model_class(name)` → resolves and caches the class (lazy import)
+- `get_model_class(name)` → resolves and caches the class (lazy import); applies the OpenMP thread cap (`HardwareProfile.configure_omp_threads()`, ADR-0004/0006) **before** importing the GBDT module, so every path that loads a model — Trainer, DAG nodes, HPO, MCP — is safe by default at the model factory. The cap also sets `OMP_WAIT_POLICY=passive` (Intel hybrid P/E-core live-lock prevention), and the GBDT wrappers default `num_threads`/`nthread`/`thread_count` to the cap (user overrides win)
 - `validate_model_name(name)` → raises `ValueError` if unknown
 - `available_model_names()` → returns sorted list of valid names
